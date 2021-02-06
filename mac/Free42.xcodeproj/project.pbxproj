@@ -80,7 +80,7 @@
 		29B97325FDCFA39411CA2CEA /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = /System/Library/Frameworks/Foundation.framework; sourceTree = "<absolute>"; };
 		32CA4F630368D1EE00C91783 /* Free42_Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Free42_Prefix.pch; sourceTree = "<group>"; };
 		8D1107310486CEB800E47090 /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		8D1107320486CEB800E47090 /* Free42.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Free42.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		8D1107320486CEB800E47090 /* Plus42.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Plus42.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		E9031CB00FF690AC0023F9EC /* builtin_skins.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = builtin_skins.txt; sourceTree = "<group>"; };
 		E9031CB20FF690CB0023F9EC /* Ehrling42sl.gif */ = {isa = PBXFileReference; lastKnownFileType = image.gif; name = Ehrling42sl.gif; path = ../skins/Ehrling42sl.gif; sourceTree = SOURCE_ROOT; };
 		E9031CB30FF690CB0023F9EC /* Ehrling42sl.layout */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Ehrling42sl.layout; path = ../skins/Ehrling42sl.layout; sourceTree = SOURCE_ROOT; };
@@ -257,7 +257,7 @@
 		19C28FACFE9D520D11CA2CBB /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				8D1107320486CEB800E47090 /* Free42.app */,
+				8D1107320486CEB800E47090 /* Plus42.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -402,7 +402,7 @@
 			name = Free42;
 			productInstallPath = "$(HOME)/Applications";
 			productName = Free42;
-			productReference = 8D1107320486CEB800E47090 /* Free42.app */;
+			productReference = 8D1107320486CEB800E47090 /* Plus42.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -576,8 +576,8 @@
 				);
 				MACOSX_DEPLOYMENT_TARGET = 10.9;
 				"OTHER_CFLAGS[arch=*]" = "-DFREE42_FPTEST";
-				PRODUCT_BUNDLE_IDENTIFIER = com.thomasokken.Free42;
-				PRODUCT_NAME = Free42;
+				PRODUCT_BUNDLE_IDENTIFIER = com.thomasokken.Plus42;
+				PRODUCT_NAME = Plus42;
 				PROVISIONING_PROFILE = "";
 			};
 			name = "Debug Binary";
@@ -604,8 +604,8 @@
 					"\"$(SRCROOT)\"",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 10.9;
-				PRODUCT_BUNDLE_IDENTIFIER = com.thomasokken.Free42;
-				PRODUCT_NAME = Free42;
+				PRODUCT_BUNDLE_IDENTIFIER = com.thomasokken.Plus42;
+				PRODUCT_NAME = Plus42;
 				PROVISIONING_PROFILE = "";
 			};
 			name = "Release Binary";
@@ -701,8 +701,8 @@
 				);
 				MACOSX_DEPLOYMENT_TARGET = 10.9;
 				"OTHER_CFLAGS[arch=*]" = "-DFREE42_FPTEST";
-				PRODUCT_BUNDLE_IDENTIFIER = com.thomasokken.Free42;
-				PRODUCT_NAME = Free42;
+				PRODUCT_BUNDLE_IDENTIFIER = com.thomasokken.Plus42;
+				PRODUCT_NAME = Plus42;
 				PROVISIONING_PROFILE = "";
 			};
 			name = "Debug Decimal";
@@ -751,8 +751,8 @@
 					"\"$(SRCROOT)\"",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 10.9;
-				PRODUCT_BUNDLE_IDENTIFIER = com.thomasokken.Free42;
-				PRODUCT_NAME = Free42;
+				PRODUCT_BUNDLE_IDENTIFIER = com.thomasokken.Plus42;
+				PRODUCT_NAME = Plus42;
 				PROVISIONING_PROFILE = "";
 			};
 			name = "Release Decimal";

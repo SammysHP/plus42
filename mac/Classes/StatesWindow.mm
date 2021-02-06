@@ -48,7 +48,7 @@
     // Make sure a file exists for the current state. This isn't necessarily
     // the case, specifically, right after starting up with a version <= 25
     // state file.
-    NSString *currentStateFileName = [NSString stringWithFormat:@"%s/%@.f42", free42dirname, [NSString stringWithUTF8String:state.coreName]];
+    NSString *currentStateFileName = [NSString stringWithFormat:@"%s/%@.p42", free42dirname, [NSString stringWithUTF8String:state.coreName]];
     const char *currentStateFileNameC = [currentStateFileName UTF8String];
     struct stat st;
     if (stat(currentStateFileNameC, &st) != 0) {
@@ -148,7 +148,7 @@
     NSString *name = [stateNameWindow selectedName];
     if (name == nil)
         return;
-    NSString *fname = [NSString stringWithFormat:@"%s/%@.f42", free42dirname, name];
+    NSString *fname = [NSString stringWithFormat:@"%s/%@.p42", free42dirname, name];
     FILE *f = fopen([fname UTF8String], "w");
     fprintf(f, FREE42_MAGIC_STR);
     fclose(f);
@@ -219,9 +219,9 @@
     while (true) {
         n++;
         if (n == 1)
-            finalName = [NSString stringWithFormat:@"%@ copy.f42", copyName];
+            finalName = [NSString stringWithFormat:@"%@ copy.p42", copyName];
         else
-            finalName = [NSString stringWithFormat:@"%@ copy %d.f42", copyName, n];
+            finalName = [NSString stringWithFormat:@"%@ copy %d.p42", copyName, n];
         finalNameC = [finalName UTF8String];
         struct stat st;
         if (stat(finalNameC, &st) != 0)
@@ -237,7 +237,7 @@
     if ([name caseInsensitiveCompare:[NSString stringWithUTF8String:state.coreName]] == NSOrderedSame)
         core_save_state(finalNameC);
     else {
-        NSString *origName = [NSString stringWithFormat:@"%s/%@.f42", free42dirname, name];
+        NSString *origName = [NSString stringWithFormat:@"%s/%@.p42", free42dirname, name];
         if (![self copyStateFrom:[origName UTF8String] to:finalNameC])
             [Free42AppDelegate showMessage:@"State duplication failed." withTitle:@"Error"];
     }
@@ -253,8 +253,8 @@
     NSString *newname = [stateNameWindow selectedName];
     if (newname == nil)
         return;
-    NSString *oldpath = [NSString stringWithFormat:@"%s/%@.f42", free42dirname, oldname];
-    NSString *newpath = [NSString stringWithFormat:@"%s/%@.f42", free42dirname, newname];
+    NSString *oldpath = [NSString stringWithFormat:@"%s/%@.p42", free42dirname, oldname];
+    NSString *newpath = [NSString stringWithFormat:@"%s/%@.p42", free42dirname, newname];
     rename([oldpath UTF8String], [newpath UTF8String]);
     if ([oldname caseInsensitiveCompare:[NSString stringWithUTF8String:state.coreName]] == NSOrderedSame) {
         strncpy(state.coreName, [newname UTF8String], FILENAMELEN);
@@ -278,13 +278,13 @@
     [alert setAlertStyle:NSWarningAlertStyle];
     if ([alert runModal] != NSAlertFirstButtonReturn)
         return;
-    NSString *statePath = [NSString stringWithFormat:@"%s/%@.f42", free42dirname, name];
+    NSString *statePath = [NSString stringWithFormat:@"%s/%@.p42", free42dirname, name];
     remove([statePath UTF8String]);
     [self updateUI:YES];
 }
 
 - (void) doImport {
-    FileOpenPanel *openDlg = [FileOpenPanel panelWithTitle:@"Import State" types:@"Free42 State;f42;All Files;*"];
+    FileOpenPanel *openDlg = [FileOpenPanel panelWithTitle:@"Import State" types:@"Plus42 State;p42;Free42 State;f42;All Files;*"];
     if ([openDlg runModal] != NSOKButton)
         return;
     NSArray *paths = [openDlg paths];
@@ -292,9 +292,10 @@
         NSString *path = [paths objectAtIndex:i];
         NSString *name = [path lastPathComponent];
         int len = [name length];
-        if (len > 4 && [[name substringFromIndex:len - 4] caseInsensitiveCompare:@".f42"] == NSOrderedSame)
+        if (len > 4 && ([[name substringFromIndex:len - 4] caseInsensitiveCompare:@".f42"] == NSOrderedSame
+                     || [[name substringFromIndex:len - 4] caseInsensitiveCompare:@".p42"] == NSOrderedSame))
             name = [name substringToIndex:len - 4];
-        NSString *destPath = [NSString stringWithFormat:@"%s/%@.f42", free42dirname, name];
+        NSString *destPath = [NSString stringWithFormat:@"%s/%@.p42", free42dirname, name];
         const char *destPathC = [destPath UTF8String];
         struct stat st;
         if (stat(destPathC, &st) == 0)
@@ -309,7 +310,7 @@
     NSString *name = [self selectedStateName];
     if (name == nil)
         return;
-    FileSavePanel *saveDlg = [FileSavePanel panelWithTitle:@"Export State" types:@"Free42 State;f42;All Files;*" path:name];
+    FileSavePanel *saveDlg = [FileSavePanel panelWithTitle:@"Export State" types:@"Plus42 State;p42;All Files;*" path:name];
     if ([saveDlg runModal] != NSOKButton)
         return;
     NSString *copyPath = [saveDlg path];
@@ -317,7 +318,7 @@
     if ([name caseInsensitiveCompare:[NSString stringWithUTF8String:state.coreName]] == NSOrderedSame)
         core_save_state(copyPathC);
     else {
-        NSString *origPath = [NSString stringWithFormat:@"%s/%@.f42", free42dirname, name];
+        NSString *origPath = [NSString stringWithFormat:@"%s/%@.p42", free42dirname, name];
         if (![self copyStateFrom:[origPath UTF8String] to:copyPathC])
             [Free42AppDelegate showMessage:@"State export failed." withTitle:@"Error"];
     }

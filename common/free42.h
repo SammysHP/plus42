@@ -43,7 +43,10 @@
 #define F42_BIG_ENDIAN 1
 #endif
 
-/* Magic number "24kF" for the state file. */
+/* Magic number "24lP" for the state file. */
+#define PLUS42_MAGIC 0x506c3432
+#define PLUS42_MAGIC_STR "24lP"
+/* Magic number "24kF" for Free42 state files. */
 #define FREE42_MAGIC 0x466b3432
 #define FREE42_MAGIC_STR "24kF"
 

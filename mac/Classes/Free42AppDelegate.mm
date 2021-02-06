@@ -175,34 +175,24 @@ static struct timeval runner_end_time;
     
     
     /********************************************************************************/
-    /***** Try to create the $HOME/Library/Application Support/Free42 directory *****/
+    /***** Try to create the $HOME/Library/Application Support/Plus42 directory *****/
     /********************************************************************************/
     
     int free42dir_exists = 0;
     char *home = getenv("HOME");
     struct stat st;
     char keymapfilename[FILENAMELEN];
-    char oldfree42dirname[FILENAMELEN];
     
-    snprintf(free42dirname, FILENAMELEN, "%s/Library/Application Support/Free42", home);
-    if (stat(free42dirname, &st) == -1 || !S_ISDIR(st.st_mode)) {
-        // Free42 directory does not exist. If $HOME/.free42 does exist, rename it and use
-        // it instead (for compatibility with versions <= 1.4.54); else, create a new
-        // Free42 directory.
-        snprintf(oldfree42dirname, FILENAMELEN, "%s/.free42", home);
-        if (stat(oldfree42dirname, &st) == 0 && S_ISDIR(st.st_mode))
-            rename(oldfree42dirname, free42dirname);
-        else
-            mkdir(free42dirname, 0755);
-        if (stat(free42dirname, &st) == 0 && S_ISDIR(st.st_mode))
-            free42dir_exists = 1;
-    } else
+    snprintf(free42dirname, FILENAMELEN, "%s/Library/Application Support/Plus42", home);
+    if (stat(free42dirname, &st) == -1 || !S_ISDIR(st.st_mode))
+        mkdir(free42dirname, 0755);
+    if (stat(free42dirname, &st) != -1 && S_ISDIR(st.st_mode))
         free42dir_exists = 1;
     
     if (free42dir_exists) {
-        snprintf(statefilename, FILENAMELEN, "%s/Library/Application Support/Free42/state", home);
-        snprintf(printfilename, FILENAMELEN, "%s/Library/Application Support/Free42/print", home);
-        snprintf(keymapfilename, FILENAMELEN, "%s/Library/Application Support/Free42/keymap.txt", home);
+        snprintf(statefilename, FILENAMELEN, "%s/Library/Application Support/Plus42/state", home);
+        snprintf(printfilename, FILENAMELEN, "%s/Library/Application Support/Plus42/print", home);
+        snprintf(keymapfilename, FILENAMELEN, "%s/Library/Application Support/Plus42/keymap.txt", home);
     } else {
         statefilename[0] = 0;
         printfilename[0] = 0;
@@ -294,7 +284,7 @@ static void low_battery_checker(CFRunLoopTimerRef timer, void *info) {
     }
     if (init_mode == 1) {
         if (version > 25) {
-            snprintf(core_state_file_name, FILENAMELEN, "%s/%s.f42", free42dirname, state.coreName);
+            snprintf(core_state_file_name, FILENAMELEN, "%s/%s.p42", free42dirname, state.coreName);
             core_state_file_offset = 0;
         } else {
             strcpy(core_state_file_name, statefilename);
@@ -304,10 +294,10 @@ static void low_battery_checker(CFRunLoopTimerRef timer, void *info) {
     }  else {
         // The shell state was missing or corrupt, but there
         // may still be a valid core state...
-        snprintf(core_state_file_name, FILENAMELEN, "%s/%s.f42", free42dirname, state.coreName);
+        snprintf(core_state_file_name, FILENAMELEN, "%s/%s.p42", free42dirname, state.coreName);
         struct stat st;
         if (stat(core_state_file_name, &st) == 0) {
-            // Core state "Untitled.f42" exists; let's try to read it
+            // Core state "Untitled.p42" exists; let's try to read it
             core_state_file_offset = 0;
             init_mode = 1;
             version = 26;
@@ -315,9 +305,9 @@ static void low_battery_checker(CFRunLoopTimerRef timer, void *info) {
     }
 
 #ifdef BCD_MATH
-    [mainWindow setTitle:@"Free42 Decimal"];
+    [mainWindow setTitle:@"Plus42 Decimal"];
 #else
-    [mainWindow setTitle:@"Free42 Binary"];
+    [mainWindow setTitle:@"Plus42 Binary"];
 #endif
     long win_width, win_height;
     skin_load(&win_width, &win_height);
@@ -447,7 +437,7 @@ static void low_battery_checker(CFRunLoopTimerRef timer, void *info) {
         fclose(statefile);
     }
     char corefilename[FILENAMELEN];
-    snprintf(corefilename, FILENAMELEN, "%s/%s.f42", free42dirname, state.coreName);
+    snprintf(corefilename, FILENAMELEN, "%s/%s.p42", free42dirname, state.coreName);
     core_save_state(corefilename);
     core_cleanup();
 }
@@ -485,7 +475,7 @@ static void low_battery_checker(CFRunLoopTimerRef timer, void *info) {
 
 - (IBAction) showAbout:(id)sender {
     const char *version = [Free42AppDelegate getVersion];
-    [aboutVersion setStringValue:[NSString stringWithFormat:@"Free42 %s", version]];
+    [aboutVersion setStringValue:[NSString stringWithFormat:@"Plus42 %s", version]];
     [aboutCopyright setStringValue:@"© 2004-2021 Thomas Okken"];
     [NSApp runModalForWindow:aboutWindow];
 }
@@ -1004,13 +994,13 @@ static char version[32] = "";
 + (void) loadState:(const char *)name {
     if (strcmp(name, state.coreName) != 0) {
         char corefilename[FILENAMELEN];
-        snprintf(corefilename, FILENAMELEN, "%s/%s.f42", free42dirname, state.coreName);
+        snprintf(corefilename, FILENAMELEN, "%s/%s.p42", free42dirname, state.coreName);
         core_save_state(corefilename);
     }
     core_cleanup();
     strcpy(state.coreName, name);
     char corefilename[FILENAMELEN];
-    snprintf(corefilename, FILENAMELEN, "%s/%s.f42", free42dirname, state.coreName);
+    snprintf(corefilename, FILENAMELEN, "%s/%s.p42", free42dirname, state.coreName);
     core_init(1, 26, corefilename, 0);
     if (core_powercycle())
         [instance startRunner];

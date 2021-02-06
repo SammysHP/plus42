@@ -1,33 +1,39 @@
-About Free42
+About Plus42
 
-Free42 is a complete re-implementation of the HP-42S scientific programmable
+Plus42 is an advances scientific programmable calculator, based on Free42.
+Free42 is complete re-implementation of the HP-42S scientific programmable
 RPN calculator, which was made from 1988 until 1995 by Hewlett-Packard.
 Free42 is a complete rewrite and contains no HP code whatsoever.
+Plus42 builds on Free42 and adds algebraic expressions modeled after those
+used on the HP-27S and HP-17B/19B; attached units and unit conversions modeled
+after those used on the HP-48/49/50 series; directories for more organized
+storage of programs and variables; and a larger display, with 131x64 pixels
+or up to 8 lines of text.
 At this time, the author supports versions that run on Android, iOS, Microsoft
 Windows, MacOS, and Linux.
 
 
-Installing Free42:
+Installing Plus42:
 
-Copy Free42 Decimal (or Free42 Binary, or both) to wherever you want it, e.g.
+Copy Plus42 Decimal (or Plus42 Binary, or both) to wherever you want it, e.g.
 in /Applications or somewhere in your home directory.
-When Free42 runs, it will create three additional files; they are state.bin,
+When Plus42 runs, it will create three additional files; they are state.bin,
 print.bin, and keymap.txt, and they are used to store the calculator's internal
 state, the contents of the print-out window, and the keyboard map,
 respectively. These files will be stored in the directory
-$HOME/Library/Application Support/Free42.
-Free42 comes with two skins built in, but you may use different ones, by
-placing them in the directory $HOME/Library/Application Support/Free42. They
+$HOME/Library/Application Support/Plus42.
+Plus42 comes with two skins built in, but you may use different ones, by
+placing them in the directory $HOME/Library/Application Support/Plus42. They
 will show up in the Skin menu immediately.
 Note: in OS X 10.7 (Lion) and later, the $HOME/Library directory is hidden in
 the Finder by default. You can make it visible by opening a terminal and
 running this command: chflags nohidden ~/Library
 
 
-Uninstalling Free42:
+Uninstalling Plus42:
 
-Remove Free42 Decimal, Free42 Binary, and the directory
-$HOME/Library/Application Support/Free42 and its contents.
+Remove Plus42 Decimal, Plus42 Binary, and the directory
+$HOME/Library/Application Support/Plus42 and its contents.
 
 
 Documentation
@@ -134,14 +140,13 @@ mappings override any other mappings that may be defined for those keys.
 
 What's the deal with the "Decimal" and "Binary"?
 
-Starting with release 1.4, Free42 comes in decimal and binary versions. The two
-look and behave identically; the only difference is the way they represent
-numbers internally.
-Free42 Decimal uses the Intel Decimal Floating-Point Math Library;
+Plus42 comes in decimal and binary versions. The two look and behave
+identically; the only difference is the way they represent numbers internally.
+Plus42 Decimal uses the Intel Decimal Floating-Point Math Library;
 it uses IEEE-754-2008 quadruple precision decimal floating point, which
 consumes 16 bytes per number, and gives 34 decimal digits of precision, with
 exponents ranging from -6143 to +6144.
-Free42 Binary uses the PC's FPU; it represents numbers as IEEE-754
+Plus42 Binary uses the PC's FPU; it represents numbers as IEEE-754
 compatible double precision binary floating point, which consumes 8 bytes per
 number, and gives an effective precision of nearly 16 decimal digits, with
 exponents ranging from -308 to +308.
@@ -151,13 +156,13 @@ cannot be represented exactly in binary, since they are repeating fractions
 then. This inexactness can cause some HP-42S programs to fail.
 If you understand the issues surrounding binary floating point, and you do not
 rely on legacy software that may depend on the exactness of decimal fractions,
-you may use Free42 Binary and enjoy its speed advantage. If, on the other hand,
-you need full HP-42S compatibility, you should use Free42 Decimal.
+you may use Plus42 Binary and enjoy its speed advantage. If, on the other hand,
+you need full HP-42S compatibility, you should use Plus42 Decimal.
 If you don't fully understand the above, it is best to play safe and use
-Free42 Decimal.
+Plus42 Decimal.
 
 
-Free42 is (C) 2004-2021, by Thomas Okken
+Plus42 is (C) 2004-2021, by Thomas Okken
 Contact the author at thomasokken@gmail.com
 Look for updates, and versions for other operating systems, at
 https://thomasokken.com/free42/

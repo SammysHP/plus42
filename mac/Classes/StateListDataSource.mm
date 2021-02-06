@@ -52,7 +52,7 @@
         if (namelen < 4)
             continue;
         namelen -= 4;
-        if (strcasecmp(dent->d_name + namelen, ".f42") != 0)
+        if (strcasecmp(dent->d_name + namelen, ".p42") != 0)
             continue;
         char *tempname = (char *) malloc(namelen + 1);
         strncpy(tempname, dent->d_name, namelen);

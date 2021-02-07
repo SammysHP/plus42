@@ -40,7 +40,7 @@ static void loadStateNames() {
 
 	WIN32_FIND_DATAW wfd;
 	ci_string path = free42dirname;
-	path += L"\\*.f42";
+	path += L"\\*.p42";
 
 	HANDLE search = FindFirstFileW(path.c_str(), &wfd);
     if (search != INVALID_HANDLE_VALUE) {
@@ -83,7 +83,7 @@ static LRESULT CALLBACK StateNameDlgProc(HWND hDlg, UINT message, WPARAM wParam,
             // Make sure a file exists for the current state. This isn't necessarily
             // the case, specifically, right after starting up with a version <= 25
             // state file.
-            ci_string currentStateName = ci_string(free42dirname) + L"/" + state.coreName + L".f42";
+            ci_string currentStateName = ci_string(free42dirname) + L"/" + state.coreName + L".p42";
             const wchar_t *currentStateNameC = currentStateName.c_str();
             if (GetFileAttributesW(currentStateNameC) == INVALID_FILE_ATTRIBUTES) {
                 FILE *f = _wfopen(currentStateNameC, L"wb");
@@ -183,7 +183,7 @@ static void switchTo(HWND hDlg) {
 		ci_string path = free42dirname;
 		path += L"\\";
 		path += state.coreName;
-		path += L".f42";
+		path += L".p42";
 		char *cpath = wide2utf(path.c_str());
 		core_save_state(cpath);
 		free(cpath);
@@ -193,7 +193,7 @@ static void switchTo(HWND hDlg) {
 	ci_string path = free42dirname;
 	path += L"\\";
 	path += state.coreName;
-	path += L".f42";
+	path += L".p42";
 	char *cpath = wide2utf(path.c_str());
 	core_init(1, 26, cpath, 0);
 	free(cpath);
@@ -208,7 +208,7 @@ static void doNew(HWND hDlg) {
 	ci_string path = free42dirname;
 	path += L"\\";
 	path += name;
-	path += L".f42";
+	path += L".p42";
     FILE *f = _wfopen(path.c_str(), L"wb");
     fprintf(f, FREE42_MAGIC_STR);
     fclose(f);
@@ -280,9 +280,9 @@ static void doDuplicate(HWND hDlg) {
     while (true) {
         n++;
         if (n == 1)
-            finalName = copyName + L" copy.f42";
+            finalName = copyName + L" copy.p42";
         else
-			finalName = copyName + L" copy " + to_ci_string(n) + L".f42";
+			finalName = copyName + L" copy " + to_ci_string(n) + L".p42";
         finalNameC = finalName.c_str();
         if (GetFileAttributesW(finalNameC) == INVALID_FILE_ATTRIBUTES)
             // File does not exist; that means we have a usable name
@@ -302,7 +302,7 @@ static void doDuplicate(HWND hDlg) {
         ci_string origName = free42dirname;
 		origName += L"\\";
 		origName += selectedStateName;
-		origName += L".f42";
+		origName += L".p42";
 		if (!copyState(origName.c_str(), finalNameC))
             MessageBox(hDlg, "State duplication failed.", "Message", MB_ICONWARNING);
     }
@@ -318,8 +318,8 @@ static void doRename(HWND hDlg) {
 	ci_string newname = getStateName(hDlg, prompt);
     if (newname == L"")
         return;
-    ci_string oldpath = ci_string(free42dirname) + L"\\" + selectedStateName + L".f42";
-    ci_string newpath = ci_string(free42dirname) + L"\\" + newname + L".f42";
+    ci_string oldpath = ci_string(free42dirname) + L"\\" + selectedStateName + L".p42";
+    ci_string newpath = ci_string(free42dirname) + L"\\" + newname + L".p42";
 	_wrename(oldpath.c_str(), newpath.c_str());
     if (selectedStateName == state.coreName) {
 		wcsncpy(state.coreName, newname.c_str(), FILENAMELEN);
@@ -336,7 +336,7 @@ static void doDelete(HWND hDlg) {
 	ci_string prompt = ci_string(L"Are you sure you want to delete the state \"") + selectedStateName + L"\"?";
 	if (MessageBoxW(hDlg, prompt.c_str(), L"Delete State?", MB_OKCANCEL) != IDOK)
 		return;
-    ci_string statePath = ci_string(free42dirname) + L"\\" + selectedStateName + L".f42";
+    ci_string statePath = ci_string(free42dirname) + L"\\" + selectedStateName + L".p42";
 	_wremove(statePath.c_str());
     updateUI(hDlg, true);
 }
@@ -347,7 +347,7 @@ static void doImport(HWND hDlg) {
     if (!browse_file_w(hDlg,
                     L"Import State",
                     0,
-                    L"Free42 State (*.f42)\0*.f42\0All Files (*.*)\0*.*\0\0",
+                    L"Plus42 State (*.p42)\0*.p42\0Free42 State (*.f42)\0*.f42\0All Files (*.*)\0*.*\0\0",
                     NULL,
                     buf,
                     FILENAMELEN))
@@ -356,9 +356,9 @@ static void doImport(HWND hDlg) {
 	size_t p = path.find_last_of('\\');
 	ci_string name = p == std::string::npos ? path : path.substr(p + 1);
 	int len = name.length();
-    if (len > 4 && name.substr(len - 4) == L".f42")
+    if (len > 4 && name.substr(len - 4) == L".p42")
         name = name.substr(0, len - 4);
-    ci_string destPath = ci_string(free42dirname) + L"\\" + name + L".f42";
+    ci_string destPath = ci_string(free42dirname) + L"\\" + name + L".p42";
 	const wchar_t *destPathC = destPath.c_str();
 	if (GetFileAttributesW(destPathC) != INVALID_FILE_ATTRIBUTES) {
 		ci_string message = ci_string(L"A state named \"") + name + L"\" already exists.";
@@ -377,8 +377,8 @@ static void doExport(HWND hDlg) {
     if (!browse_file_w(hDlg,
                     L"Export State",
                     1,
-                    L"Free42 State (*.f42)\0*.f42\0All Files (*.*)\0*.*\0\0",
-                    L"f42",
+                    L"Plus42 State (*.p42)\0*.p42\0All Files (*.*)\0*.*\0\0",
+                    L"p42",
                     buf,
                     FILENAMELEN))
 		return;
@@ -389,7 +389,7 @@ static void doExport(HWND hDlg) {
 		core_save_state(sfn);
 		free(sfn);
 	} else {
-        ci_string origPath = ci_string(free42dirname) + L"\\" + selectedStateName + L".f42";
+        ci_string origPath = ci_string(free42dirname) + L"\\" + selectedStateName + L".p42";
 		if (!copyState(origPath.c_str(), copyPathC))
             MessageBox(hDlg, "State export failed.", "Message", MB_ICONWARNING);
     }

@@ -384,7 +384,7 @@ static BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
     }
 	if (init_mode == 1) {
 		if (version > 25) {
-			swprintf(core_state_file_name, L"%ls\\%ls.f42", free42dirname, state.coreName);
+			swprintf(core_state_file_name, L"%ls\\%ls.p42", free42dirname, state.coreName);
 			core_state_file_offset = 0;
 		} else {
 			wcscpy(core_state_file_name, statefilename);
@@ -394,9 +394,9 @@ static BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 	} else {
 		// The shell state was missing or corrupt, but there
 		// may still be a valid core state...
-        swprintf(core_state_file_name, L"%ls\\%ls.f42", free42dirname, state.coreName);
+        swprintf(core_state_file_name, L"%ls\\%ls.p42", free42dirname, state.coreName);
 		if (GetFileAttributesW(core_state_file_name) != INVALID_FILE_ATTRIBUTES) {
-			// Core state "Untitled.f42" exists; let's try to read it
+			// Core state "Untitled.p42" exists; let's try to read it
 			core_state_file_offset = 0;
 			init_mode = 1;
 			version = 26;
@@ -1437,7 +1437,7 @@ static void get_home_dir(wchar_t *path, int pathlen) {
     if (SHGetSpecialFolderLocation(NULL, CSIDL_APPDATA, &idlist) == NOERROR) {
         if (!SHGetPathFromIDListW(idlist, newpath))
             wcscpy(newpath, L"C:");
-        wcsncat(newpath, L"\\Free42", MAX_PATH - 1);
+        wcsncat(newpath, L"\\Plus42", MAX_PATH - 1);
         newpath[MAX_PATH - 1] = 0;
         LPMALLOC imalloc;
         if (SHGetMalloc(&imalloc) == NOERROR)
@@ -1445,7 +1445,7 @@ static void get_home_dir(wchar_t *path, int pathlen) {
         wcsncpy(path, newpath, pathlen);
         path[pathlen - 1] = 0;
     } else {
-        wcsncpy(path, L"C:\\Free42", pathlen);
+        wcsncpy(path, L"C:\\Plus42", pathlen);
         path[pathlen - 1] = 0;
     }
 }
@@ -1613,7 +1613,7 @@ static void Quit() {
 	    fclose(statefile);
     }
 	wchar_t corefilename[FILENAMELEN];
-    swprintf(corefilename, L"%ls/%ls.f42", free42dirname, state.coreName);
+    swprintf(corefilename, L"%ls/%ls.p42", free42dirname, state.coreName);
     char *cfn = wide2utf(corefilename);
     core_save_state(cfn);
     free(cfn);
@@ -2751,7 +2751,7 @@ static FILE *logfile = NULL;
 
 void shell_log(const char *message) {
     if (logfile == NULL)
-        logfile = fopen("free42.log", "w");
+        logfile = fopen("plus42.log", "w");
     fprintf(logfile, "%s\n", message);
     fflush(logfile);
 }

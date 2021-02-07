@@ -15,7 +15,7 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "8D1107260486CEB800E47090"
-               BuildableName = "Free42.app"
+               BuildableName = "Plus42.app"
                BlueprintName = "Free42"
                ReferencedContainer = "container:Free42.xcodeproj">
             </BuildableReference>
@@ -31,7 +31,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "8D1107260486CEB800E47090"
-            BuildableName = "Free42.app"
+            BuildableName = "Plus42.app"
             BlueprintName = "Free42"
             ReferencedContainer = "container:Free42.xcodeproj">
          </BuildableReference>
@@ -54,7 +54,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "8D1107260486CEB800E47090"
-            BuildableName = "Free42.app"
+            BuildableName = "Plus42.app"
             BlueprintName = "Free42"
             ReferencedContainer = "container:Free42.xcodeproj">
          </BuildableReference>
@@ -71,7 +71,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "8D1107260486CEB800E47090"
-            BuildableName = "Free42.app"
+            BuildableName = "Plus42.app"
             BlueprintName = "Free42"
             ReferencedContainer = "container:Free42.xcodeproj">
          </BuildableReference>

@@ -49,7 +49,7 @@ static pthread_mutex_t shell_mutex = PTHREAD_MUTEX_INITIALIZER;
 static char *make_temp_file() {
     char *path = (char *) malloc(19);
     int fd;
-    strcpy(path, "/tmp/Free42.XXXXXX");
+    strcpy(path, "/tmp/Plus42.XXXXXX");
     fd = mkstemp(path);
     if (fd == -1) {
         free(path);
@@ -596,7 +596,7 @@ static void do_get(int csock, const char *url) {
         tbprintf(&tb, "   </table></td></tr>\n");
         tbprintf(&tb, "   <tr><th colspan=\"5\"><hr></th></tr></table></form>\n");
 #ifdef FREE42
-        tbprintf(&tb, "  <address>Free42 %s HTTP Server</address>\n", get_version());
+        tbprintf(&tb, "  <address>Plus42 %s HTTP Server</address>\n", get_version());
 #else
         tbprintf(&tb, "  <address>Thomas Okken's Simple Server</address>\n");
 #endif

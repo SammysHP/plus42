@@ -35,7 +35,7 @@
 
 - (void) awakeFromNib {
     [super awakeFromNib];
-    [versionLabel setText:[NSString stringWithFormat:@"Free42 %s", [Free42AppDelegate getVersion]]];
+    [versionLabel setText:[NSString stringWithFormat:@"Plus42 %s", [Free42AppDelegate getVersion]]];
     [copyrightLabel setText:@"© 2004-2021 Thomas Okken"];
 }
 

@@ -12,11 +12,25 @@
 			<key>CFBundleTypeIconFiles</key>
 			<array/>
 			<key>CFBundleTypeName</key>
-			<string>Free42 State</string>
+			<string>Plus42 State</string>
 			<key>CFBundleTypeRole</key>
 			<string>Editor</string>
 			<key>LSHandlerRank</key>
 			<string>Owner</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>plus42.state</string>
+			</array>
+		</dict>
+		<dict>
+			<key>CFBundleTypeIconFiles</key>
+			<array/>
+			<key>CFBundleTypeName</key>
+			<string>Free42 State</string>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>LSHandlerRank</key>
+			<string>Alternate</string>
 			<key>LSItemContentTypes</key>
 			<array>
 				<string>free42.state</string>
@@ -26,14 +40,14 @@
 			<key>CFBundleTypeIconFiles</key>
 			<array/>
 			<key>CFBundleTypeName</key>
-			<string>Free42 Program</string>
+			<string>Plus42 Program</string>
 			<key>CFBundleTypeRole</key>
 			<string>Editor</string>
 			<key>LSHandlerRank</key>
 			<string>Alternate</string>
 			<key>LSItemContentTypes</key>
 			<array>
-				<string>free42.raw</string>
+				<string>plus42.raw</string>
 			</array>
 		</dict>
 	</array>
@@ -44,7 +58,7 @@
 	<key>CFBundleIconName</key>
 	<string>icon-1024.png</string>
 	<key>CFBundleIdentifier</key>
-	<string>com.yourcompany.Free42</string>
+	<string>com.thomasokken.Plus42</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
@@ -88,6 +102,25 @@
 				<string>public.data</string>
 			</array>
 			<key>UTTypeDescription</key>
+			<string>Plus42 State</string>
+			<key>UTTypeIconFiles</key>
+			<array/>
+			<key>UTTypeIdentifier</key>
+			<string>plus42.state</string>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>p42</string>
+				</array>
+			</dict>
+		</dict>
+		<dict>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.data</string>
+			</array>
+			<key>UTTypeDescription</key>
 			<string>Free42 State</string>
 			<key>UTTypeIconFiles</key>
 			<array/>
@@ -107,11 +140,11 @@
 				<string>public.data</string>
 			</array>
 			<key>UTTypeDescription</key>
-			<string>Free42 Program</string>
+			<string>Plus42 Program</string>
 			<key>UTTypeIconFiles</key>
 			<array/>
 			<key>UTTypeIdentifier</key>
-			<string>free42.raw</string>
+			<string>plus42.raw</string>
 			<key>UTTypeTagSpecification</key>
 			<dict>
 				<key>public.filename-extension</key>

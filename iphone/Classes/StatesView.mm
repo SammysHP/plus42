@@ -57,7 +57,7 @@
     // after a fresh install, make sure that at least a dummy file exists
     // for the current state, so that the initial states list won't be
     // empty.
-    NSString *currentStateFileName = [NSString stringWithFormat:@"config/%@.f42", [NSString stringWithUTF8String:state.coreName]];
+    NSString *currentStateFileName = [NSString stringWithFormat:@"config/%@.p42", [NSString stringWithUTF8String:state.coreName]];
     const char *currentStateFileNameC = [currentStateFileName UTF8String];
     struct stat st;
     if (stat(currentStateFileNameC, &st) != 0) {
@@ -72,7 +72,7 @@
     struct dirent *d;
     while ((d = readdir(dir)) != NULL) {
         size_t len = strlen(d->d_name);
-        if (len < 5 || strcmp(d->d_name + len - 4, ".f42") != 0)
+        if (len < 5 || strcmp(d->d_name + len - 4, ".p42") != 0)
             continue;
         d->d_name[len - 4] = 0;
         NSString *s = [NSString stringWithUTF8String:d->d_name];
@@ -207,7 +207,7 @@
         [RootViewController showMessage:@"That name is not valid."];
         return;
     }
-    NSString *fname = [NSString stringWithFormat:@"config/%@.f42", name];
+    NSString *fname = [NSString stringWithFormat:@"config/%@.p42", name];
     const char *cname = [fname UTF8String];
     struct stat st;
     if (stat(cname, &st) == 0) {
@@ -281,7 +281,7 @@
             finalName = [NSString stringWithFormat:@"%@ copy", copyName];
         else
             finalName = [NSString stringWithFormat:@"%@ copy %d", copyName, n];
-        finalPath = [NSString stringWithFormat:@"config/%@.f42", finalName];
+        finalPath = [NSString stringWithFormat:@"config/%@.p42", finalName];
         struct stat st;
         if (stat([finalPath UTF8String], &st) != 0)
             // File does not exist; that means we have a usable name
@@ -296,7 +296,7 @@
     if (name == nil)
         return;
     NSString *copyName = [StatesView makeCopyName:name];
-    NSString *finalPath = [NSString stringWithFormat:@"config/%@.f42", copyName];
+    NSString *finalPath = [NSString stringWithFormat:@"config/%@.p42", copyName];
     const char *finalPathC = [finalPath UTF8String];
     
     // What we do next depends on whether the selected state is the currently active
@@ -306,7 +306,7 @@
     if (strcmp([name UTF8String], state.coreName) == 0)
         core_save_state(finalPathC);
     else {
-        NSString *origName = [NSString stringWithFormat:@"config/%@.f42", name];
+        NSString *origName = [NSString stringWithFormat:@"config/%@.p42", name];
         if (![self copyStateFrom:[origName UTF8String] to:finalPathC])
             [RootViewController showMessage:@"State duplication failed."];
     }
@@ -329,14 +329,14 @@
         [RootViewController showMessage:@"That name is not valid."];
         return;
     }
-    NSString *newPath = [NSString stringWithFormat:@"config/%@.f42", newName];
+    NSString *newPath = [NSString stringWithFormat:@"config/%@.p42", newName];
     const char *newPathC = [newPath UTF8String];
     struct stat st;
     if (stat(newPathC, &st) == 0) {
         [RootViewController showMessage:@"That name is already in use."];
         return;
     }
-    NSString *oldPath = [NSString stringWithFormat:@"config/%@.f42", oldName];
+    NSString *oldPath = [NSString stringWithFormat:@"config/%@.p42", oldName];
     rename([oldPath UTF8String], newPathC);
     if (strcmp([oldName UTF8String], state.coreName) == 0)
         strncpy(state.coreName, [newName UTF8String], FILENAMELEN);
@@ -361,7 +361,7 @@
     NSString *name = [self selectedStateName];
     if (name == nil || strcmp([name UTF8String], state.coreName) == 0)
         return;
-    NSString *path = [NSString stringWithFormat:@"config/%@.f42", name];
+    NSString *path = [NSString stringWithFormat:@"config/%@.p42", name];
     remove([path UTF8String]);
     [self raised];
 }
@@ -371,7 +371,7 @@
     if (name == nil)
         return;
     char *cwd = getcwd(NULL, 0);
-    NSString *statePath = [NSString stringWithFormat:@"%s/config/%@.f42", cwd, name];
+    NSString *statePath = [NSString stringWithFormat:@"%s/config/%@.p42", cwd, name];
     free(cwd);
     if (strcmp([name UTF8String], state.coreName) == 0)
         core_save_state([statePath UTF8String]);

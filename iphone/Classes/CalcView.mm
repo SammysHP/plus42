@@ -207,7 +207,7 @@ static CalcView *calcView = nil;
                     style:UIAlertActionStyleDefault
                     handler:^(UIAlertAction *action)
                         { [self doPaste]; }]];
-    [ctrl addAction:[UIAlertAction actionWithTitle:@"About Free42"
+    [ctrl addAction:[UIAlertAction actionWithTitle:@"About Plus42"
                     style:UIAlertActionStyleDefault
                     handler:^(UIAlertAction *action)
                         { [RootViewController showAbout]; }]];
@@ -441,7 +441,7 @@ static struct timeval runner_end_time;
     }
     if (init_mode == 1) {
         if (version > 25) {
-            snprintf(core_state_file_name, FILENAMELEN, "config/%s.f42", state.coreName);
+            snprintf(core_state_file_name, FILENAMELEN, "config/%s.p42", state.coreName);
             core_state_file_offset = 0;
         } else {
             strcpy(core_state_file_name, "config/state");
@@ -451,10 +451,10 @@ static struct timeval runner_end_time;
     }  else {
         // The shell state was missing or corrupt, but there
         // may still be a valid core state...
-        snprintf(core_state_file_name, FILENAMELEN, "config/%s.f42", state.coreName);
+        snprintf(core_state_file_name, FILENAMELEN, "config/%s.p42", state.coreName);
         struct stat st;
         if (stat(core_state_file_name, &st) == 0) {
-            // Core state "Untitled.f42" exists; let's try to read it
+            // Core state "Untitled.p42" exists; let's try to read it
             core_state_file_offset = 0;
             init_mode = 1;
             version = 26;
@@ -516,13 +516,13 @@ static struct timeval runner_end_time;
 + (void) loadState:(const char *)name {
     if (strcmp(name, state.coreName) != 0) {
         char corefilename[FILENAMELEN];
-        snprintf(corefilename, FILENAMELEN, "config/%s.f42", state.coreName);
+        snprintf(corefilename, FILENAMELEN, "config/%s.p42", state.coreName);
         core_save_state(corefilename);
     }
     core_cleanup();
     strcpy(state.coreName, name);
     char corefilename[FILENAMELEN];
-    snprintf(corefilename, FILENAMELEN, "config/%s.f42", state.coreName);
+    snprintf(corefilename, FILENAMELEN, "config/%s.p42", state.coreName);
     core_init(1, 26, corefilename, 0);
     if (core_powercycle())
         [calcView startRunner];
@@ -802,7 +802,7 @@ static void quit2(bool really_quit) {
     write_shell_state();
 
     char corefilename[FILENAMELEN];
-    snprintf(corefilename, FILENAMELEN, "config/%s.f42", state.coreName);
+    snprintf(corefilename, FILENAMELEN, "config/%s.p42", state.coreName);
     core_save_state(corefilename);
     if (really_quit) {
         //core_cleanup();

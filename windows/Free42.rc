@@ -70,7 +70,7 @@ BEGIN
     END
     POPUP "&Help"
     BEGIN
-        MENUITEM "&About Free42...",            IDM_ABOUT
+        MENUITEM "&About Plus42...",            IDM_ABOUT
     END
 END
 
@@ -113,7 +113,7 @@ END
 
 IDD_ABOUTBOX DIALOG DISCARDABLE  65499, 40, 225, 53
 STYLE DS_MODALFRAME | WS_CAPTION | WS_SYSMENU
-CAPTION "About Free42"
+CAPTION "About Plus42"
 FONT 8, "System"
 BEGIN
     ICON            IDI_FREE42,IDC_STATIC,9,7,20,20
@@ -143,9 +143,9 @@ BEGIN
     CONTROL         "Allow Big Stack (NSTK) mode",
                     IDC_ALLOW_BIG_STACK,"Button",BS_AUTOCHECKBOX | 
                     WS_TABSTOP,7,40,213,10
-    CONTROL         "Keep Free42 window always on top",IDC_ALWAYSONTOP,
+    CONTROL         "Keep Plus42 window always on top",IDC_ALWAYSONTOP,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,51,128,10
-    CONTROL         "Map ""Calculator"" key to Free42",IDC_CALCULATOR_KEY,
+    CONTROL         "Map ""Calculator"" key to Plus42",IDC_CALCULATOR_KEY,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,62,128,10
     CONTROL         "Write printer output to text file:",IDC_PRINTER_TXT,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,77,112,10
@@ -292,14 +292,14 @@ BEGIN
         BEGIN
             //VALUE "Comments", "\0"
             //VALUE "CompanyName", "\0"
-            VALUE "FileDescription", "Free42\0"
+            VALUE "FileDescription", "Plus42\0"
             VALUE "FileVersion", FREE42_VERSION_2
             VALUE "InternalName", "Free42\0"
             VALUE "LegalCopyright", "Copyright © 2004-2021 Thomas Okken\0"
             //VALUE "LegalTrademarks", "\0"
-            VALUE "OriginalFilename", "Free42.exe\0"
+            VALUE "OriginalFilename", "Plus42.exe\0"
             //VALUE "PrivateBuild", "\0"
-            VALUE "ProductName", "Free42\0"
+            VALUE "ProductName", "Plus42\0"
             VALUE "ProductVersion", FREE42_VERSION_2
             //VALUE "SpecialBuild", "\0"
         END
@@ -320,8 +320,8 @@ END
 
 STRINGTABLE DISCARDABLE 
 BEGIN
-    IDS_APP_TITLE_BIN       "Free42 Binary"
-    IDS_APP_TITLE_DEC       "Free42 Decimal"
+    IDS_APP_TITLE_BIN       "Plus42 Binary"
+    IDS_APP_TITLE_DEC       "Plus42 Decimal"
     IDS_HELLO               "Hello World!"
     IDC_FREE42              "FREE42"
     IDC_FREE42_PRINTOUT     "FREE42PRINTOUT"
@@ -329,7 +329,7 @@ END
 
 STRINGTABLE DISCARDABLE 
 BEGIN
-    IDS_PRINTOUT_TITLE      "Free42 Print-Out"
+    IDS_PRINTOUT_TITLE      "Plus42 Print-Out"
 END
 
 /////////////////////////////////////////////////////////////////////////////

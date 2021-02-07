@@ -69,9 +69,9 @@ OBJS = shell_main.o shell_skin.o skins.o keymap.o shell_loadimage.o \
 
 ifdef BCD_MATH
 CXXFLAGS += -DBCD_MATH
-EXE = free42dec
+EXE = plus42dec
 else
-EXE = free42bin
+EXE = plus42bin
 endif
 
 ifdef FREE42_FPTEST
@@ -130,7 +130,7 @@ clean: FORCE
 
 cleaner: FORCE
 	rm -f `find . -type l` \
-		free42bin free42bin.exe free42dec free42dec.exe \
+		plus42bin plus42bin.exe plus42dec plus42dec.exe \
 		skin2cc skin2cc.exe skins.cc \
 		keymap2cc keymap2cc.exe keymap.cc \
 		readtest_lines.cc \

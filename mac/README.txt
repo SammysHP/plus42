@@ -1,7 +1,7 @@
 About Plus42
 
-Plus42 is an advances scientific programmable calculator, based on Free42.
-Free42 is complete re-implementation of the HP-42S scientific programmable
+Plus42 is an advanced scientific programmable calculator, based on Free42.
+Free42 is a complete re-implementation of the HP-42S scientific programmable
 RPN calculator, which was made from 1988 until 1995 by Hewlett-Packard.
 Free42 is a complete rewrite and contains no HP code whatsoever.
 Plus42 builds on Free42 and adds algebraic expressions modeled after those

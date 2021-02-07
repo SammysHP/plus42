@@ -178,13 +178,13 @@ static bool skin_open(const char *name, bool open_layout, bool force_builtin) {
         char *tok = strtok(buf, ":");
         while (tok != NULL) {
             string dirname = tok;
-            string fname = dirname + "/free42/" + name + suffix;
+            string fname = dirname + "/plus42/" + name + suffix;
             external_file = fopen(fname.c_str(), "r");
             if (external_file != NULL) {
                 free(buf);
                 return true;
             }
-            fname = dirname + "/free42/skins/" + name + suffix;
+            fname = dirname + "/plus42/skins/" + name + suffix;
             external_file = fopen(fname.c_str(), "r");
             if (external_file != NULL) {
                 free(buf);
@@ -293,8 +293,8 @@ void skin_menu_update(GtkWidget *w) {
     char *tok = strtok(buf, ":");
     while (tok != NULL) {
         string dirname = tok;
-        scan_skin_dir((dirname + "/free42").c_str(), shared_skins);
-        scan_skin_dir((dirname + "/free42/skins").c_str(), shared_skins);
+        scan_skin_dir((dirname + "/plus42").c_str(), shared_skins);
+        scan_skin_dir((dirname + "/plus42/skins").c_str(), shared_skins);
         tok = strtok(NULL, ":");
     }
     free(buf);

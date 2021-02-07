@@ -188,9 +188,9 @@ static void gif_writer(const char *text, int length);
 
 
 #ifdef BCD_MATH
-#define TITLE "Free42 Decimal"
+#define TITLE "Plus42 Decimal"
 #else
-#define TITLE "Free42 Binary"
+#define TITLE "Plus42 Binary"
 #endif
 
 static const char *mainWindowXml =
@@ -324,7 +324,7 @@ static const char *mainWindowXml =
                   "<object class='GtkMenu' id='help_menu'>"
                     "<child>"
                       "<object class='GtkMenuItem' id='about_item'>"
-                        "<property name='label'>About Free42...</property>"
+                        "<property name='label'>About Plus42...</property>"
                       "</object>"
                     "</child>"
                   "</object>"
@@ -373,7 +373,7 @@ int main(int argc, char *argv[]) {
 
     GtkApplication *app;
     int status;
-    app = gtk_application_new("com.thomasokken.free42", G_APPLICATION_FLAGS_NONE);
+    app = gtk_application_new("com.thomasokken.plus42", G_APPLICATION_FLAGS_NONE);
     g_signal_connect(app, "activate", G_CALLBACK(activate), NULL);
     status = g_application_run(G_APPLICATION(app), 0, NULL);
     g_object_unref(app);
@@ -399,7 +399,7 @@ static void activate(GtkApplication *theApp, gpointer userData) {
 
 
     /*************************************************************/
-    /***** Try to create the $XDG_DATA_HOME/free42 directory *****/
+    /***** Try to create the $XDG_DATA_HOME/plus42 directory *****/
     /*************************************************************/
 
     char keymapfilename[FILENAMELEN];
@@ -408,9 +408,9 @@ static void activate(GtkApplication *theApp, gpointer userData) {
     char *home = getenv("HOME");
 
     if (xdg_data_home == NULL || xdg_data_home[0] == 0)
-        snprintf(free42dirname, FILENAMELEN, "%s/.local/share/free42", home);
+        snprintf(free42dirname, FILENAMELEN, "%s/.local/share/plus42", home);
     else
-        snprintf(free42dirname, FILENAMELEN, "%s/free42", xdg_data_home);
+        snprintf(free42dirname, FILENAMELEN, "%s/plus42", xdg_data_home);
 
     if (!file_exists(free42dirname)) {
         // The Free42 directory does not exist yet. Before trying to do
@@ -418,29 +418,6 @@ static void activate(GtkApplication *theApp, gpointer userData) {
         if (free42dirname[0] != '/') {
             fprintf(stderr, "Fatal: XDG_DATA_HOME or HOME are invalid; must start with '/'\n");
             exit(1);
-        }
-        // If $HOME/.free42 does exist, move it to the new location.
-        char old_free42dirname[FILENAMELEN];
-        snprintf(old_free42dirname, FILENAMELEN, "%s/.free42", home);
-        bool have_old = false;
-        struct stat st;
-        if (lstat(old_free42dirname, &st) == 0) {
-            if (S_ISLNK(st.st_mode)) {
-                const char *dest;
-                if (xdg_data_home == NULL || xdg_data_home[0] == 0)
-                    dest = "$HOME/.local/share/free42";
-                else
-                    dest = "$XDG_DATA_HOME/free42";
-                fprintf(stderr, "$HOME/.free42 is a symlink; not moving it to %s\n", dest);
-                strcpy(free42dirname, old_free42dirname);
-                goto dir_done;
-            }
-            have_old = S_ISDIR(st.st_mode);
-        }
-        if (have_old) {
-            // Temporarily remove the "/free42" part from the end of the path,
-            // leaving the path of the parent, which we will create
-            free42dirname[strlen(free42dirname) - 7] = 0;
         }
         // The Free42 directory does not exist yet. Trying to create it,
         // and all its ancestors. We're not checking for errors here, since
@@ -457,33 +434,8 @@ static void activate(GtkApplication *theApp, gpointer userData) {
             mkdir(free42dirname, 0755);
             slash = nextSlash;
         } while (slash != NULL);
-        // Now, move the $HOME/.free42 directory, if it exists
-        if (have_old) {
-            strcat(free42dirname, "/free42");
-            if (rename(old_free42dirname, free42dirname) != 0) {
-                int err = errno;
-                const char *dest;
-                if (xdg_data_home == NULL || xdg_data_home[0] == 0)
-                    dest = "$HOME/.local/share/free42";
-                else
-                    dest = "$XDG_DATA_HOME/free42";
-                fprintf(stderr, "Unable to move $HOME/.free42 to %s: %s (%d)\n", dest, strerror(err), err);
-                strcpy(free42dirname, old_free42dirname);
-                goto dir_done;
-            }
-            // Create a symlink so the old directory will not appear
-            // to have just vanished without a trace.
-            // If XDG_DATA_HOME is a subdirectory of HOME, make
-            // the symlink relative.
-            int len = strlen(home);
-            if (strncmp(free42dirname, home, len) == 0 && free42dirname[len] == '/')
-                symlink(free42dirname + len + 1, old_free42dirname);
-            else
-                symlink(free42dirname, old_free42dirname);
-        }
     }
 
-    dir_done:
     snprintf(statefilename, FILENAMELEN, "%s/state", free42dirname);
     snprintf(printfilename, FILENAMELEN, "%s/print", free42dirname);
     snprintf(keymapfilename, FILENAMELEN, "%s/keymap", free42dirname);
@@ -523,7 +475,7 @@ static void activate(GtkApplication *theApp, gpointer userData) {
     }
     if (init_mode == 1) {
         if (version > 25) {
-            snprintf(core_state_file_name, FILENAMELEN, "%s/%s.f42", free42dirname, state.coreName);
+            snprintf(core_state_file_name, FILENAMELEN, "%s/%s.p42", free42dirname, state.coreName);
             core_state_file_offset = 0;
         } else {
             strcpy(core_state_file_name, statefilename);
@@ -533,9 +485,9 @@ static void activate(GtkApplication *theApp, gpointer userData) {
     }  else {
         // The shell state was missing or corrupt, but there
         // may still be a valid core state...
-        snprintf(core_state_file_name, FILENAMELEN, "%s/%s.f42", free42dirname, state.coreName);
+        snprintf(core_state_file_name, FILENAMELEN, "%s/%s.p42", free42dirname, state.coreName);
         if (file_exists(core_state_file_name)) {
-            // Core state "Untitled.f42" exists; let's try to read it
+            // Core state "Untitled.p42" exists; let's try to read it
             core_state_file_offset = 0;
             init_mode = 1;
             version = 26;
@@ -563,7 +515,7 @@ static void activate(GtkApplication *theApp, gpointer userData) {
 
     gtk_window_set_icon(GTK_WINDOW(mainwindow), icon_128);
     gtk_window_set_title(GTK_WINDOW(mainwindow), TITLE);
-    gtk_window_set_role(GTK_WINDOW(mainwindow), "Free42 Calculator");
+    gtk_window_set_role(GTK_WINDOW(mainwindow), "Plus42 Calculator");
     gtk_window_set_resizable(GTK_WINDOW(mainwindow), FALSE);
     no_mwm_resize_borders(mainwindow);
     g_signal_connect(G_OBJECT(mainwindow), "delete_event",
@@ -695,8 +647,8 @@ static void activate(GtkApplication *theApp, gpointer userData) {
 
     printwindow = gtk_application_window_new(GTK_APPLICATION(app));
     gtk_window_set_icon(GTK_WINDOW(printwindow), icon_128);
-    gtk_window_set_title(GTK_WINDOW(printwindow), "Free42 Print-Out");
-    gtk_window_set_role(GTK_WINDOW(printwindow), "Free42 Print-Out");
+    gtk_window_set_title(GTK_WINDOW(printwindow), "Plus42 Print-Out");
+    gtk_window_set_role(GTK_WINDOW(printwindow), "Plus42 Print-Out");
     g_signal_connect(G_OBJECT(printwindow), "delete_event",
                      G_CALLBACK(delete_print_cb), NULL);
 
@@ -1136,7 +1088,7 @@ static void quit() {
         fclose(statefile);
     }
     char corefilename[FILENAMELEN];
-    snprintf(corefilename, FILENAMELEN, "%s/%s.f42", free42dirname, state.coreName);
+    snprintf(corefilename, FILENAMELEN, "%s/%s.p42", free42dirname, state.coreName);
     core_save_state(corefilename);
     core_cleanup();
 
@@ -1165,7 +1117,7 @@ static void show_message(const char *title, const char *message, GtkWidget *pare
                                             "%s",
                                             message);
     gtk_window_set_title(GTK_WINDOW(msg), title);
-    gtk_window_set_role(GTK_WINDOW(msg), "Free42 Dialog");
+    gtk_window_set_role(GTK_WINDOW(msg), "Plus42 Dialog");
     gtk_dialog_run(GTK_DIALOG(msg));
     gtk_widget_destroy(msg);
 }
@@ -1273,7 +1225,7 @@ static char *get_state_name(const char *prompt) {
         gtk_widget_show_all(state_name_dialog);
     }
 
-    gtk_window_set_role(GTK_WINDOW(state_name_dialog), "Free42 Dialog");
+    gtk_window_set_role(GTK_WINDOW(state_name_dialog), "Plus42 Dialog");
     gtk_label_set_text(GTK_LABEL(promptLabel), prompt);
 
     char *result = NULL;
@@ -1287,7 +1239,7 @@ static char *get_state_name(const char *prompt) {
                 continue;
             }
             char path[FILENAMELEN];
-            snprintf(path, FILENAMELEN, "%s/%s.f42", free42dirname, tmp);
+            snprintf(path, FILENAMELEN, "%s/%s.p42", free42dirname, tmp);
             if (file_exists(path)) {
                 show_message("Message", "That name is already in use.", state_name_dialog);
                 continue;
@@ -1312,19 +1264,19 @@ static bool switchTo(const char *selectedStateName) {
                                                 "Are you sure you want to revert the state \"%s\" to the last version saved?",
                                                 selectedStateName);
         gtk_window_set_title(GTK_WINDOW(msg), "Revert State?");
-        gtk_window_set_role(GTK_WINDOW(msg), "Free42 Dialog");
+        gtk_window_set_role(GTK_WINDOW(msg), "Plus42 Dialog");
         bool cancelled = gtk_dialog_run(GTK_DIALOG(msg)) != GTK_RESPONSE_YES;
         gtk_widget_destroy(msg);
         if (cancelled)
             return false;
     } else {
-        snprintf(path, FILENAMELEN, "%s/%s.f42", free42dirname, state.coreName);
+        snprintf(path, FILENAMELEN, "%s/%s.p42", free42dirname, state.coreName);
         core_save_state(path);
     }
     core_cleanup();
     strncpy(state.coreName, selectedStateName, FILENAMELEN);
     state.coreName[FILENAMELEN - 1] = 0;
-    snprintf(path, FILENAMELEN, "%s/%s.f42", free42dirname, state.coreName);
+    snprintf(path, FILENAMELEN, "%s/%s.p42", free42dirname, state.coreName);
     core_init(1, 26, path, 0);
     if (core_powercycle())
         enable_reminder();
@@ -1336,7 +1288,7 @@ static void states_menu_new() {
     if (name == NULL)
         return;
     char path[FILENAMELEN];
-    snprintf(path, FILENAMELEN, "%s/%s.f42", free42dirname, name);
+    snprintf(path, FILENAMELEN, "%s/%s.p42", free42dirname, name);
     FILE *f = fopen(path, "w");
     fprintf(f, FREE42_MAGIC_STR);
     fclose(f);
@@ -1408,9 +1360,9 @@ static void states_menu_duplicate() {
     while (true) {
         n++;
         if (n == 1)
-            flen = snprintf(finalName, FILENAMELEN, "%s/%s copy.f42", free42dirname, copyName);
+            flen = snprintf(finalName, FILENAMELEN, "%s/%s copy.p42", free42dirname, copyName);
         else
-            flen = snprintf(finalName, FILENAMELEN, "%s/%s copy %d.f42", free42dirname, copyName, n);
+            flen = snprintf(finalName, FILENAMELEN, "%s/%s copy %d.p42", free42dirname, copyName, n);
         if (flen >= FILENAMELEN) {
             show_message("Message", "The name of that state is too long to copy.", dlg);
             return;
@@ -1429,7 +1381,7 @@ static void states_menu_duplicate() {
         core_save_state(finalName);
     else {
         char origName[FILENAMELEN];
-        snprintf(origName, FILENAMELEN, "%s/%s.f42", free42dirname, state_names[selectedStateIndex]);
+        snprintf(origName, FILENAMELEN, "%s/%s.p42", free42dirname, state_names[selectedStateIndex]);
         if (!copy_state(origName, finalName)) {
             show_message("Message", "State duplication failed.", dlg);
             return;
@@ -1447,9 +1399,9 @@ static void states_menu_rename() {
     if (newname == NULL)
         return;
     char oldpath[FILENAMELEN];
-    snprintf(oldpath, FILENAMELEN, "%s/%s.f42", free42dirname, state_names[selectedStateIndex]);
+    snprintf(oldpath, FILENAMELEN, "%s/%s.p42", free42dirname, state_names[selectedStateIndex]);
     char newpath[FILENAMELEN];
-    snprintf(newpath, FILENAMELEN, "%s/%s.f42", free42dirname, newname);
+    snprintf(newpath, FILENAMELEN, "%s/%s.p42", free42dirname, newname);
     rename(oldpath, newpath);
     if (strcmp(state_names[selectedStateIndex], state.coreName) == 0)
         strncpy(state.coreName, newname, FILENAMELEN);
@@ -1469,13 +1421,13 @@ static void states_menu_delete() {
                                             "Are you sure you want to delete the state \"%s\"?",
                                             stateName);
     gtk_window_set_title(GTK_WINDOW(msg), "Delete State?");
-    gtk_window_set_role(GTK_WINDOW(msg), "Free42 Dialog");
+    gtk_window_set_role(GTK_WINDOW(msg), "Plus42 Dialog");
     bool cancelled = gtk_dialog_run(GTK_DIALOG(msg)) != GTK_RESPONSE_YES;
     gtk_widget_destroy(msg);
     if (cancelled)
         return;
     char statePath[FILENAMELEN];
-    snprintf(statePath, FILENAMELEN, "%s/%s.f42", free42dirname, stateName);
+    snprintf(statePath, FILENAMELEN, "%s/%s.p42", free42dirname, stateName);
     remove(statePath);
     gtk_dialog_response(GTK_DIALOG(dlg), 4);
 }
@@ -1485,10 +1437,10 @@ static void states_menu_import() {
 
     if (dialog == NULL)
         dialog = make_file_select_dialog("Import State",
-                "Free42 State (*.f42)\0*.[Ff]42\0All Files (*.*)\0*\0",
+                "Plus42 State (*.p42)\0*.[Pp]42\0Free42 State (*.f42)\0*.[Ff]42\0All Files (*.*)\0*\0",
                 false, dlg);
 
-    gtk_window_set_role(GTK_WINDOW(dialog), "Free42 Dialog");
+    gtk_window_set_role(GTK_WINDOW(dialog), "Plus42 Dialog");
     bool cancelled = gtk_dialog_run(GTK_DIALOG(dialog)) != GTK_RESPONSE_ACCEPT;
     gtk_widget_hide(dialog);
     if (cancelled)
@@ -1506,10 +1458,10 @@ static void states_menu_import() {
         strncpy(name, p + 1, FILENAMELEN);
     name[FILENAMELEN - 1] = 0;
     int len = strlen(name);
-    if (len > 4 && strcmp(name + len - 4, ".f42") == 0)
+    if (len > 4 && strcmp(name + len - 4, ".p42") == 0)
         name[len - 4] = 0;
     char destPath[FILENAMELEN];
-    snprintf(destPath, FILENAMELEN, "%s/%s.f42", free42dirname, name);
+    snprintf(destPath, FILENAMELEN, "%s/%s.p42", free42dirname, name);
     bool success = false;
     if (file_exists(destPath)) {
         char msg[FILENAMELEN];
@@ -1532,15 +1484,15 @@ static void states_menu_export() {
     static GtkWidget *save_dialog = NULL;
     if (save_dialog == NULL)
         save_dialog = make_file_select_dialog("Export State",
-                "Free42 State (*.f42)\0*.[Ff]42\0All Files (*.*)\0*\0",
+                "Plus42 State (*.p42)\0*.[Ff]42\0All Files (*.*)\0*\0",
                 true, dlg);
 
     char *filename = NULL;
-    gtk_window_set_role(GTK_WINDOW(save_dialog), "Free42 Dialog");
+    gtk_window_set_role(GTK_WINDOW(save_dialog), "Plus42 Dialog");
     char export_file_name[FILENAMELEN];
     strcpy(export_file_name, state_names[selectedStateIndex]);
     export_file_name[FILENAMELEN - 5] = 0;
-    strcat(export_file_name, ".f42");
+    strcat(export_file_name, ".p42");
     gtk_file_chooser_set_current_name(GTK_FILE_CHOOSER(save_dialog), export_file_name);
     if (gtk_dialog_run(GTK_DIALOG(save_dialog)) == GTK_RESPONSE_ACCEPT)
         filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(save_dialog));
@@ -1553,7 +1505,7 @@ static void states_menu_export() {
     if (strncmp(gtk_file_filter_get_name(
                     gtk_file_chooser_get_filter(
                         GTK_FILE_CHOOSER(save_dialog))), "All", 3) != 0)
-        appendSuffix(export_file_name, ".f42");
+        appendSuffix(export_file_name, ".p42");
 
     if (file_exists(export_file_name)) {
         GtkWidget *msg = gtk_message_dialog_new(GTK_WINDOW(mainwindow),
@@ -1563,7 +1515,7 @@ static void states_menu_export() {
                                                 "Replace existing \"%s\"?",
                                                 export_file_name);
         gtk_window_set_title(GTK_WINDOW(msg), "Replace?");
-        gtk_window_set_role(GTK_WINDOW(msg), "Free42 Dialog");
+        gtk_window_set_role(GTK_WINDOW(msg), "Plus42 Dialog");
         bool cancelled = gtk_dialog_run(GTK_DIALOG(msg)) != GTK_RESPONSE_YES;
         gtk_widget_destroy(msg);
         if (cancelled)
@@ -1574,7 +1526,7 @@ static void states_menu_export() {
         core_save_state(export_file_name);
     else {
         char orig_path[FILENAMELEN];
-        snprintf(orig_path, FILENAMELEN, "%s/%s.f42", free42dirname, state_names[selectedStateIndex]);
+        snprintf(orig_path, FILENAMELEN, "%s/%s.p42", free42dirname, state_names[selectedStateIndex]);
         if (!copy_state(orig_path, export_file_name))
             show_message("Message", "State export failed.", dlg);
     }
@@ -1695,7 +1647,7 @@ static void statesCB() {
     // Make sure a file exists for the current state. This isn't necessarily
     // the case, specifically, right after starting up with a version <= 25
     // state file.
-    snprintf(buf, FILENAMELEN, "%s/%s.f42", free42dirname, state.coreName);
+    snprintf(buf, FILENAMELEN, "%s/%s.p42", free42dirname, state.coreName);
     if (!file_exists(buf)) {
         FILE *f = fopen(buf, "w");
         fwrite(FREE42_MAGIC_STR, 1, 4, f);
@@ -1714,7 +1666,7 @@ static void statesCB() {
             int namelen = strlen(dent->d_name);
             if (namelen < 4)
                 continue;
-            if (strcmp(dent->d_name + namelen - 4, ".f42") != 0)
+            if (strcmp(dent->d_name + namelen - 4, ".p42") != 0)
                 continue;
             char *stn = (char *) malloc(namelen - 3);
             memcpy(stn, dent->d_name, namelen - 4);
@@ -1743,7 +1695,7 @@ static void statesCB() {
     // TODO: does this leak list-stores? Or is everything taken case of by the
     // GObject reference-counting stuff?
 
-    gtk_window_set_role(GTK_WINDOW(states_dialog), "Free42 Dialog");
+    gtk_window_set_role(GTK_WINDOW(states_dialog), "Plus42 Dialog");
     while (true) {
         int response = gtk_dialog_run(GTK_DIALOG(states_dialog));
         if (response == 3 || response == GTK_RESPONSE_DELETE_EVENT)
@@ -1847,7 +1799,7 @@ static void exportProgramCB() {
     // TODO: does this leak list-stores? Or is everything taken case of by the
     // GObject reference-counting stuff?
 
-    gtk_window_set_role(GTK_WINDOW(sel_dialog), "Free42 Dialog");
+    gtk_window_set_role(GTK_WINDOW(sel_dialog), "Plus42 Dialog");
     bool cancelled = gtk_dialog_run(GTK_DIALOG(sel_dialog)) != GTK_RESPONSE_ACCEPT;
     gtk_widget_hide(sel_dialog);
     if (cancelled) {
@@ -1905,7 +1857,7 @@ static void exportProgramCB() {
                 true, mainwindow);
 
     char *filename = NULL;
-    gtk_window_set_role(GTK_WINDOW(save_dialog), "Free42 Dialog");
+    gtk_window_set_role(GTK_WINDOW(save_dialog), "Plus42 Dialog");
     gtk_file_chooser_set_current_name(GTK_FILE_CHOOSER(save_dialog), suggested_name);
     if (gtk_dialog_run(GTK_DIALOG(save_dialog)) == GTK_RESPONSE_ACCEPT)
         filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(save_dialog));
@@ -1931,7 +1883,7 @@ static void exportProgramCB() {
                                                 "Replace existing \"%s\"?",
                                                 export_file_name);
         gtk_window_set_title(GTK_WINDOW(msg), "Replace?");
-        gtk_window_set_role(GTK_WINDOW(msg), "Free42 Dialog");
+        gtk_window_set_role(GTK_WINDOW(msg), "Plus42 Dialog");
         cancelled = gtk_dialog_run(GTK_DIALOG(msg)) != GTK_RESPONSE_YES;
         gtk_widget_destroy(msg);
         if (cancelled) {
@@ -1987,7 +1939,7 @@ static void importProgramCB() {
                 "Program Files (*.raw)\0*.[Rr][Aa][Ww]\0All Files (*.*)\0*\0",
                 false, mainwindow);
 
-    gtk_window_set_role(GTK_WINDOW(dialog), "Free42 Dialog");
+    gtk_window_set_role(GTK_WINDOW(dialog), "Plus42 Dialog");
     bool cancelled = gtk_dialog_run(GTK_DIALOG(dialog)) != GTK_RESPONSE_ACCEPT;
     gtk_widget_hide(dialog);
     if (cancelled)
@@ -2170,7 +2122,7 @@ static void browse_file(GtkButton *button, gpointer cd) {
         gtk_file_chooser_set_filename(GTK_FILE_CHOOSER(save_dialog), filename);
     gtk_file_chooser_set_current_name(GTK_FILE_CHOOSER(save_dialog), filename);
 
-    gtk_window_set_role(GTK_WINDOW(save_dialog), "Free42 Dialog");
+    gtk_window_set_role(GTK_WINDOW(save_dialog), "Plus42 Dialog");
     if (gtk_dialog_run(GTK_DIALOG(save_dialog)) == GTK_RESPONSE_ACCEPT) {
         filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(save_dialog));
 
@@ -2271,7 +2223,7 @@ static void preferencesCB() {
         gtk_entry_set_text(GTK_ENTRY(gifheight), maxlen);
     gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(repaintwholedisplay), !state.old_repaint);
 
-    gtk_window_set_role(GTK_WINDOW(dialog), "Free42 Dialog");
+    gtk_window_set_role(GTK_WINDOW(dialog), "Plus42 Dialog");
     if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_ACCEPT) {
         core_settings.matrix_singularmatrix = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(singularmatrix));
         core_settings.matrix_outofrange = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(matrixoutofrange));
@@ -2380,7 +2332,7 @@ static void aboutCB() {
 
     if (about == NULL) {
         about = gtk_dialog_new_with_buttons(
-                            "About Free42",
+                            "About Plus42",
                             GTK_WINDOW(mainwindow),
                             GTK_DIALOG_MODAL,
                             "_OK",
@@ -2394,7 +2346,7 @@ static void aboutCB() {
         GtkWidget *image = gtk_image_new_from_pixbuf(icon_48);
         gtk_box_pack_start(GTK_BOX(box), image, FALSE, FALSE, 10);
         GtkWidget *box2 = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
-        GtkWidget *version = gtk_label_new("Free42 " VERSION);
+        GtkWidget *version = gtk_label_new("Plus42 " VERSION);
         gtk_misc_set_alignment(GTK_MISC(version), 0, 0);
         gtk_box_pack_start(GTK_BOX(box2), version, FALSE, FALSE, 10);
         GtkWidget *author = gtk_label_new("\302\251 2004-2021 Thomas Okken");
@@ -2416,7 +2368,7 @@ static void aboutCB() {
         focus_ok_button(GTK_WINDOW(about), container);
     }
 
-    gtk_window_set_role(GTK_WINDOW(about), "Free42 Dialog");
+    gtk_window_set_role(GTK_WINDOW(about), "Plus42 Dialog");
     gtk_dialog_run(GTK_DIALOG(about));
     gtk_widget_hide(GTK_WIDGET(about));
 }
@@ -3356,7 +3308,7 @@ static FILE *logfile = NULL;
 
 void shell_log(const char *message) {
     if (logfile == NULL)
-        logfile = fopen("free42.log", "w");
+        logfile = fopen("plus42.log", "w");
     fprintf(logfile, "%s\n", message);
     fflush(logfile);
 }

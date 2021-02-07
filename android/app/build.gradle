@@ -11,7 +11,7 @@ android {
     }
     compileSdkVersion 29
     defaultConfig {
-        applicationId "com.thomasokken.free42"
+        applicationId "com.thomasokken.plus42"
         minSdkVersion 14
         targetSdkVersion 29
         versionCode 134

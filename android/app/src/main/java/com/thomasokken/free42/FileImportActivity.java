@@ -58,7 +58,8 @@ public class FileImportActivity extends Activity {
         }
         if (baseName == null || baseName.equals("")) {
             baseName = "Imported State";
-        } else if (baseName.toLowerCase().endsWith(".f42")) {
+        } else if (baseName.toLowerCase().endsWith(".p42")
+                || baseName.toLowerCase().endsWith(".f42")) {
             baseName = baseName.substring(0, baseName.length() - 4);
             type = "f42";
         } else if (baseName.toLowerCase().endsWith(".raw")) {
@@ -75,7 +76,7 @@ public class FileImportActivity extends Activity {
                 importedState = baseName;
                 if (n > 1)
                     importedState += " " + n;
-                dstFile = baseDir + "/" + importedState + ".f42";
+                dstFile = baseDir + "/" + importedState + ".p42";
                 if (!new File(dstFile).exists())
                     break;
             }

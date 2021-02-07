@@ -280,7 +280,7 @@ public class Free42Activity extends Activity {
         }
         if (init_mode == 1) {
             if (version.value > 25) {
-                coreFileName = getFilesDir() + "/" + coreName + ".f42";
+                coreFileName = getFilesDir() + "/" + coreName + ".p42";
             } else {
                 coreFileName = getFilesDir() + "/state";
                 coreFileOffset = stateFileInputStream.getPosition();
@@ -291,9 +291,9 @@ public class Free42Activity extends Activity {
         }  else {
             // The shell state was missing or corrupt, but there
             // may still be a valid core state...
-            coreFileName = getFilesDir() + "/" + coreName + ".f42";
+            coreFileName = getFilesDir() + "/" + coreName + ".p42";
             if (new File(coreFileName).isFile()) {
-                // Core state "Untitled.f42" exists; let's try to read it
+                // Core state "Untitled.p42" exists; let's try to read it
                 init_mode = 1;
                 version.value = 26;
             }
@@ -479,7 +479,7 @@ public class Free42Activity extends Activity {
         }
 
         // Write core state
-        core_save_state(getFilesDir() + "/" + coreName + ".f42");
+        core_save_state(getFilesDir() + "/" + coreName + ".p42");
 
         printPaperView.dump();
         if (printTxtStream != null) {
@@ -607,7 +607,7 @@ public class Free42Activity extends Activity {
             itemsList.add("Skin: Other...");
             itemsList.add("Copy");
             itemsList.add("Paste");
-            itemsList.add("About Free42");
+            itemsList.add("About Plus42");
             itemsList.add("Cancel");
             builder.setItems(itemsList.toArray(new String[itemsList.size()]),
                     new DialogInterface.OnClickListener() {
@@ -740,12 +740,12 @@ public class Free42Activity extends Activity {
 
     private void switchToState2(String stateName) {
         if (!stateName.equals(coreName)) {
-            String oldFileName = getFilesDir() + "/" + coreName + ".f42";
+            String oldFileName = getFilesDir() + "/" + coreName + ".p42";
             core_save_state(oldFileName);
         }
         core_cleanup();
         coreName = stateName;
-        String newFileName = getFilesDir() + "/" + coreName + ".f42";
+        String newFileName = getFilesDir() + "/" + coreName + ".p42";
         core_init(1, 26, newFileName, 0);
         if (core_powercycle())
             startRunner();
@@ -933,7 +933,7 @@ public class Free42Activity extends Activity {
         Uri uri = FileProvider.getUriForFile(this, getPackageName() + ".fileprovider", file);
         intent.setType("*/*");
         intent.putExtra(Intent.EXTRA_STREAM, uri);
-        startActivity(Intent.createChooser(intent, "Share Free42 Program" + (m == 1 ? "" : "s") + " Using"));
+        startActivity(Intent.createChooser(intent, "Share Plus42 Program" + (m == 1 ? "" : "s") + " Using"));
     }
 
     private void doSelectSkin(String skinName) {
@@ -1066,7 +1066,7 @@ public class Free42Activity extends Activity {
             super(context);
             view = new AboutView(context);
             setContentView(view);
-            this.setTitle("About Free42");
+            this.setTitle("About Plus42");
         }
         
         private class AboutView extends RelativeLayout {
@@ -1084,7 +1084,7 @@ public class Free42Activity extends Activity {
                 try {
                     version = " " + getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
                 } catch (NameNotFoundException e) {}
-                label1.setText("Free42" + version);
+                label1.setText("Plus42" + version);
                 LayoutParams lp = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
                 lp.addRule(RelativeLayout.ALIGN_TOP, icon.getId());
                 lp.addRule(RelativeLayout.RIGHT_OF, icon.getId());
@@ -1621,7 +1621,7 @@ public class Free42Activity extends Activity {
             Uri uri = FileProvider.getUriForFile(Free42Activity.this, Free42Activity.this.getPackageName() + ".fileprovider", new File(pngFileName));
             intent.setType("*/*");
             intent.putExtra(Intent.EXTRA_STREAM, uri);
-            getContext().startActivity(Intent.createChooser(intent, "Share Free42 Print-Out Using"));
+            getContext().startActivity(Intent.createChooser(intent, "Share Plus42 Print-Out Using"));
         }
 
         public void clear() {
@@ -1793,11 +1793,11 @@ public class Free42Activity extends Activity {
             skinName[0] = "Standard";
             // fall through
         case 2:
-            externalSkinName[0] = topStorageDir() + "/Free42/" + skinName[0];
+            externalSkinName[0] = topStorageDir() + "/Plus42/" + skinName[0];
             // fall through
         case 3:
             skinName[1] = "Landscape";
-            externalSkinName[1] = topStorageDir() + "/Free42/" + skinName[1];
+            externalSkinName[1] = topStorageDir() + "/Plus42/" + skinName[1];
             keyClicksLevel = 3;
             // fall through
         case 4:

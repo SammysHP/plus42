@@ -87,7 +87,7 @@ public class StatesDialog extends Dialog {
         // Make sure a file exists for the current state. This isn't necessarily
         // the case, specifically, right after starting up with a version <= 25
         // state file.
-        String currentStateFileName = stateDirName + "/" + Free42Activity.getSelectedState() + ".f42";
+        String currentStateFileName = stateDirName + "/" + Free42Activity.getSelectedState() + ".p42";
         if (!new File(currentStateFileName).exists()) {
             OutputStream os = null;
             try {
@@ -187,7 +187,7 @@ public class StatesDialog extends Dialog {
     }
 
     private void doNew2(String newStateName) {
-        String newFileName = stateDirName + "/" + newStateName + ".f42";
+        String newFileName = stateDirName + "/" + newStateName + ".p42";
         if (new File(newFileName).exists()) {
             Free42Activity.showAlert("That name is already in use.");
             return;
@@ -238,7 +238,7 @@ public class StatesDialog extends Dialog {
                 finalName = copyName + " copy";
             else
                 finalName = copyName + " copy " + n;
-            finalPath = stateDirName + "/" + finalName + ".f42";
+            finalPath = stateDirName + "/" + finalName + ".p42";
             if (!new File(finalPath).exists())
                 // File does not exist; that means we have a usable name
                 break;
@@ -253,11 +253,11 @@ public class StatesDialog extends Dialog {
             return;
 
         String finalName = makeCopyName(selectedStateName);
-        String finalPath = stateDirName + "/" + finalName + ".f42";
+        String finalPath = stateDirName + "/" + finalName + ".p42";
         if (selectedStateName.equals(Free42Activity.getSelectedState()))
             Free42Activity.saveStateAs(finalPath);
         else {
-            String origPath = stateDirName + "/" + selectedStateName + ".f42";
+            String origPath = stateDirName + "/" + selectedStateName + ".p42";
             FileInputStream fis = null;
             FileOutputStream fos = null;
             try {
@@ -292,8 +292,8 @@ public class StatesDialog extends Dialog {
         String selectedStateName = getSelectedState();
         if (selectedStateName == null)
             return;
-        String oldpath = stateDirName + "/" + selectedStateName + ".f42";
-        String newpath = stateDirName + "/" + newStateName + ".f42";
+        String oldpath = stateDirName + "/" + selectedStateName + ".p42";
+        String newpath = stateDirName + "/" + newStateName + ".p42";
         if (new File(newpath).exists()) {
             Free42Activity.showAlert("That name is already in use.");
             return;
@@ -326,7 +326,7 @@ public class StatesDialog extends Dialog {
         String selectedStateName = getSelectedState();
         if (selectedStateName == null || selectedStateName.equals(Free42Activity.getSelectedState()))
             return;
-        String path = stateDirName + "/" + selectedStateName + ".f42";
+        String path = stateDirName + "/" + selectedStateName + ".p42";
         new File(path).delete();
         updateUI(true);
     }
@@ -334,7 +334,7 @@ public class StatesDialog extends Dialog {
     private void doImport() {
         if (!Free42Activity.checkStorageAccess())
             return;
-        FileSelectionDialog fsd = new FileSelectionDialog(getContext(), new String[]{"f42", "*"});
+        FileSelectionDialog fsd = new FileSelectionDialog(getContext(), new String[]{"p42", "f42", "*"});
         fsd.setOkListener(new FileSelectionDialog.OkListener() {
             public void okPressed(String path) {
                 doImport2(path);
@@ -347,11 +347,11 @@ public class StatesDialog extends Dialog {
         int lastSlash = path.lastIndexOf('/');
         String name = lastSlash == -1 ? path : path.substring(lastSlash + 1);
         int len = name.length();
-        if (len > 4 && name.endsWith(".f42"))
+        if (len > 4 && (name.endsWith(".p42") || name.endsWith(".f42")))
             name = name.substring(0, len - 4);
-        String destPath = getContext().getFilesDir() + "/" + name + ".f42";
+        String destPath = getContext().getFilesDir() + "/" + name + ".p42";
         if (new File(destPath).exists())
-            destPath = getContext().getFilesDir() + "/" + makeCopyName(name) + ".f42";
+            destPath = getContext().getFilesDir() + "/" + makeCopyName(name) + ".p42";
         InputStream is = null;
         OutputStream os = null;
         boolean failed = true;
@@ -388,11 +388,11 @@ public class StatesDialog extends Dialog {
         String selectedStateName = getSelectedState();
         if (selectedStateName == null)
             return;
-        FileSelectionDialog fsd = new FileSelectionDialog(getContext(), new String[]{"f42", "*"});
-        fsd.setPath(selectedStateName + ".f42");
+        FileSelectionDialog fsd = new FileSelectionDialog(getContext(), new String[]{"p42", "*"});
+        fsd.setPath(selectedStateName + ".p42");
         fsd.setOkListener(new FileSelectionDialog.OkListener() {
             public void okPressed(String path) {
-                if (path.endsWith(".f42"))
+                if (path.endsWith(".p42"))
                     doExport2(path);
             }
         });
@@ -409,7 +409,7 @@ public class StatesDialog extends Dialog {
         if (selectedStateName.equals(Free42Activity.getSelectedState()))
             Free42Activity.saveStateAs(finalPath);
         else {
-            String origPath = stateDirName + "/" + getSelectedState() + ".f42";
+            String origPath = stateDirName + "/" + getSelectedState() + ".p42";
             FileInputStream fis = null;
             FileOutputStream fos = null;
             try {
@@ -440,11 +440,11 @@ public class StatesDialog extends Dialog {
         if (selectedStateName == null)
             return;
         Intent intent = new Intent(Intent.ACTION_SEND);
-        File file = new File(stateDirName + "/" + selectedStateName + ".f42");
+        File file = new File(stateDirName + "/" + selectedStateName + ".p42");
         Uri uri = FileProvider.getUriForFile(getContext(), getContext().getPackageName() + ".fileprovider", file);
         intent.setType("*/*");
         intent.putExtra(Intent.EXTRA_STREAM, uri);
-        getContext().startActivity(Intent.createChooser(intent, "Share Free42 State Using"));
+        getContext().startActivity(Intent.createChooser(intent, "Share Plus42 State Using"));
     }
 
     private class MoreMenuOnClickListener implements DialogInterface.OnClickListener {
@@ -524,7 +524,7 @@ public class StatesDialog extends Dialog {
                 if (!file.isFile())
                     continue;
                 String fn = file.getName();
-                if (!fn.endsWith(".f42"))
+                if (!fn.endsWith(".p42"))
                     continue;
                 nameList.add(fn.substring(0, fn.length() - 4));
             }

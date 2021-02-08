@@ -684,6 +684,10 @@ int core_powercycle() {
 }
 
 void core_update_allow_big_stack() {
+    if (prgms == NULL)
+        // Hack to deal with the Mac version calling this function
+        // after already having called core_quit()
+        return;
     if (flags.f.big_stack && !core_settings.allow_big_stack) {
         arg_struct dummy_arg;
         docmd_4stk(&dummy_arg);
@@ -1013,15 +1017,26 @@ static void export_hp42s(int index) {
             normal:
                 if (arg.type == ARGTYPE_STR || arg.type == ARGTYPE_IND_STR) {
                     int i;
-                    cmdbuf[cmdlen++] = 0xF0 + arg.length + 1;
+                    if ((code_name & 0x80) == 0) {
+                        cmdbuf[cmdlen++] = 0xf0 + arg.length + 2;
+                        cmdbuf[cmdlen++] = 0xa7;
+                    } else {
+                        cmdbuf[cmdlen++] = 0xf0 + arg.length + 1;
+                    }
                     cmdbuf[cmdlen++] = arg.type == ARGTYPE_STR ? code_name
                                                             : code_name + 8;
                     for (i = 0; i < arg.length; i++)
                         cmdbuf[cmdlen++] = arg.val.text[i];
                 } else {
                     unsigned char suffix;
-                    if (code_std_1 != 0)
-                        cmdbuf[cmdlen++] = code_std_1;
+                    if (code_std_1 != 0) {
+                        if (code_std_1 == 0xf2 && (code_std_2 & 0x80) == 0) {
+                            cmdbuf[cmdlen++] = 0xf3;
+                            cmdbuf[cmdlen++] = 0xa7;
+                        } else {
+                            cmdbuf[cmdlen++] = code_std_1;
+                        }
+                    }
                     cmdbuf[cmdlen++] = code_std_2;
 
                     non_string_suffix:
@@ -1101,8 +1116,8 @@ int4 core_program_size(int prgm_index) {
     arg_struct arg;
     int saved_prgm = current_prgm;
     uint4 hp42s_code;
-    unsigned char code_flags, code_std_1;
-    //unsigned char code_name, code_std_2;
+    unsigned char code_flags, code_std_1, code_std_2;
+    //unsigned char code_name;
     int4 size = 0;
 
     current_prgm = prgm_index;
@@ -1113,7 +1128,7 @@ int4 core_program_size(int prgm_index) {
         code_flags = hp42s_code >> 24;
         //code_name = hp42s_code >> 16;
         code_std_1 = hp42s_code >> 8;
-        //code_std_2 = hp42s_code;
+        code_std_2 = hp42s_code;
         switch (code_flags) {
             case 1:
                 /* A command that requires some special attention */
@@ -1205,6 +1220,9 @@ int4 core_program_size(int prgm_index) {
                     if (arg.type != ARGTYPE_NONE)
                         size += 1;
                 }
+                if (code_std_1 == 0xf2 && (code_std_2 & 0x80) == 0)
+                    /* Extra extension */
+                    size += 1;
                 break;
             case 2:
             default:
@@ -1559,7 +1577,160 @@ static int hp42tofree42[] = {
 
 static int hp42ext[] = {
     /* Flag values: 0 = string, 1 = IND string, 2 = suffix, 3 = special,
-     * 4 = illegal */
+     * 4 = illegal
+     * Values 80-ff are the space used on the HP-42S, that is, strings whose
+     * first character has its high bit set. Since the gaps left in that
+     * scheme ran out when development of Plus42 started, additional
+     * extensions had to be defined, and they are encoded using a7 as the
+     * first character, and the opcode in the second character. By keeping
+     * that second-character opcode in the range 00-7f, we can still
+     * use a single byte lookup for all these extensions.
+     */
+
+    /* 00-0F */
+    CMD_NULL   | 0x4000,
+    CMD_XASTO  | 0x0000,
+    CMD_LXASTO | 0x0000,
+    CMD_NULL   | 0x4000,
+    CMD_NULL   | 0x4000,
+    CMD_NULL   | 0x4000,
+    CMD_NULL   | 0x4000,
+    CMD_NULL   | 0x4000,
+    CMD_NULL   | 0x4000,
+    CMD_XASTO  | 0x1000,
+    CMD_LXASTO | 0x1000,
+    CMD_NULL   | 0x4000,
+    CMD_NULL   | 0x4000,
+    CMD_NULL   | 0x4000,
+    CMD_NULL   | 0x4000,
+    CMD_NULL   | 0x4000,
+
+    /* 10-1F */
+    CMD_NULL   | 0x4000,
+    CMD_XASTO  | 0x2000,
+    CMD_LXASTO | 0x2000,
+    CMD_NULL   | 0x4000,
+    CMD_NULL   | 0x4000,
+    CMD_NULL   | 0x4000,
+    CMD_NULL   | 0x4000,
+    CMD_NULL   | 0x4000,
+    CMD_NULL   | 0x4000,
+    CMD_NULL   | 0x4000,
+    CMD_NULL   | 0x4000,
+    CMD_NULL   | 0x4000,
+    CMD_NULL   | 0x4000,
+    CMD_NULL   | 0x4000,
+    CMD_NULL   | 0x4000,
+    CMD_NULL   | 0x4000,
+
+    /* 20-2F */
+    CMD_NULL | 0x4000,
+    CMD_NULL | 0x4000,
+    CMD_NULL | 0x4000,
+    CMD_NULL | 0x4000,
+    CMD_NULL | 0x4000,
+    CMD_NULL | 0x4000,
+    CMD_NULL | 0x4000,
+    CMD_NULL | 0x4000,
+    CMD_NULL | 0x4000,
+    CMD_NULL | 0x4000,
+    CMD_NULL | 0x4000,
+    CMD_NULL | 0x4000,
+    CMD_NULL | 0x4000,
+    CMD_NULL | 0x4000,
+    CMD_NULL | 0x4000,
+    CMD_NULL | 0x4000,
+
+    /* 30-3F */
+    CMD_NULL | 0x4000,
+    CMD_NULL | 0x4000,
+    CMD_NULL | 0x4000,
+    CMD_NULL | 0x4000,
+    CMD_NULL | 0x4000,
+    CMD_NULL | 0x4000,
+    CMD_NULL | 0x4000,
+    CMD_NULL | 0x4000,
+    CMD_NULL | 0x4000,
+    CMD_NULL | 0x4000,
+    CMD_NULL | 0x4000,
+    CMD_NULL | 0x4000,
+    CMD_NULL | 0x4000,
+    CMD_NULL | 0x4000,
+    CMD_NULL | 0x4000,
+    CMD_NULL | 0x4000,
+
+    /* 40-4F */
+    CMD_NULL | 0x4000,
+    CMD_NULL | 0x4000,
+    CMD_NULL | 0x4000,
+    CMD_NULL | 0x4000,
+    CMD_NULL | 0x4000,
+    CMD_NULL | 0x4000,
+    CMD_NULL | 0x4000,
+    CMD_NULL | 0x4000,
+    CMD_NULL | 0x4000,
+    CMD_NULL | 0x4000,
+    CMD_NULL | 0x4000,
+    CMD_NULL | 0x4000,
+    CMD_NULL | 0x4000,
+    CMD_NULL | 0x4000,
+    CMD_NULL | 0x4000,
+    CMD_NULL | 0x4000,
+
+    /* 50-5F */
+    CMD_NULL | 0x4000,
+    CMD_NULL | 0x4000,
+    CMD_NULL | 0x4000,
+    CMD_NULL | 0x4000,
+    CMD_NULL | 0x4000,
+    CMD_NULL | 0x4000,
+    CMD_NULL | 0x4000,
+    CMD_NULL | 0x4000,
+    CMD_NULL | 0x4000,
+    CMD_NULL | 0x4000,
+    CMD_NULL | 0x4000,
+    CMD_NULL | 0x4000,
+    CMD_NULL | 0x4000,
+    CMD_NULL | 0x4000,
+    CMD_NULL | 0x4000,
+    CMD_NULL | 0x4000,
+
+    /* 60-6F */
+    CMD_NULL | 0x4000,
+    CMD_NULL | 0x4000,
+    CMD_NULL | 0x4000,
+    CMD_NULL | 0x4000,
+    CMD_NULL | 0x4000,
+    CMD_NULL | 0x4000,
+    CMD_NULL | 0x4000,
+    CMD_NULL | 0x4000,
+    CMD_NULL | 0x4000,
+    CMD_NULL | 0x4000,
+    CMD_NULL | 0x4000,
+    CMD_NULL | 0x4000,
+    CMD_NULL | 0x4000,
+    CMD_NULL | 0x4000,
+    CMD_NULL | 0x4000,
+    CMD_NULL | 0x4000,
+
+    /* 70-7F */
+    CMD_NULL | 0x4000,
+    CMD_NULL | 0x4000,
+    CMD_NULL | 0x4000,
+    CMD_NULL | 0x4000,
+    CMD_NULL | 0x4000,
+    CMD_NULL | 0x4000,
+    CMD_NULL | 0x4000,
+    CMD_NULL | 0x4000,
+    CMD_NULL | 0x4000,
+    CMD_NULL | 0x4000,
+    CMD_NULL | 0x4000,
+    CMD_NULL | 0x4000,
+    CMD_NULL | 0x4000,
+    CMD_NULL | 0x4000,
+    CMD_NULL | 0x4000,
+    CMD_NULL | 0x4000,
+
     /* 80-8F */
     CMD_VIEW    | 0x0000,
     CMD_STO     | 0x0000,
@@ -1604,7 +1775,7 @@ static int hp42ext[] = {
     CMD_UNPICK | 0x2000,
     CMD_RDNN   | 0x2000,
     CMD_RUPN   | 0x2000,
-    CMD_NULL   | 0x4000,
+    CMD_NULL   | 0x3000, /* Extra extensions */
     CMD_SF     | 0x1000,
     CMD_CF     | 0x1000,
     CMD_FSC_T  | 0x1000,
@@ -1818,6 +1989,7 @@ void core_import_programs(int num_progs, const char *raw_file_name) {
         cmd = hp42tofree42[byte1];
         flag = cmd >> 12;
         cmd &= 0x0FFF;
+        bool extra_extension = false;
         if (flag == 0) {
             arg.type = ARGTYPE_NONE;
             goto store;
@@ -2007,6 +2179,11 @@ void core_import_programs(int num_progs, const char *raw_file_name) {
                             goto done;
                         arg.val.text[i] = suffix;
                     }
+                    if (extra_extension) {
+                        memmove(arg.val.text + 1, arg.val.text, str_len);
+                        arg.val.text[0] = 0xa7;
+                        str_len++;
+                    }
                     arg.length = str_len;
                     if (assign) {
                         assign = 0;
@@ -2030,13 +2207,21 @@ void core_import_programs(int num_progs, const char *raw_file_name) {
                     goto store;
                 } else {
                     /* Parameterized HP-42S extension */
-                    cmd = hp42ext[byte2 - 0x080];
+                    if (byte2 == 0xa7) {
+                        byte2 = raw_getc();
+                        if (byte2 == EOF)
+                            goto done;
+                        byte1--;
+                        extra_extension = true;
+                    }
+                    cmd = hp42ext[byte2];
                     flag = cmd >> 12;
                     cmd &= 0x0FFF;
                     if (flag == 0 || flag == 1) {
                         arg.type = flag == 0 ? ARGTYPE_STR
                                                 : ARGTYPE_IND_STR;
                         str_len = byte1 - 0x0F1;
+                        extra_extension = false;
                         goto do_string;
                     } else if (flag == 2) {
                         int ind;

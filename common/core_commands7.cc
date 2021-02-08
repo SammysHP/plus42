@@ -1285,3 +1285,15 @@ int docmd_mvarcat(arg_struct *arg) {
     }
     return recall_result(res);
 }
+
+////////////////////////////
+///// String functions /////
+////////////////////////////
+
+int docmd_xasto(arg_struct *arg) {
+    return ERR_NOT_YET_IMPLEMENTED;
+}
+
+int docmd_lxasto(arg_struct *arg) {
+    return ERR_NOT_YET_IMPLEMENTED;
+}

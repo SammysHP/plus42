@@ -455,8 +455,12 @@
 #define CMD_RUPN        401
 /* Get list of LBLs with MVARs */
 #define CMD_MVARCAT     402
+/* Skipping 403 because of single-byte equality checks with CMD_END */
+/* String functions */
+#define CMD_XASTO       404
+#define CMD_LXASTO      405
 
-#define CMD_SENTINEL    403
+#define CMD_SENTINEL    406
 
 
 /* command_spec.argtype */

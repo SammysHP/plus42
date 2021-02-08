@@ -74,4 +74,7 @@ int docmd_rupn(arg_struct *arg);
 
 int docmd_mvarcat(arg_struct *arg);
 
+int docmd_xasto(arg_struct *arg);
+int docmd_lxasto(arg_struct *arg);
+
 #endif

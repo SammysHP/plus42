@@ -73,7 +73,7 @@
                     <rect key="frame" x="20" y="208" width="280" height="21"/>
                     <autoresizingMask key="autoresizingMask" widthSizable="YES" flexibleMaxY="YES"/>
                     <fontDescription key="fontDescription" type="system" pointSize="17"/>
-                    <state key="normal" title="https://thomasokken.com/free42/">
+                    <state key="normal" title="https://thomasokken.com/plus42/">
                         <color key="titleColor" systemColor="linkColor"/>
                         <color key="titleShadowColor" red="0.5" green="0.5" blue="0.5" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                     </state>
@@ -85,7 +85,7 @@
                     <rect key="frame" x="20" y="233" width="280" height="21"/>
                     <autoresizingMask key="autoresizingMask" widthSizable="YES" flexibleMaxY="YES"/>
                     <fontDescription key="fontDescription" type="system" pointSize="17"/>
-                    <state key="normal" title="https://thomasokken.com/free42/#doc">
+                    <state key="normal" title="https://thomasokken.com/plus42/#doc">
                         <color key="titleColor" systemColor="linkColor"/>
                         <color key="titleShadowColor" red="0.5" green="0.5" blue="0.5" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                     </state>

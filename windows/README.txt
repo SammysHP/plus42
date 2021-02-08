@@ -43,7 +43,7 @@ contents.
 
 Documentation
 
-Visit https://thomasokken.com/free42/#doc for more information.
+Visit https://thomasokken.com/plus42/#doc for more information.
 
 
 Keyboard Mapping
@@ -171,4 +171,4 @@ Free42 Decimal.
 Free42 is (C) 2004-2021, by Thomas Okken
 Contact the author at thomasokken@gmail.com
 Look for updates, and versions for other operating systems, at
-https://thomasokken.com/free42/
+https://thomasokken.com/plus42/

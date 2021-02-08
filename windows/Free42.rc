@@ -119,9 +119,9 @@ BEGIN
     ICON            IDI_FREE42,IDC_STATIC,9,7,20,20
     LTEXT           FREE42_VERSION_1,IDC_STATIC,31,4,99,8,SS_NOPREFIX
     LTEXT           "© 2004-2021 Thomas Okken",IDC_STATIC,31,17,98,8
-    LTEXT           "https://thomasokken.com/free42/",
+    LTEXT           "https://thomasokken.com/plus42/",
                     IDC_WEBSITELINK,31,27,191,8,SS_NOTIFY
-    LTEXT           "https://thomasokken.com/free42/#doc",
+    LTEXT           "https://thomasokken.com/plus42/#doc",
                     IDC_FORUMLINK,31,37,191,8,SS_NOTIFY
     DEFPUSHBUTTON   "OK",IDOK,189,6,30,11,WS_GROUP
 END

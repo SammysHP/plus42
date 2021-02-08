@@ -798,7 +798,7 @@ static void tbnonewliner() {
 
 - (IBAction) loadSkins:(id)sender {
     if (!loadSkinsWindowMapped) {
-        NSString *url = @"https://thomasokken.com/free42/skins/";
+        NSString *url = @"https://thomasokken.com/plus42/skins/";
         [loadSkinsURL setStringValue:url];
         [loadSkinsWebView setMainFrameURL:url];
         loadSkinsWindowMapped = true;

@@ -86,7 +86,7 @@ public class SkinSelectDialog extends Dialog {
             return;
         }
         SkinLoadDialog sld = new SkinLoadDialog(getContext());
-        sld.setUrl("https://thomasokken.com/free42/skins/");
+        sld.setUrl("https://thomasokken.com/plus42/skins/");
         sld.setListener(new SkinLoadDialog.Listener() {
             @Override
             public void dialogDone() {

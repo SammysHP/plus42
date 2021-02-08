@@ -53,7 +53,7 @@
     }
     NSString *url = [urlField text];
     if (url == nil || [url length] == 0)
-        [urlField setText:@"https://thomasokken.com/free42/skins/"];
+        [urlField setText:@"https://thomasokken.com/plus42/skins/"];
     [self reload];
     showMessages = YES;
 }

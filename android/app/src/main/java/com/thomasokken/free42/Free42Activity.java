@@ -1100,7 +1100,7 @@ public class Free42Activity extends Activity {
 
                 TextView label3 = new TextView(context);
                 label3.setId(4);
-                SpannableString s = new SpannableString("https://thomasokken.com/free42/");
+                SpannableString s = new SpannableString("https://thomasokken.com/plus42/");
                 Linkify.addLinks(s, Linkify.WEB_URLS);
                 label3.setText(s);
                 label3.setMovementMethod(LinkMovementMethod.getInstance());
@@ -1111,7 +1111,7 @@ public class Free42Activity extends Activity {
 
                 TextView label4 = new TextView(context);
                 label4.setId(5);
-                s = new SpannableString("https://thomasokken.com/free42/#doc");
+                s = new SpannableString("https://thomasokken.com/plus42/#doc");
                 Linkify.addLinks(s, Linkify.WEB_URLS);
                 label4.setText(s);
                 label4.setMovementMethod(LinkMovementMethod.getInstance());

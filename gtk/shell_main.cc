@@ -2352,11 +2352,11 @@ static void aboutCB() {
         GtkWidget *author = gtk_label_new("\302\251 2004-2021 Thomas Okken");
         gtk_misc_set_alignment(GTK_MISC(author), 0, 0);
         gtk_box_pack_start(GTK_BOX(box2), author, FALSE, FALSE, 0);
-        GtkWidget *websitelink = gtk_link_button_new("https://thomasokken.com/free42/");
+        GtkWidget *websitelink = gtk_link_button_new("https://thomasokken.com/plus42/");
         GtkWidget *websitebox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
         gtk_box_pack_start(GTK_BOX(websitebox), websitelink, FALSE, FALSE, 0);
         gtk_box_pack_start(GTK_BOX(box2), websitebox, FALSE, FALSE, 0);
-        GtkWidget *forumlink = gtk_link_button_new("https://thomasokken.com/free42/#doc");
+        GtkWidget *forumlink = gtk_link_button_new("https://thomasokken.com/plus42/#doc");
         GtkWidget *forumbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
         gtk_box_pack_start(GTK_BOX(forumbox), forumlink, FALSE, FALSE, 0);
         gtk_box_pack_start(GTK_BOX(box2), forumbox, FALSE, FALSE, 0);

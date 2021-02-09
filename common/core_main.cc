@@ -826,7 +826,6 @@ static void export_hp42s(int index) {
     int cmd;
     arg_struct arg;
     int saved_prgm = current_prgm;
-    uint4 hp42s_code;
     unsigned char code_flags, code_name, code_std_1, code_std_2;
     char cmdbuf[50];
     int cmdlen;
@@ -838,11 +837,10 @@ static void export_hp42s(int index) {
     do {
         const char *orig_num;
         get_next_command(&pc, &cmd, &arg, 0, &orig_num);
-        hp42s_code = cmd_array[cmd].hp42s_code;
-        code_flags = hp42s_code >> 24;
-        code_name = hp42s_code >> 16;
-        code_std_1 = hp42s_code >> 8;
-        code_std_2 = hp42s_code;
+        code_flags = (cmd_array[cmd].flags & (FLAG_SPECIAL | FLAG_ILLEGAL)) >> 5;
+        code_name = cmd_array[cmd].scode;
+        code_std_1 = cmd_array[cmd].code1;
+        code_std_2 = cmd_array[cmd].code2;
         cmdlen = 0;
         switch (code_flags) {
             case 1:
@@ -1115,7 +1113,6 @@ int4 core_program_size(int prgm_index) {
     int cmd;
     arg_struct arg;
     int saved_prgm = current_prgm;
-    uint4 hp42s_code;
     unsigned char code_flags, code_std_1, code_std_2;
     //unsigned char code_name;
     int4 size = 0;
@@ -1124,11 +1121,10 @@ int4 core_program_size(int prgm_index) {
     do {
         const char *orig_num;
         get_next_command(&pc, &cmd, &arg, 0, &orig_num);
-        hp42s_code = cmd_array[cmd].hp42s_code;
-        code_flags = hp42s_code >> 24;
-        //code_name = hp42s_code >> 16;
-        code_std_1 = hp42s_code >> 8;
-        code_std_2 = hp42s_code;
+        code_flags = (cmd_array[cmd].flags & (FLAG_SPECIAL | FLAG_ILLEGAL)) >> 5;
+        //code_name = cmd_array[cmd].scode;
+        code_std_1 = cmd_array[cmd].code1;
+        code_std_2 = cmd_array[cmd].code2;
         switch (code_flags) {
             case 1:
                 /* A command that requires some special attention */
@@ -2076,7 +2072,7 @@ void core_import_programs(int num_progs, const char *raw_file_name) {
                     goto store;
                 }
                 for (i = 0; i < CMD_SENTINEL; i++)
-                    if (cmd_array[i].hp42s_code == code) {
+                    if (cmd_array[i].code1 == byte1 && cmd_array[i].code2 == byte2) {
                         if ((cmd_array[i].flags & FLAG_HIDDEN) != 0)
                             break;
                         cmd = i;

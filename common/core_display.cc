@@ -2421,8 +2421,8 @@ int command2buf(char *buf, int len, int cmd, const arg_struct *arg) {
     int bufptr = 0;
 
     int4 xrom_arg;
-    if ((cmd_array[cmd].hp42s_code & 0xfffff800) == 0x0000a000 && (cmd_array[cmd].flags & FLAG_HIDDEN) != 0) {
-        xrom_arg = cmd_array[cmd].hp42s_code;
+    if ((cmd_array[cmd].code1 & 0xf8) == 0xa0 && (cmd_array[cmd].flags & FLAG_HIDDEN) != 0) {
+        xrom_arg = (cmd_array[cmd].code1 << 8) | cmd_array[cmd].code2;
         cmd = CMD_XROM;
     } else if (cmd == CMD_XROM)
         xrom_arg = arg->val.num;

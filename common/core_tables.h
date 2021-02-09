@@ -498,12 +498,13 @@
 
 /* command_spec.flags */
 
-#define FLAG_NONE      0  /* Boring! */
 #define FLAG_PRGM_ONLY 1  /* Only allowed in program mode (LBL, DEL, ...) */
 #define FLAG_IMMED     2  /* Executes in program mode (DEL, GTO.nnn, ...) */
 #define FLAG_HIDDEN    4  /* Cannot be activated using XEQ "NAME" (SIMQ, ...) */
 #define FLAG_NO_PRGM   8  /* Cannot be programmed (SIMQ, MATA, ...) */
 #define FLAG_NO_SHOW  16  /* Do not show after keytimeout1 */
+#define FLAG_SPECIAL  32  /* hp42s_code flags 0x01 */
+#define FLAG_ILLEGAL  64  /* hp42s_code flags 0x02 */
 
 
 /* Builtin cmd arg types */
@@ -546,13 +547,16 @@ typedef struct {
 
 
 typedef struct {
-    const char *name;
-    char name_length;
-    char argtype;
-    signed char argcount;
-    char flags;
-    uint4 hp42s_code;
     int (*handler)(arg_struct *arg);
+    const char *name;
+    unsigned char flags;
+    unsigned char scode;
+    unsigned char code1;
+    unsigned char code2;
+    unsigned char name_length;
+    unsigned char argtype;
+    signed char argcount;
+    unsigned char rttypes;
 } command_spec;
 
 extern const command_spec cmd_array[];

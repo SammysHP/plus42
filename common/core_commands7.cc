@@ -1286,14 +1286,95 @@ int docmd_mvarcat(arg_struct *arg) {
     return recall_result(res);
 }
 
-////////////////////////////
-///// String functions /////
-////////////////////////////
+///////////////////////////////////
+///// String & List Functions /////
+///////////////////////////////////
 
 int docmd_xasto(arg_struct *arg) {
+    // XASTO: like ASTO, but the entire ALPHA register, not just
+    // the first 6 characters.
     return ERR_NOT_YET_IMPLEMENTED;
 }
 
 int docmd_lxasto(arg_struct *arg) {
+    // LXASTO: like LASTO, but the entire ALPHA register, not just
+    // the first 6 characters.
+    return ERR_NOT_YET_IMPLEMENTED;
+}
+
+int docmd_concat(arg_struct *args) {
+    // CONCAT: adds the object in X to the string or list in Y and returns the
+    // combined string or list. If Y is a string, the contents of X will be converted
+    // to a string in the same way as ARCL. If Y is a list, X will be added to it
+    // unchanged. (But what if X is a list? Concatenating two lists is not the same as
+    // adding a list to a list. TBD...)
+    return ERR_NOT_YET_IMPLEMENTED;
+}
+
+int docmd_substr(arg_struct *args) {
+    // SUBSTR: from the string or list in Z, gets the substring/sublist starting at
+    // index Y and ending at index X. If X and/or Y are negative, they are counts from
+    // the end, rather than the beginning. The very end of the string or list can be
+    // specified by leaving off the 'end' parameter, i.e. by having the string or list
+    // in Y and the starting index in X.
+    return ERR_NOT_YET_IMPLEMENTED;
+}
+
+int docmd_length(arg_struct *args) {
+    // LENGTH: returns the length of the string or list in X.
+    return ERR_NOT_YET_IMPLEMENTED;
+}
+
+int docmd_head(arg_struct *args) {
+    // HEAD <param>: removes and returns the first character or element from the
+    // string or list named by <param>. If the string or list is empty, skip the next
+    // instruction.
+    return ERR_NOT_YET_IMPLEMENTED;
+}
+
+int docmd_rev(arg_struct *args) {
+    // REV: reverse the string or list in X
+    return ERR_NOT_YET_IMPLEMENTED;
+}
+
+int docmd_pos(arg_struct *args) {
+    // POS: finds the first occurrence of the string or list X in Y. Or with three
+    // parameters: find the first occurrence of string or list Y in Z, starting the
+    // search from position X.
+    return ERR_NOT_YET_IMPLEMENTED;
+}
+
+int docmd_s_to_n(arg_struct *args) {
+    // S->N: convert string to number, like ANUM
+    return ERR_NOT_YET_IMPLEMENTED;
+}
+
+int docmd_n_to_s(arg_struct *args) {
+    // N->S: convert number to string, like ARCL
+    return ERR_NOT_YET_IMPLEMENTED;
+}
+
+int docmd_c_to_n(arg_struct *args) {
+    // C->N: convert character to number, like ATOX
+    return ERR_NOT_YET_IMPLEMENTED;
+}
+
+int docmd_n_to_c(arg_struct *args) {
+    // N->C: convert number to character, like XTOA
+    return ERR_NOT_YET_IMPLEMENTED;
+}
+
+int docmd_list_t(arg_struct *args) {
+    // LIST?: tests whether the object in X is a list
+    return ERR_NOT_YET_IMPLEMENTED;
+}
+
+int docmd_newlist(arg_struct *args) {
+    // NEWLIST: returns a new empty list
+    return ERR_NOT_YET_IMPLEMENTED;
+}
+
+int docmd_newstr(arg_struct *args) {
+    // NEWSTR: returns a new empty string
     return ERR_NOT_YET_IMPLEMENTED;
 }

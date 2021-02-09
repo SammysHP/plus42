@@ -456,11 +456,24 @@
 /* Get list of LBLs with MVARs */
 #define CMD_MVARCAT     402
 /* Skipping 403 because of single-byte equality checks with CMD_END */
-/* String functions */
+/* String & List Functions */
 #define CMD_XASTO       404
 #define CMD_LXASTO      405
+#define CMD_CONCAT      406
+#define CMD_SUBSTR      407
+#define CMD_LENGTH      408
+#define CMD_HEAD        409
+#define CMD_REV         410
+#define CMD_POS         411
+#define CMD_S_TO_N      412
+#define CMD_N_TO_S      413
+#define CMD_C_TO_N      414
+#define CMD_N_TO_C      415
+#define CMD_LIST_T      416
+#define CMD_NEWLIST     417
+#define CMD_NEWSTR      418
 
-#define CMD_SENTINEL    406
+#define CMD_SENTINEL    419
 
 
 /* command_spec.argtype */

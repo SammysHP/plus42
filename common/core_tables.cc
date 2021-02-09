@@ -466,9 +466,22 @@ const command_spec cmd_array[] =
     /* Skipping 403 because of single-byte equality checks with CMD_END */
     { /* DUMMY */      "",                     0, ARG_OTHER,  0, FLAG_HIDDEN,                 0x02000000, NULL,             },
 
-    /* String extensions */
+    /* String & List Functions */
     { /* XASTO */      "XASTO",                5, ARG_VAR,    0, FLAG_NONE,                   0x0001f211, docmd_xasto       },
-    { /* LXASTO */     "LXASTO",               6, ARG_NAMED,  0, FLAG_NONE,                   0x0002f212, docmd_lxasto      }
+    { /* LXASTO */     "LXASTO",               6, ARG_NAMED,  0, FLAG_NONE,                   0x0002f212, docmd_lxasto      },
+    { /* CONCAT */     "CONCAT",               6, ARG_NONE,   2, FLAG_NONE,                   0x0000a7e9, docmd_concat      },
+    { /* SUBSTR */     "SUBSTR",               6, ARG_NONE,   2, FLAG_NONE,                   0x0000a7ea, docmd_substr      },
+    { /* LENGTH */     "LENGTH",               6, ARG_NONE,   1, FLAG_NONE,                   0x0000a7eb, docmd_length      },
+    { /* HEAD */       "HEAD",                 4, ARG_VAR,    0, FLAG_NONE,                   0x0003f213, docmd_head        },
+    { /* REV */        "REV",                  3, ARG_NONE,   1, FLAG_NONE,                   0x0000a7ec, docmd_rev         },
+    { /* POS */        "POS",                  3, ARG_NONE,   2, FLAG_NONE,                   0x0000a7ed, docmd_pos         },
+    { /* S_TO_N */     "S\017N",               3, ARG_NONE,   1, FLAG_NONE,                   0x0000a7ee, docmd_s_to_n      },
+    { /* N_TO_S */     "N\017S",               3, ARG_NONE,   1, FLAG_NONE,                   0x0000a7ef, docmd_n_to_s      },
+    { /* C_TO_N */     "C\017N",               3, ARG_NONE,   1, FLAG_NONE,                   0x0000a7f0, docmd_c_to_n      },
+    { /* N_TO_C */     "N\017C",               3, ARG_NONE,   1, FLAG_NONE,                   0x0000a7f1, docmd_n_to_c      },
+    { /* LIST_T */     "LIST?",                5, ARG_NONE,   1, FLAG_NONE,                   0x0000a7f2, docmd_list_t      },
+    { /* NEWLIST */    "NEWLIST",              7, ARG_NONE,   0, FLAG_NONE,                   0x0000a7f3, docmd_newlist     },
+    { /* NEWSTR */     "NEWSTR",               6, ARG_NONE,   0, FLAG_NONE,                   0x0000a7f4, docmd_newstr      }
 };
 
 /*

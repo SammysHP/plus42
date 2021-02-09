@@ -1,5 +1,5 @@
 /* XPM */
-static char *temp_image[] = {
+static char *icon_128_xpm[] = {
 /* width height ncolors chars_per_pixel */
 "128 128 3774 2",
 /* colors */

@@ -92,8 +92,9 @@ vartype *new_string(const char *text, int length) {
     int i;
     s->s.type = TYPE_STRING;
     s->s.length = length > 6 ? 6 : length;
-    for (i = 0; i < s->s.length; i++)
-        s->s.text[i] = text[i];
+    if (text != NULL)
+        for (i = 0; i < s->s.length; i++)
+            s->s.text[i] = text[i];
     return (vartype *) s;
 }
 

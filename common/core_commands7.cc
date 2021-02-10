@@ -20,6 +20,7 @@
 #include <string.h>
 #include <stdarg.h>
 
+#include "core_commands1.h"
 #include "core_commands2.h"
 #include "core_commands7.h"
 #include "core_display.h"
@@ -1254,16 +1255,99 @@ int docmd_lxasto(arg_struct *arg) {
     return ERR_NOT_YET_IMPLEMENTED;
 }
 
-int docmd_concat(arg_struct *args) {
-    // CONCAT: adds the object in X to the string or list in Y and returns the
-    // combined string or list. If Y is a string, the contents of X will be converted
-    // to a string in the same way as ARCL. If Y is a list, X will be added to it
-    // unchanged. (But what if X is a list? Concatenating two lists is not the same as
-    // adding a list to a list. TBD...)
-    return ERR_NOT_YET_IMPLEMENTED;
+static int concat(bool extend) {
+    if (stack[sp - 1]->type == TYPE_STRING) {
+        char *text;
+        int len;
+        char buf[44];
+        int templen;
+        if (stack[sp]->type == TYPE_STRING) {
+            text = ((vartype_string *) stack[sp])->text;
+            len = ((vartype_string *) stack[sp])->length;
+        } else {
+            memcpy(buf, reg_alpha, reg_alpha_length);
+            templen = reg_alpha_length;
+            reg_alpha_length = 0;
+            arg_struct arg;
+            arg.type = ARGTYPE_STK;
+            arg.val.stk = 'X';
+            docmd_arcl(&arg);
+            text = reg_alpha;
+            len = reg_alpha_length;
+        }
+        vartype_string *s = (vartype_string *) stack[sp - 1];
+        vartype *v = new_string(NULL, s->length + len);
+        if (v != NULL) {
+            vartype_string *s2 = (vartype_string *) v;
+            memcpy(s2->text, s->text, s->length);
+            memcpy(s2->text + s->length, text, len);
+        }
+        if (text == reg_alpha) {
+            memcpy(reg_alpha, buf, templen);
+            reg_alpha_length = templen;
+        }
+        if (v == NULL)
+            return ERR_INSUFFICIENT_MEMORY;
+        binary_result(v);
+        return ERR_NONE;
+    } else if (stack[sp - 1]->type == TYPE_LIST) {
+        vartype *v = dup_vartype(stack[sp]);
+        if (v == NULL)
+            return ERR_INSUFFICIENT_MEMORY;
+        vartype_list *list = (vartype_list *) stack[sp - 1];
+        if (!disentangle((vartype *) list)) {
+            nomem:
+            free_vartype(v);
+            return ERR_INSUFFICIENT_MEMORY;
+        }
+        if (extend && v->type == TYPE_LIST) {
+            if (!disentangle(v))
+                goto nomem;
+            vartype_list *list2 = (vartype_list *) v;
+            if (list2->size > 0) {
+                vartype **new_data = (vartype **) realloc(list->array->data, (list->size + list2->size) * sizeof(vartype *));
+                if (new_data == NULL)
+                    goto nomem;
+                list->array->data = new_data;
+                memcpy(list->array->data + list->size, list2->array->data, list2->size * sizeof(vartype *));
+                memset(list2->array->data, 0, list2->size * sizeof(vartype *));
+                list->size += list2->size;
+            }
+            free_vartype(v);
+            stack[sp - 1] = NULL;
+            binary_result((vartype *) list);
+            return ERR_NONE;
+        }
+        vartype **new_data = (vartype **) realloc(list->array->data, (list->size + 1) * sizeof(vartype *));
+        if (new_data == NULL)
+            goto nomem;
+        list->array->data = new_data;
+        list->array->data[list->size++] = v;
+        stack[sp - 1] = NULL;
+        binary_result((vartype *) list);
+        return ERR_NONE;
+    } else {
+        return ERR_INVALID_TYPE;
+    }
 }
 
-int docmd_substr(arg_struct *args) {
+int docmd_append(arg_struct *arg) {
+    // APPEND: adds the object in X to the string or list in Y and returns the
+    // combined string or list. If Y is a string, the contents of X will be converted
+    // to a string in the same way as ARCL. If Y is a list, X will be added to it
+    // unchanged. If X is a list, it will be added to Y as one element.
+    return concat(false);
+}
+
+int docmd_extend(arg_struct *arg) {
+    // EXTEND: adds the object in X to the string or list in Y and returns the
+    // combined string or list. If Y is a string, the contents of X will be converted
+    // to a string in the same way as ARCL. If Y is a list, X will be added to it
+    // unchanged. If X is a list, it will be added to Y element by element.
+    return concat(true);
+}
+
+int docmd_substr(arg_struct *arg) {
     // SUBSTR: from the string or list in Z, gets the substring/sublist starting at
     // index Y and ending at index X. If X and/or Y are negative, they are counts from
     // the end, rather than the beginning. The very end of the string or list can be
@@ -1272,62 +1356,150 @@ int docmd_substr(arg_struct *args) {
     return ERR_NOT_YET_IMPLEMENTED;
 }
 
-int docmd_length(arg_struct *args) {
+int docmd_length(arg_struct *arg) {
     // LENGTH: returns the length of the string or list in X.
     return ERR_NOT_YET_IMPLEMENTED;
 }
 
-int docmd_head(arg_struct *args) {
+int docmd_head(arg_struct *arg) {
     // HEAD <param>: removes and returns the first character or element from the
     // string or list named by <param>. If the string or list is empty, skip the next
     // instruction.
-    return ERR_NOT_YET_IMPLEMENTED;
+    int err;
+    if (arg->type == ARGTYPE_IND_NUM
+            || arg->type == ARGTYPE_IND_STK
+            || arg->type == ARGTYPE_IND_STR) {
+        err = resolve_ind_arg(arg);
+        if (err != ERR_NONE)
+            return err;
+    }
+    if (!ensure_stack_capacity(1))
+        return ERR_INSUFFICIENT_MEMORY;
+    vartype *s, *v;
+    switch (arg->type) {
+        case ARGTYPE_NUM: {
+            vartype *regs = recall_var("REGS", 4);
+            if (regs == NULL)
+                return ERR_SIZE_ERROR;
+            if (regs->type != TYPE_REALMATRIX)
+                return ERR_INVALID_TYPE;
+            vartype_realmatrix *rm = (vartype_realmatrix *) regs;
+            int4 sz = rm->rows * rm->columns;
+            int4 n = arg->val.num;
+            if (n >= sz)
+                return ERR_SIZE_ERROR;
+            if (!rm->array->is_string[n])
+                return ERR_INVALID_TYPE;
+            int len = phloat_length(rm->array->data[n]);
+            if (len == 0)
+                return ERR_NO;
+            if (!disentangle(regs))
+                return ERR_INSUFFICIENT_MEMORY;
+            char *text = (char *) &rm->array->data[n];
+            v = new_string(text, 1);
+            if (v == NULL)
+                return ERR_INSUFFICIENT_MEMORY;
+            memmove(text, text + 1, len - 1);
+            text[6]--;
+            err = recall_result(v);
+            return err == ERR_NONE ? ERR_YES : err;
+        }
+        case ARGTYPE_STK: {
+            int idx;
+            switch (arg->val.stk) {
+                case 'X': idx = 0; break;
+                case 'Y': idx = 1; break;
+                case 'Z': idx = 2; break;
+                case 'T': idx = 3; break;
+                case 'L': idx = -1; break;
+            }
+            if (idx == -1) {
+                s = lastx;
+            } else {
+                if (idx > sp)
+                    return ERR_NONEXISTENT;
+                s = stack[sp - idx];
+            }
+            doit:
+            if (s->type == TYPE_STRING) {
+                vartype_string *str = (vartype_string *) s;
+                if (str->length == 0)
+                    return ERR_NO;
+                v = new_string(str->text, 1);
+                if (v == NULL)
+                    return ERR_INSUFFICIENT_MEMORY;
+                memmove(str->text, str->text + 1, --str->length);
+                err = recall_result(v);
+                return err == ERR_NONE ? ERR_YES : err;
+            } else if (s->type == TYPE_LIST) {
+                vartype_list *list = (vartype_list *) s;
+                if (list->size == 0)
+                    return ERR_NO;
+                if (!disentangle(s))
+                    return ERR_INSUFFICIENT_MEMORY;
+                v = list->array->data[0];
+                memmove(list->array->data, list->array->data + 1, --list->size * sizeof(vartype *));
+                err = recall_result(v);
+                return err == ERR_NONE ? ERR_YES : err;
+            } else {
+                return ERR_INVALID_TYPE;
+            }
+        }
+        case ARGTYPE_STR: {
+            s = recall_var(arg->val.text, arg->length);
+            if (s == NULL)
+                return ERR_NONEXISTENT;
+            goto doit;
+        }
+        default:
+            return ERR_INTERNAL_ERROR;
+    }
 }
 
-int docmd_rev(arg_struct *args) {
+int docmd_rev(arg_struct *arg) {
     // REV: reverse the string or list in X
     return ERR_NOT_YET_IMPLEMENTED;
 }
 
-int docmd_pos(arg_struct *args) {
+int docmd_pos(arg_struct *arg) {
     // POS: finds the first occurrence of the string or list X in Y. Or with three
     // parameters: find the first occurrence of string or list Y in Z, starting the
     // search from position X.
     return ERR_NOT_YET_IMPLEMENTED;
 }
 
-int docmd_s_to_n(arg_struct *args) {
+int docmd_s_to_n(arg_struct *arg) {
     // S->N: convert string to number, like ANUM
     return ERR_NOT_YET_IMPLEMENTED;
 }
 
-int docmd_n_to_s(arg_struct *args) {
+int docmd_n_to_s(arg_struct *arg) {
     // N->S: convert number to string, like ARCL
     return ERR_NOT_YET_IMPLEMENTED;
 }
 
-int docmd_c_to_n(arg_struct *args) {
+int docmd_c_to_n(arg_struct *arg) {
     // C->N: convert character to number, like ATOX
     return ERR_NOT_YET_IMPLEMENTED;
 }
 
-int docmd_n_to_c(arg_struct *args) {
+int docmd_n_to_c(arg_struct *arg) {
     // N->C: convert number to character, like XTOA
     return ERR_NOT_YET_IMPLEMENTED;
 }
 
-int docmd_list_t(arg_struct *args) {
+int docmd_list_t(arg_struct *arg) {
     return stack[sp]->type == TYPE_LIST ? ERR_YES : ERR_NO;
 }
 
-int docmd_newlist(arg_struct *args) {
+int docmd_newlist(arg_struct *arg) {
     vartype *v = new_list(0);
     if (v == NULL)
         return ERR_INSUFFICIENT_MEMORY;
     return recall_result(v);
 }
 
-int docmd_newstr(arg_struct *args) {
+int docmd_newstr(arg_struct *arg) {
     vartype *v = new_string("", 0);
     if (v == NULL)
         return ERR_INSUFFICIENT_MEMORY;

@@ -459,21 +459,22 @@
 /* String & List Functions */
 #define CMD_XASTO       404
 #define CMD_LXASTO      405
-#define CMD_CONCAT      406
-#define CMD_SUBSTR      407
-#define CMD_LENGTH      408
-#define CMD_HEAD        409
-#define CMD_REV         410
-#define CMD_POS         411
-#define CMD_S_TO_N      412
-#define CMD_N_TO_S      413
-#define CMD_C_TO_N      414
-#define CMD_N_TO_C      415
-#define CMD_LIST_T      416
-#define CMD_NEWLIST     417
-#define CMD_NEWSTR      418
+#define CMD_APPEND      406
+#define CMD_EXTEND      407
+#define CMD_SUBSTR      408
+#define CMD_LENGTH      409
+#define CMD_HEAD        410
+#define CMD_REV         411
+#define CMD_POS         412
+#define CMD_S_TO_N      413
+#define CMD_N_TO_S      414
+#define CMD_C_TO_N      415
+#define CMD_N_TO_C      416
+#define CMD_LIST_T      417
+#define CMD_NEWLIST     418
+#define CMD_NEWSTR      419
 
-#define CMD_SENTINEL    419
+#define CMD_SENTINEL    420
 
 
 /* command_spec.argtype */

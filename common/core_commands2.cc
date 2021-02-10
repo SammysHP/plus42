@@ -759,8 +759,7 @@ int docmd_xtoa(arg_struct *arg) {
         }
         done:
         append_alpha_string(buf, buflen, 1);
-    } else
-        return ERR_INVALID_TYPE;
+    }
     if (flags.f.trace_print && flags.f.printer_exists)
         docmd_pra(NULL);
     return ERR_NONE;

@@ -1317,16 +1317,19 @@ int docmd_n_to_c(arg_struct *args) {
 }
 
 int docmd_list_t(arg_struct *args) {
-    // LIST?: tests whether the object in X is a list
-    return ERR_NOT_YET_IMPLEMENTED;
+    return stack[sp]->type == TYPE_LIST ? ERR_YES : ERR_NO;
 }
 
 int docmd_newlist(arg_struct *args) {
-    // NEWLIST: returns a new empty list
-    return ERR_NOT_YET_IMPLEMENTED;
+    vartype *v = new_list(0);
+    if (v == NULL)
+        return ERR_INSUFFICIENT_MEMORY;
+    return recall_result(v);
 }
 
 int docmd_newstr(arg_struct *args) {
-    // NEWSTR: returns a new empty string
-    return ERR_NOT_YET_IMPLEMENTED;
+    vartype *v = new_string("", 0);
+    if (v == NULL)
+        return ERR_INSUFFICIENT_MEMORY;
+    return recall_result(v);
 }

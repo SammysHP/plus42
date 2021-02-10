@@ -329,7 +329,7 @@ const command_spec cmd_array[] =
     { /* SINH */       docmd_sinh,        "SINH",                0x00, 0x00, 0xa0, 0x61,  4, ARG_NONE,   1, 0x0f },
     { /* SLOPE */      docmd_slope,       "SLOPE",               0x00, 0x00, 0xa0, 0xa4,  5, ARG_NONE,   0, NA_T },
     { /* SOLVE */      docmd_solve,       "SOLVE",               0x00, 0xb7, 0xf2, 0xeb,  5, ARG_RVAR,   1, FUNC },
-    { /* STOEL */      docmd_stoel,       "STOEL",               0x00, 0x00, 0xa6, 0xd6,  5, ARG_NONE,   1, 0x13 }, // seq?
+    { /* STOEL */      docmd_stoel,       "STOEL",               0x00, 0x00, 0xa6, 0xd6,  5, ARG_NONE,   1, FUNC },
     { /* STOIJ */      docmd_stoij,       "STOIJ",               0x00, 0x00, 0xa6, 0xd8,  5, ARG_NONE,   2, FUNC },
     { /* SUM */        docmd_sum,         "SUM",                 0x00, 0x00, 0xa0, 0xa5,  3, ARG_NONE,   0, NA_T },
     { /* TANH */       docmd_tanh,        "TANH",                0x00, 0x00, 0xa0, 0x63,  4, ARG_NONE,   1, 0x0f },
@@ -342,10 +342,10 @@ const command_spec cmd_array[] =
     { /* YINT */       docmd_yint,        "YINT",                0x00, 0x00, 0xa0, 0xa6,  4, ARG_NONE,   0, NA_T },
     { /* TO_DEC */     docmd_to_dec,      "\017DEC",             0x00, 0x00, 0x00, 0x5f,  4, ARG_NONE,   1, 0x01 },
     { /* TO_OCT */     docmd_to_oct,      "\017OCT",             0x00, 0x00, 0x00, 0x6f,  4, ARG_NONE,   1, 0x01 },
-    { /* LEFT */       docmd_left,        "\020",                0x00, 0x00, 0xa6, 0xdc,  1, ARG_NONE,   1, 0x13 }, // seq?
-    { /* UP */         docmd_up,          "^",                   0x00, 0x00, 0xa6, 0xde,  1, ARG_NONE,   1, 0x13 }, // seq?
-    { /* DOWN */       docmd_down,        "\016",                0x00, 0x00, 0xa6, 0xdf,  1, ARG_NONE,   1, 0x13 }, // seq?
-    { /* RIGHT */      docmd_right,       "\017",                0x00, 0x00, 0xa6, 0xdd,  1, ARG_NONE,   1, 0x13 }, // seq?
+    { /* LEFT */       docmd_left,        "\020",                0x00, 0x00, 0xa6, 0xdc,  1, ARG_NONE,   1, FUNC },
+    { /* UP */         docmd_up,          "^",                   0x00, 0x00, 0xa6, 0xde,  1, ARG_NONE,   1, FUNC },
+    { /* DOWN */       docmd_down,        "\016",                0x00, 0x00, 0xa6, 0xdf,  1, ARG_NONE,   1, FUNC },
+    { /* RIGHT */      docmd_right,       "\017",                0x00, 0x00, 0xa6, 0xdd,  1, ARG_NONE,   1, FUNC },
     { /* PERCENT_CH */ docmd_percent_ch,  "%CH",                 0x00, 0x00, 0x00, 0x4d,  3, ARG_NONE,   2, 0x01 },
     { /* SIMQ */       docmd_simq,        "SIMQ",                0x4c, 0x00, 0x00, 0x00,  4, ARG_COUNT,  0, NA_T },
     { /* MATA */       docmd_mata,        "MATA",                0x4c, 0x00, 0x00, 0x00,  4, ARG_NONE,   0, NA_T },
@@ -357,11 +357,11 @@ const command_spec cmd_array[] =
     { /* CLALLb */     docmd_clall,       "CLALL",               0x44, 0x00, 0x00, 0x00,  5, ARG_NONE,   0, NA_T },
     { /* PGMSLVi */    docmd_pgmslvi,     "P\307\315SLV",        0x44, 0x00, 0x00, 0x00,  6, ARG_PRGM,   0, NA_T },
     { /* PGMINTi */    docmd_pgminti,     "P\307\315INT",        0x44, 0x00, 0x00, 0x00,  6, ARG_PRGM,   0, NA_T },
-    { /* VMSTO2 */     docmd_vmsto2,      "STO",                 0x44, 0x00, 0x00, 0x00,  3, ARG_OTHER,  1, ALLT }, // seq?
+    { /* VMSTO2 */     docmd_vmsto2,      "STO",                 0x44, 0x00, 0x00, 0x00,  3, ARG_OTHER,  1, ALLT },
     { /* VMSOLVE */    docmd_vmsolve,     "SOLVE",               0x44, 0x00, 0x00, 0x00,  5, ARG_OTHER,  0, NA_T },
     { /* MAX */        docmd_max,         "[MAX]",               0x00, 0x00, 0xa6, 0xeb,  5, ARG_NONE,   0, NA_T },
     { /* MIN */        docmd_min,         "[MIN]",               0x00, 0x00, 0xa6, 0xea,  5, ARG_NONE,   0, NA_T },
-    { /* FIND */       docmd_find,        "[F\311ND]",           0x00, 0x00, 0xa6, 0xec,  6, ARG_NONE,   1, 0x13 },
+    { /* FIND */       docmd_find,        "[F\311ND]",           0x00, 0x00, 0xa6, 0xec,  6, ARG_NONE,   1, FUNC },
     { /* XROM */       docmd_xrom,        "XROM",                0x24, 0x00, 0x00, 0x00,  4, ARG_OTHER,  0, NA_T },
 
     /* Here endeth the original Free42 function table. */

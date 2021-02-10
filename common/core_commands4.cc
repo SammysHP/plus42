@@ -300,7 +300,7 @@ int docmd_posa(arg_struct *arg) {
                 pos = i;
                 break;
             }
-    } else if (stack[sp]->type == TYPE_STRING) {
+    } else {
         vartype_string *s = (vartype_string *) stack[sp];
         if (s->length != 0) {
             int i, j;
@@ -313,8 +313,7 @@ int docmd_posa(arg_struct *arg) {
                 notfound:;
             }
         }
-    } else
-        return ERR_INVALID_TYPE;
+    }
     v = new_real(pos);
     if (v == NULL)
         return ERR_INSUFFICIENT_MEMORY;

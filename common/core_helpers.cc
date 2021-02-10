@@ -1339,6 +1339,17 @@ int vartype2string(const vartype *v, char *buf, int buflen, int max_mant_digits)
             return chars_so_far;
         }
 
+        case TYPE_LIST: {
+            vartype_list *list = (vartype_list *) v;
+            int i;
+            int chars_so_far = 0;
+            string2buf(buf, buflen, &chars_so_far, "{ ", 2);
+            i = int2string(list->size, buf + chars_so_far, buflen - chars_so_far);
+            chars_so_far += i;
+            string2buf(buf, buflen, &chars_so_far, "-Elem List }", 12);
+            return chars_so_far;
+        }
+
         default: {
             const char *msg = "UnsuppVarType";
             int msglen = 13;

@@ -1749,6 +1749,8 @@ static void draw_catalog() {
                 case TYPE_REALMATRIX:
                 case TYPE_COMPLEXMATRIX:
                     if (show_mat) break; else continue;
+                default:
+                    continue;
             }
             j++;
             if (j / 6 == catalogmenu_row[catindex]) {

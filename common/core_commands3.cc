@@ -596,14 +596,6 @@ int docmd_dim(arg_struct *arg) {
     if (arg->type != ARGTYPE_STR)
         return ERR_INVALID_TYPE;
 
-    if (stack[sp]->type == TYPE_STRING)
-        return ERR_ALPHA_DATA_IS_INVALID;
-    if (stack[sp]->type != TYPE_REAL)
-        return ERR_INVALID_TYPE;
-    if (stack[sp - 1]->type == TYPE_STRING)
-        return ERR_ALPHA_DATA_IS_INVALID;
-    if (stack[sp - 1]->type != TYPE_REAL)
-        return ERR_INVALID_TYPE;
     x = ((vartype_real *) stack[sp])->x;
     if (x == 0)
         return ERR_DIMENSION_ERROR;
@@ -1142,15 +1134,6 @@ int docmd_grow(arg_struct *arg) {
 }
 
 static int hms_add_or_sub(bool add) {
-    if (stack[sp]->type == TYPE_STRING)
-        return ERR_ALPHA_DATA_IS_INVALID;
-    if (stack[sp]->type != TYPE_REAL)
-        return ERR_INVALID_TYPE;
-    if (stack[sp - 1]->type == TYPE_STRING)
-        return ERR_ALPHA_DATA_IS_INVALID;
-    if (stack[sp - 1]->type != TYPE_REAL)
-        return ERR_INVALID_TYPE;
-
     phloat x = ((vartype_real *) stack[sp])->x;
     phloat y = ((vartype_real *) stack[sp - 1])->x;
     phloat r;

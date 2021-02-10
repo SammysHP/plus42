@@ -820,10 +820,10 @@ int docmd_y_pow_x(arg_struct *arg) {
 
     if (stack[sp]->type == TYPE_STRING || stack[sp - 1]->type == TYPE_STRING)
         return ERR_ALPHA_DATA_IS_INVALID;
-    else if (stack[sp]->type == TYPE_REALMATRIX
-            || stack[sp]->type == TYPE_COMPLEXMATRIX
-            || stack[sp - 1]->type == TYPE_REALMATRIX
-            || stack[sp - 1]->type == TYPE_COMPLEXMATRIX)
+    else if (stack[sp]->type != TYPE_REAL
+            && stack[sp]->type != TYPE_COMPLEX
+            || stack[sp - 1]->type != TYPE_REAL
+            && stack[sp - 1]->type != TYPE_COMPLEX)
         return ERR_INVALID_TYPE;
     else if (stack[sp]->type == TYPE_REAL) {
         phloat x = ((vartype_real *) stack[sp])->x;
@@ -1121,10 +1121,6 @@ int docmd_anum(arg_struct *arg) {
 }
 
 int docmd_x_swap_f(arg_struct *arg) {
-    if (stack[sp]->type == TYPE_STRING)
-        return ERR_ALPHA_DATA_IS_INVALID;
-    if (stack[sp]->type != TYPE_REAL)
-        return ERR_INVALID_DATA;
     phloat x = ((vartype_real *) stack[sp])->x;
     if (x < 0)
         x = -x;

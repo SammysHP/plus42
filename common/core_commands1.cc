@@ -787,27 +787,21 @@ int docmd_clall(arg_struct *arg) {
 }
 
 int docmd_percent(arg_struct *arg) {
-    if (stack[sp]->type == TYPE_STRING || stack[sp - 1]->type == TYPE_STRING)
-        return ERR_ALPHA_DATA_IS_INVALID;
-    if (stack[sp]->type != TYPE_REAL || stack[sp - 1]->type != TYPE_REAL)
-        return ERR_INVALID_TYPE;
-    else {
-        vartype_real *x = (vartype_real *) stack[sp];
-        vartype_real *y = (vartype_real *) stack[sp - 1];
-        phloat res = x->x * y->x;
-        if (p_isinf(res)) {
-            /* Try different evaluation order */
-            res = (x->x / 100.0) * y->x;
-            if (p_isinf(res))
-                return ERR_OUT_OF_RANGE;
-        } else
-            res /= 100.0;
-        vartype *new_x = new_real(res);
-        if (new_x == NULL)
-            return ERR_INSUFFICIENT_MEMORY;
-        unary_result(new_x);
-        return ERR_NONE;
-    }
+    vartype_real *x = (vartype_real *) stack[sp];
+    vartype_real *y = (vartype_real *) stack[sp - 1];
+    phloat res = x->x * y->x;
+    if (p_isinf(res)) {
+        /* Try different evaluation order */
+        res = (x->x / 100.0) * y->x;
+        if (p_isinf(res))
+            return ERR_OUT_OF_RANGE;
+    } else
+        res /= 100.0;
+    vartype *new_x = new_real(res);
+    if (new_x == NULL)
+        return ERR_INSUFFICIENT_MEMORY;
+    unary_result(new_x);
+    return ERR_NONE;
 }
 
 int docmd_pi(arg_struct *arg) {
@@ -1340,31 +1334,22 @@ int docmd_sign(arg_struct *arg) {
 }
 
 int docmd_mod(arg_struct *arg) {
-    if (stack[sp]->type == TYPE_REAL && stack[sp - 1]->type == TYPE_REAL) {
-        phloat x = ((vartype_real *) stack[sp])->x;
-        phloat y = ((vartype_real *) stack[sp - 1])->x;
-        phloat res;
-        vartype *v;
-        if (x == 0)
-            res = y;
-        else if (y == 0)
-            res = 0;
-        else {
-            res = fmod(y, x);
-            if (res != 0 && ((x > 0 && y < 0) || (x < 0 && y > 0)))
-                res += x;
-        }
-        v = new_real(res);
-        if (v == NULL)
-            return ERR_INSUFFICIENT_MEMORY;
-        binary_result(v);
-        return ERR_NONE;
-    } else if (stack[sp]->type == TYPE_STRING)
-        return ERR_ALPHA_DATA_IS_INVALID;
-    else if (stack[sp]->type != TYPE_REAL)
-        return ERR_INVALID_TYPE;
-    else if (stack[sp - 1]->type == TYPE_STRING)
-        return ERR_ALPHA_DATA_IS_INVALID;
-    else
-        return ERR_INVALID_TYPE;
+    phloat x = ((vartype_real *) stack[sp])->x;
+    phloat y = ((vartype_real *) stack[sp - 1])->x;
+    phloat res;
+    vartype *v;
+    if (x == 0)
+        res = y;
+    else if (y == 0)
+        res = 0;
+    else {
+        res = fmod(y, x);
+        if (res != 0 && ((x > 0 && y < 0) || (x < 0 && y > 0)))
+            res += x;
+    }
+    v = new_real(res);
+    if (v == NULL)
+        return ERR_INSUFFICIENT_MEMORY;
+    binary_result(v);
+    return ERR_NONE;
 }

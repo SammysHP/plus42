@@ -27,25 +27,24 @@
 #include "core_commands7.h"
 
 
-/* rttypes special cases for functions that accept everything.
- * and functions that don't use arguments from the stack and
- * therefore don't care.
+/* rttypes special cases */
+
+/* ALLT means all types; not just all the types that exist now, but also all
+ * types that might be added in the future.
+ * For things like ENTER, CLX, PRX, etc.
  */
 #define ALLT 0xff
-#define FUNC 0xff
-#define NA_T 0x00
 
-// TODO: Check the "seq?" comments. These are cases where it looks like the
-// type check in handle() may be undesirable, because using it would cause
-// certain conditions where multiple errors apply to generate the wrong
-// message. Maybe that is strictly cosmetic, but even so, undesirable,
-// we're going the extra mile to make the exact same messsages appear an on
-// the 42S everywhere else, so we should do that here as well.
-// If my reservations are correct, these cases should have a special tag,
-// FUNC or something, meaning the function does care but performs its own
-// checking, #defined as 0xff. Note that this is distinct from the case
-// where the function may perform *additional* checking, which we never
-// indicate here.
+/* Checking performed by the function, maybe because it's complicated,
+ * maybe because HP-42S compatibilty requires performing other checks before
+ * the parameter type checks.
+ */
+#define FUNC 0xff
+
+/* Dummy value, to be used only when argcount = 0. Only used for actual
+ * existing functions; for unimplemented functions, leave it at 0x00.
+ */
+#define NA_T 0x00
 
 const command_spec cmd_array[] =
 {
@@ -74,7 +73,7 @@ const command_spec cmd_array[] =
     { /* SQRT */       docmd_sqrt,        "SQRT",                0x00, 0x00, 0x00, 0x52,  4, ARG_NONE,   1, 0x0f },
     { /* SQUARE */     docmd_square,      "X^2",                 0x00, 0x00, 0x00, 0x51,  3, ARG_NONE,   1, 0x0f },
     { /* INV */        docmd_inv,         "1/X",                 0x00, 0x00, 0x00, 0x60,  3, ARG_NONE,   1, 0x0f },
-    { /* Y_POW_X */    docmd_y_pow_x,     "Y^X",                 0x00, 0x00, 0x00, 0x53,  3, ARG_NONE,   2, 0x03 },
+    { /* Y_POW_X */    docmd_y_pow_x,     "Y^X",                 0x00, 0x00, 0x00, 0x53,  3, ARG_NONE,   2, FUNC },
     { /* PERCENT */    docmd_percent,     "%",                   0x00, 0x00, 0x00, 0x4c,  1, ARG_NONE,   2, 0x01 },
     { /* PI */         docmd_pi,          "PI",                  0x00, 0x00, 0x00, 0x72,  2, ARG_NONE,   0, NA_T },
     { /* COMPLEX */    docmd_complex,     "C\317\315PL\305X",    0x00, 0x00, 0xa0, 0x72,  7, ARG_NONE,  -1, 0x00 },
@@ -293,7 +292,7 @@ const command_spec cmd_array[] =
     { /* FCSTX */      docmd_fcstx,       "FCSTX",               0x00, 0x00, 0xa0, 0xa8,  5, ARG_NONE,   1, 0x05 }, // seq?
     { /* FCSTY */      docmd_fcsty,       "FCSTY",               0x00, 0x00, 0xa0, 0xa9,  5, ARG_NONE,   1, 0x05 }, // seq?
     { /* FNRM */       docmd_fnrm,        "FNRM",                0x00, 0x00, 0xa6, 0xcf,  4, ARG_NONE,   1, 0x0c },
-    { /* GETM */       docmd_getm,        "GETM",                0x00, 0x00, 0xa6, 0xe8,  4, ARG_NONE,   2, 0x01 }, // seq?
+    { /* GETM */       docmd_getm,        "GETM",                0x00, 0x00, 0xa6, 0xe8,  4, ARG_NONE,   2, FUNC },
     { /* GROW */       docmd_grow,        "GROW",                0x00, 0x00, 0xa6, 0xe3,  4, ARG_NONE,   0, NA_T },
     { /* HEXM */       docmd_hexm,        "HEXM",                0x00, 0x00, 0xa0, 0xe2,  4, ARG_NONE,   0, NA_T },
     { /* HMSADD */     docmd_hmsadd,      "HMS+",                0x00, 0x00, 0x00, 0x49,  4, ARG_NONE,   2, 0x01 },
@@ -325,13 +324,13 @@ const command_spec cmd_array[] =
     { /* RNRM */       docmd_rnrm,        "RNRM",                0x00, 0x00, 0xa6, 0xed,  4, ARG_NONE,   1, 0x0c },
     { /* ROTXY */      docmd_rotxy,       "ROTXY",               0x00, 0x00, 0xa5, 0x8b,  5, ARG_NONE,   2, 0x01 },
     { /* RSUM */       docmd_rsum,        "RSUM",                0x00, 0x00, 0xa6, 0xd0,  4, ARG_NONE,   0, NA_T },
-    { /* SWAP_R */     docmd_swap_r,      "R<>R",                0x00, 0x00, 0xa6, 0xd1,  4, ARG_NONE,   2, 0x01 },
+    { /* SWAP_R */     docmd_swap_r,      "R<>R",                0x00, 0x00, 0xa6, 0xd1,  4, ARG_NONE,   2, FUNC },
     { /* SDEV */       docmd_sdev,        "SDEV",                0x00, 0x00, 0x00, 0x7d,  4, ARG_NONE,   0, NA_T },
     { /* SINH */       docmd_sinh,        "SINH",                0x00, 0x00, 0xa0, 0x61,  4, ARG_NONE,   1, 0x0f },
     { /* SLOPE */      docmd_slope,       "SLOPE",               0x00, 0x00, 0xa0, 0xa4,  5, ARG_NONE,   0, NA_T },
-    { /* SOLVE */      docmd_solve,       "SOLVE",               0x00, 0xb7, 0xf2, 0xeb,  5, ARG_RVAR,   1, 0x01 }, // seq?
+    { /* SOLVE */      docmd_solve,       "SOLVE",               0x00, 0xb7, 0xf2, 0xeb,  5, ARG_RVAR,   1, FUNC },
     { /* STOEL */      docmd_stoel,       "STOEL",               0x00, 0x00, 0xa6, 0xd6,  5, ARG_NONE,   1, 0x13 }, // seq?
-    { /* STOIJ */      docmd_stoij,       "STOIJ",               0x00, 0x00, 0xa6, 0xd8,  5, ARG_NONE,   2, 0x01 }, // seq?
+    { /* STOIJ */      docmd_stoij,       "STOIJ",               0x00, 0x00, 0xa6, 0xd8,  5, ARG_NONE,   2, FUNC },
     { /* SUM */        docmd_sum,         "SUM",                 0x00, 0x00, 0xa0, 0xa5,  3, ARG_NONE,   0, NA_T },
     { /* TANH */       docmd_tanh,        "TANH",                0x00, 0x00, 0xa0, 0x63,  4, ARG_NONE,   1, 0x0f },
     { /* TRANS */      docmd_trans,       "TRANS",               0x00, 0x00, 0xa6, 0xc9,  5, ARG_NONE,   1, 0x0c },

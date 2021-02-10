@@ -199,39 +199,30 @@ int docmd_comb(arg_struct *arg) {
 }
 
 int docmd_perm(arg_struct *arg) {
-    if (stack[sp]->type == TYPE_REAL && stack[sp - 1]->type == TYPE_REAL) {
-        phloat y = ((vartype_real *) stack[sp - 1])->x;
-        phloat x = ((vartype_real *) stack[sp])->x;
-        phloat r = 1;
-        vartype *v;
-        if (x < 0 || x != floor(x) || x == x - 1 || y < 0 || y != floor(y))
-            return ERR_INVALID_DATA;
-        if (y < x)
-            return ERR_INVALID_DATA;
-        while (x > 0) {
-            r *= y--;
-            if (p_isinf(r)) {
-                if (flags.f.range_error_ignore) {
-                    r = POS_HUGE_PHLOAT;
-                    break;
-                } else
-                    return ERR_OUT_OF_RANGE;
-            }
-            x--;
+    phloat y = ((vartype_real *) stack[sp - 1])->x;
+    phloat x = ((vartype_real *) stack[sp])->x;
+    phloat r = 1;
+    vartype *v;
+    if (x < 0 || x != floor(x) || x == x - 1 || y < 0 || y != floor(y))
+        return ERR_INVALID_DATA;
+    if (y < x)
+        return ERR_INVALID_DATA;
+    while (x > 0) {
+        r *= y--;
+        if (p_isinf(r)) {
+            if (flags.f.range_error_ignore) {
+                r = POS_HUGE_PHLOAT;
+                break;
+            } else
+                return ERR_OUT_OF_RANGE;
         }
-        v = new_real(r);
-        if (v == NULL)
-            return ERR_INSUFFICIENT_MEMORY;
-        binary_result(v);
-        return ERR_NONE;
-    } else if (stack[sp]->type == TYPE_STRING)
-        return ERR_ALPHA_DATA_IS_INVALID;
-    else if (stack[sp]->type != TYPE_REAL)
-        return ERR_INVALID_TYPE;
-    else if (stack[sp - 1]->type == TYPE_STRING)
-        return ERR_ALPHA_DATA_IS_INVALID;
-    else
-        return ERR_INVALID_TYPE;
+        x--;
+    }
+    v = new_real(r);
+    if (v == NULL)
+        return ERR_INSUFFICIENT_MEMORY;
+    binary_result(v);
+    return ERR_NONE;
 }
 
 static int mappable_fact(phloat x, phloat *y) {
@@ -300,67 +291,62 @@ int docmd_ran(arg_struct *arg) {
 }
 
 int docmd_seed(arg_struct *arg) {
-    if (stack[sp]->type == TYPE_REAL) {
-        phloat x = ((vartype_real *) stack[sp])->x;
-        if (x == 0) {
-            int8 s = shell_random_seed();
-            if (s < 0)
-                s = -s;
-            s %= 100000000000000LL;
-            s = s * 10 + 1;
-            random_number_high = s / 100000000LL;
-            random_number_low = s % 100000000LL;
-            return ERR_NONE;
-        }
-        if (x < 0)
-            x = -x;
-        #ifdef BCD_MATH
-            const phloat e12(1000000000000LL);
-            if (x >= 1) {
-                int exp = to_int(floor(log10(x)));
-                Phloat mant = floor(x * pow(Phloat(10), 11 - exp) + 0.5);
-                if (mant >= Phloat(1000000000000LL)) {
-                    mant /= 10;
-                    exp++;
-                }
-                x = (mant + ((exp + 1) % 100) / Phloat(100) + Phloat(1, 1000)) / e12;
-            } else if (x >= Phloat(1LL, 1000000000000LL)) {
-                x = floor(x * e12) / e12 + Phloat(1LL, 1000000000000000LL);
-            } else {
-                int exp = to_int(floor(log10(x) + 10000));
-                if (exp > 9984)
-                    exp = 9984;
-                x = ((exp + 16) % 100) / Phloat(100000000000000LL) + Phloat(1LL, 1000000000000000LL);
-            }
-            random_number_high = to_int8(x * Phloat(10000000));
-            random_number_low = to_int8(fmod(x * Phloat(1000000000000000LL), Phloat(100000000)));
-        #else
-            if (x >= 1) {
-                int exp = (int) floor(log10(x));
-                int8 mant = (int8) floor(x * pow(10.0, 11 - exp) + 0.5);
-                if (mant >= 1000000000000LL) {
-                    mant /= 10;
-                    exp++;
-                }
-                random_number_high = mant / 100000;
-                random_number_low = (mant % 100000) * 1000L + (exp + 1) % 100 * 10 + 1;
-            } else if (x >= 1e-12) {
-                int8 t = (int8) floor(x * 1e12);
-                random_number_high = t / 100000;
-                random_number_low = (t % 100000) * 1000L + 1;
-            } else {
-                int exp = (int) floor(log10(x) + 1000);
-                if (exp > 984)
-                    exp = 984;
-                random_number_high = 0;
-                random_number_low = (exp + 16) % 100 * 10 + 1;
-            }
-        #endif
+    phloat x = ((vartype_real *) stack[sp])->x;
+    if (x == 0) {
+        int8 s = shell_random_seed();
+        if (s < 0)
+            s = -s;
+        s %= 100000000000000LL;
+        s = s * 10 + 1;
+        random_number_high = s / 100000000LL;
+        random_number_low = s % 100000000LL;
         return ERR_NONE;
-    } else if (arg->type == TYPE_STRING)
-        return ERR_ALPHA_DATA_IS_INVALID;
-    else
-        return ERR_INVALID_TYPE;
+    }
+    if (x < 0)
+        x = -x;
+    #ifdef BCD_MATH
+        const phloat e12(1000000000000LL);
+        if (x >= 1) {
+            int exp = to_int(floor(log10(x)));
+            Phloat mant = floor(x * pow(Phloat(10), 11 - exp) + 0.5);
+            if (mant >= Phloat(1000000000000LL)) {
+                mant /= 10;
+                exp++;
+            }
+            x = (mant + ((exp + 1) % 100) / Phloat(100) + Phloat(1, 1000)) / e12;
+        } else if (x >= Phloat(1LL, 1000000000000LL)) {
+            x = floor(x * e12) / e12 + Phloat(1LL, 1000000000000000LL);
+        } else {
+            int exp = to_int(floor(log10(x) + 10000));
+            if (exp > 9984)
+                exp = 9984;
+            x = ((exp + 16) % 100) / Phloat(100000000000000LL) + Phloat(1LL, 1000000000000000LL);
+        }
+        random_number_high = to_int8(x * Phloat(10000000));
+        random_number_low = to_int8(fmod(x * Phloat(1000000000000000LL), Phloat(100000000)));
+    #else
+        if (x >= 1) {
+            int exp = (int) floor(log10(x));
+            int8 mant = (int8) floor(x * pow(10.0, 11 - exp) + 0.5);
+            if (mant >= 1000000000000LL) {
+                mant /= 10;
+                exp++;
+            }
+            random_number_high = mant / 100000;
+            random_number_low = (mant % 100000) * 1000L + (exp + 1) % 100 * 10 + 1;
+        } else if (x >= 1e-12) {
+            int8 t = (int8) floor(x * 1e12);
+            random_number_high = t / 100000;
+            random_number_low = (t % 100000) * 1000L + 1;
+        } else {
+            int exp = (int) floor(log10(x) + 1000);
+            if (exp > 984)
+                exp = 984;
+            random_number_high = 0;
+            random_number_low = (exp + 16) % 100 * 10 + 1;
+        }
+    #endif
+    return ERR_NONE;
 }
 
 int docmd_lbl(arg_struct *arg) {
@@ -964,50 +950,26 @@ int docmd_menu(arg_struct *arg) {
 }
 
 int docmd_x_eq_0(arg_struct *arg) {
-    if (stack[sp]->type == TYPE_STRING)
-        return ERR_ALPHA_DATA_IS_INVALID;
-    else if (stack[sp]->type != TYPE_REAL)
-        return ERR_INVALID_TYPE;
     return ((vartype_real *) stack[sp])->x == 0 ? ERR_YES : ERR_NO;
 }
 
 int docmd_x_ne_0(arg_struct *arg) {
-    if (stack[sp]->type == TYPE_STRING)
-        return ERR_ALPHA_DATA_IS_INVALID;
-    else if (stack[sp]->type != TYPE_REAL)
-        return ERR_INVALID_TYPE;
     return ((vartype_real *) stack[sp])->x != 0 ? ERR_YES : ERR_NO;
 }
 
 int docmd_x_lt_0(arg_struct *arg) {
-    if (stack[sp]->type == TYPE_STRING)
-        return ERR_ALPHA_DATA_IS_INVALID;
-    else if (stack[sp]->type != TYPE_REAL)
-        return ERR_INVALID_TYPE;
     return ((vartype_real *) stack[sp])->x < 0 ? ERR_YES : ERR_NO;
 }
 
 int docmd_x_gt_0(arg_struct *arg) {
-    if (stack[sp]->type == TYPE_STRING)
-        return ERR_ALPHA_DATA_IS_INVALID;
-    else if (stack[sp]->type != TYPE_REAL)
-        return ERR_INVALID_TYPE;
     return ((vartype_real *) stack[sp])->x > 0 ? ERR_YES : ERR_NO;
 }
 
 int docmd_x_le_0(arg_struct *arg) {
-    if (stack[sp]->type == TYPE_STRING)
-        return ERR_ALPHA_DATA_IS_INVALID;
-    else if (stack[sp]->type != TYPE_REAL)
-        return ERR_INVALID_TYPE;
     return ((vartype_real *) stack[sp])->x <= 0 ? ERR_YES : ERR_NO;
 }
 
 int docmd_x_ge_0(arg_struct *arg) {
-    if (stack[sp]->type == TYPE_STRING)
-        return ERR_ALPHA_DATA_IS_INVALID;
-    else if (stack[sp]->type != TYPE_REAL)
-        return ERR_INVALID_TYPE;
     return ((vartype_real *) stack[sp])->x >= 0 ? ERR_YES : ERR_NO;
 }
 
@@ -1071,7 +1033,7 @@ int docmd_x_eq_y(arg_struct *arg) {
                 return ERR_NO;
         }
         default:
-            /* Can't happen */
+            /* Looks like someone added a type that we're not handling yet! */
             return ERR_INTERNAL_ERROR;
     }
 }
@@ -1089,79 +1051,31 @@ int docmd_x_ne_y(arg_struct *arg) {
 }
 
 int docmd_x_lt_y(arg_struct *arg) {
-    switch (stack[sp]->type) {
-        case TYPE_REAL: {
-            if (stack[sp - 1]->type == TYPE_STRING)
-                return ERR_ALPHA_DATA_IS_INVALID;
-            else if (stack[sp - 1]->type != TYPE_REAL)
-                return ERR_INVALID_TYPE;
-            if (((vartype_real *) stack[sp])->x < ((vartype_real *) stack[sp - 1])->x)
-                return ERR_YES;
-            else
-                return ERR_NO;
-        }
-        case TYPE_STRING:
-            return ERR_ALPHA_DATA_IS_INVALID;
-        default:
-            return ERR_INVALID_TYPE;
-    }
+    if (((vartype_real *) stack[sp])->x < ((vartype_real *) stack[sp - 1])->x)
+        return ERR_YES;
+    else
+        return ERR_NO;
 }
 
 int docmd_x_gt_y(arg_struct *arg) {
-    switch (stack[sp]->type) {
-        case TYPE_REAL: {
-            if (stack[sp - 1]->type == TYPE_STRING)
-                return ERR_ALPHA_DATA_IS_INVALID;
-            else if (stack[sp - 1]->type != TYPE_REAL)
-                return ERR_INVALID_TYPE;
-            if (((vartype_real *) stack[sp])->x > ((vartype_real *) stack[sp - 1])->x)
-                return ERR_YES;
-            else
-                return ERR_NO;
-        }
-        case TYPE_STRING:
-            return ERR_ALPHA_DATA_IS_INVALID;
-        default:
-            return ERR_INVALID_TYPE;
-    }
+    if (((vartype_real *) stack[sp])->x > ((vartype_real *) stack[sp - 1])->x)
+        return ERR_YES;
+    else
+        return ERR_NO;
 }
 
 int docmd_x_le_y(arg_struct *arg) {
-    switch (stack[sp]->type) {
-        case TYPE_REAL: {
-            if (stack[sp - 1]->type == TYPE_STRING)
-                return ERR_ALPHA_DATA_IS_INVALID;
-            else if (stack[sp - 1]->type != TYPE_REAL)
-                return ERR_INVALID_TYPE;
-            if (((vartype_real *) stack[sp])->x <= ((vartype_real *) stack[sp - 1])->x)
-                return ERR_YES;
-            else
-                return ERR_NO;
-        }
-        case TYPE_STRING:
-            return ERR_ALPHA_DATA_IS_INVALID;
-        default:
-            return ERR_INVALID_TYPE;
-    }
+    if (((vartype_real *) stack[sp])->x <= ((vartype_real *) stack[sp - 1])->x)
+        return ERR_YES;
+    else
+        return ERR_NO;
 }
 
 int docmd_x_ge_y(arg_struct *arg) {
-    switch (stack[sp]->type) {
-        case TYPE_REAL: {
-            if (stack[sp - 1]->type == TYPE_STRING)
-                return ERR_ALPHA_DATA_IS_INVALID;
-            else if (stack[sp - 1]->type != TYPE_REAL)
-                return ERR_INVALID_TYPE;
-            if (((vartype_real *) stack[sp])->x >= ((vartype_real *) stack[sp - 1])->x)
-                return ERR_YES;
-            else
-                return ERR_NO;
-        }
-        case TYPE_STRING:
-            return ERR_ALPHA_DATA_IS_INVALID;
-        default:
-            return ERR_INVALID_TYPE;
-    }
+    if (((vartype_real *) stack[sp])->x >= ((vartype_real *) stack[sp - 1])->x)
+        return ERR_YES;
+    else
+        return ERR_NO;
 }
 
 typedef struct {
@@ -1553,19 +1467,14 @@ int docmd_prlcd(arg_struct *arg) {
 }
 
 int docmd_delay(arg_struct *arg) {
-    if (stack[sp]->type == TYPE_REAL) {
-        phloat x = ((vartype_real *) stack[sp])->x;
-        if (x < 0)
-            x = -x;
-        if (x >= 1.95)
-            return ERR_INVALID_DATA;
-        else
-            /* We don't actually use the delay value... */
-            return ERR_NONE;
-    } else if (stack[sp]->type == TYPE_STRING)
-        return ERR_ALPHA_DATA_IS_INVALID;
+    phloat x = ((vartype_real *) stack[sp])->x;
+    if (x < 0)
+        x = -x;
+    if (x >= 1.95)
+        return ERR_INVALID_DATA;
     else
-        return ERR_INVALID_TYPE;
+        /* We don't actually use the delay value... */
+        return ERR_NONE;
 }
 
 int docmd_pon(arg_struct *arg) {
@@ -1733,15 +1642,6 @@ int docmd_stop(arg_struct *arg) {
 
 int docmd_newmat(arg_struct *arg) {
     vartype *m;
-
-    if (stack[sp]->type == TYPE_STRING)
-        return ERR_ALPHA_DATA_IS_INVALID;
-    else if (stack[sp]->type != TYPE_REAL)
-        return ERR_INVALID_TYPE;
-    if (stack[sp - 1]->type == TYPE_STRING)
-        return ERR_ALPHA_DATA_IS_INVALID;
-    else if (stack[sp - 1]->type != TYPE_REAL)
-        return ERR_INVALID_TYPE;
 
     phloat x = ((vartype_real *) stack[sp])->x;
     if (x <= -2147483648.0 || x >= 2147483648.0)

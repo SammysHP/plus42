@@ -525,16 +525,6 @@ int docmd_date(arg_struct *arg) {
 }
 
 int docmd_date_plus(arg_struct *arg) {
-    // TODO: Accept real matrices as well?
-    if (stack[sp]->type == TYPE_STRING)
-        return ERR_ALPHA_DATA_IS_INVALID;
-    if (stack[sp]->type != TYPE_REAL)
-        return ERR_INVALID_TYPE;
-    if (stack[sp - 1]->type == TYPE_STRING)
-        return ERR_ALPHA_DATA_IS_INVALID;
-    if (stack[sp - 1]->type != TYPE_REAL)
-        return ERR_INVALID_TYPE;
-
     phloat date = ((vartype_real *) stack[sp - 1])->x;
     if (date < 0 || date > (flags.f.ymd ? 10000 : 100))
         return ERR_INVALID_DATA;
@@ -563,16 +553,6 @@ int docmd_date_plus(arg_struct *arg) {
 }
 
 int docmd_ddays(arg_struct *arg) {
-    // TODO: Accept real matrices as well?
-    if (stack[sp]->type == TYPE_STRING)
-        return ERR_ALPHA_DATA_IS_INVALID;
-    if (stack[sp]->type != TYPE_REAL)
-        return ERR_INVALID_TYPE;
-    if (stack[sp - 1]->type == TYPE_STRING)
-        return ERR_ALPHA_DATA_IS_INVALID;
-    if (stack[sp - 1]->type != TYPE_REAL)
-        return ERR_INVALID_TYPE;
-
     phloat date1 = ((vartype_real *) stack[sp - 1])->x;
     if (date1 < 0 || date1 > (flags.f.ymd ? 10000 : 100))
         return ERR_INVALID_DATA;
@@ -607,12 +587,6 @@ int docmd_dmy(arg_struct *arg) {
 }
 
 int docmd_dow(arg_struct *arg) {
-    // TODO: Accept real matrices as well?
-    if (stack[sp]->type == TYPE_STRING)
-        return ERR_ALPHA_DATA_IS_INVALID;
-    if (stack[sp]->type != TYPE_REAL)
-        return ERR_INVALID_TYPE;
-
     phloat x = ((vartype_real *) stack[sp])->x;
     if (x < 0 || x > (flags.f.ymd ? 10000 : 100))
         return ERR_INVALID_DATA;
@@ -831,10 +805,6 @@ int docmd_lasto(arg_struct *arg) {
 }
 
 int docmd_wsize(arg_struct *arg) {
-    if (stack[sp]->type == TYPE_STRING)
-        return ERR_ALPHA_DATA_IS_INVALID;
-    if (stack[sp]->type != TYPE_REAL)
-        return ERR_INVALID_TYPE;
     phloat x = ((vartype_real *) stack[sp])->x;
 #ifdef BCD_MATH
     if (x >= 65 || x < 1)
@@ -884,14 +854,6 @@ int docmd_nop(arg_struct *arg) {
 //////////////////////////////
 
 int docmd_fma(arg_struct *arg) {
-    if (stack[sp]->type == TYPE_STRING
-            || stack[sp - 1]->type == TYPE_STRING
-            || stack[sp - 2]->type == TYPE_STRING)
-        return ERR_ALPHA_DATA_IS_INVALID;
-    if (stack[sp]->type != TYPE_REAL
-            || stack[sp - 1]->type != TYPE_REAL
-            || stack[sp - 2]->type != TYPE_REAL)
-        return ERR_INVALID_TYPE;
     phloat x = ((vartype_real *) stack[sp])->x;
     phloat y = ((vartype_real *) stack[sp - 1])->x;
     phloat z = ((vartype_real *) stack[sp - 2])->x;

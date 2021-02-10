@@ -106,8 +106,8 @@ int docmd_chs(arg_struct *arg) {
                 cm->array->data[i] = -(cm->array->data[i]);
             break;
         }
-        case TYPE_STRING:
-            return ERR_ALPHA_DATA_IS_INVALID;
+        default:
+            return ERR_INTERNAL_ERROR;
     }
     print_trace();
     return ERR_NONE;
@@ -331,6 +331,9 @@ int docmd_rcl_div(arg_struct *arg) {
     int err = generic_rcl(arg, &temp_v);
     if (err != ERR_NONE)
         return err;
+    err = assert_numeric(temp_v);
+    if (err != ERR_NONE)
+        return err;
     return generic_div(temp_v, stack[sp], docmd_rcl_div_completion);
 }
 
@@ -344,12 +347,18 @@ int docmd_rcl_mul(arg_struct *arg) {
     int err = generic_rcl(arg, &temp_v);
     if (err != ERR_NONE)
         return err;
+    err = assert_numeric(temp_v);
+    if (err != ERR_NONE)
+        return err;
     return generic_mul(temp_v, stack[sp], docmd_rcl_mul_completion);
 }
 
 int docmd_rcl_sub(arg_struct *arg) {
     vartype *v, *w;
     int err = generic_rcl(arg, &v);
+    if (err != ERR_NONE)
+        return err;
+    err = assert_numeric(temp_v);
     if (err != ERR_NONE)
         return err;
     err = generic_sub(v, stack[sp], &w);
@@ -362,6 +371,9 @@ int docmd_rcl_sub(arg_struct *arg) {
 int docmd_rcl_add(arg_struct *arg) {
     vartype *v, *w;
     int err = generic_rcl(arg, &v);
+    if (err != ERR_NONE)
+        return err;
+    err = assert_numeric(temp_v);
     if (err != ERR_NONE)
         return err;
     err = generic_add(v, stack[sp], &w);
@@ -1152,22 +1164,18 @@ static int mappable_rnd_c(phloat xre, phloat xim, phloat *yre, phloat *yim) {
 }
 
 int docmd_rnd(arg_struct *arg) {
-    if (stack[sp]->type == TYPE_STRING)
-        return ERR_ALPHA_DATA_IS_INVALID;
-    else {
-        vartype *v;
-        int err;
-        int digits = 0;
-        if (flags.f.digits_bit3) digits += 8;
-        if (flags.f.digits_bit2) digits += 4;
-        if (flags.f.digits_bit1) digits += 2;
-        if (flags.f.digits_bit0) digits += 1;
-        rnd_multiplier = pow(10.0, digits);
-        err = map_unary(stack[sp], &v, mappable_rnd_r, mappable_rnd_c);
-        if (err == ERR_NONE)
-            unary_result(v);
-        return err;
-    }
+    vartype *v;
+    int err;
+    int digits = 0;
+    if (flags.f.digits_bit3) digits += 8;
+    if (flags.f.digits_bit2) digits += 4;
+    if (flags.f.digits_bit1) digits += 2;
+    if (flags.f.digits_bit0) digits += 1;
+    rnd_multiplier = pow(10.0, digits);
+    err = map_unary(stack[sp], &v, mappable_rnd_r, mappable_rnd_c);
+    if (err == ERR_NONE)
+        unary_result(v);
+    return err;
 }
 
 int docmd_abs(arg_struct *arg) {

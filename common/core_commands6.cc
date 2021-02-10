@@ -73,14 +73,11 @@ static int mappable_sin_c(phloat xre, phloat xim, phloat *yre, phloat *yim) {
 }
 
 int docmd_sin(arg_struct *arg) {
-    if (stack[sp]->type != TYPE_STRING) {
-        vartype *v;
-        int err = map_unary(stack[sp], &v, mappable_sin_r, mappable_sin_c);
-        if (err == ERR_NONE)
-            unary_result(v);
-        return err;
-    } else
-        return ERR_ALPHA_DATA_IS_INVALID;
+    vartype *v;
+    int err = map_unary(stack[sp], &v, mappable_sin_r, mappable_sin_c);
+    if (err == ERR_NONE)
+        unary_result(v);
+    return err;
 }
 
 static int mappable_cos_r(phloat x, phloat *y) {
@@ -135,14 +132,11 @@ static int mappable_cos_c(phloat xre, phloat xim, phloat *yre, phloat *yim) {
 }
 
 int docmd_cos(arg_struct *arg) {
-    if (stack[sp]->type != TYPE_STRING) {
-        vartype *v;
-        int err = map_unary(stack[sp], &v, mappable_cos_r, mappable_cos_c);
-        if (err == ERR_NONE)
-            unary_result(v);
-        return err;
-    } else
-        return ERR_ALPHA_DATA_IS_INVALID;
+    vartype *v;
+    int err = map_unary(stack[sp], &v, mappable_cos_r, mappable_cos_c);
+    if (err == ERR_NONE)
+        unary_result(v);
+    return err;
 }
 
 static int mappable_tan_r(phloat x, phloat *y) {
@@ -205,14 +199,11 @@ static int mappable_tan_c(phloat xre, phloat xim, phloat *yre, phloat *yim) {
 }
 
 int docmd_tan(arg_struct *arg) {
-    if (stack[sp]->type != TYPE_STRING) {
-        vartype *v;
-        int err = map_unary(stack[sp], &v, mappable_tan_r, mappable_tan_c);
-        if (err == ERR_NONE)
-            unary_result(v);
-        return err;
-    } else
-        return ERR_ALPHA_DATA_IS_INVALID;
+    vartype *v;
+    int err = map_unary(stack[sp], &v, mappable_tan_r, mappable_tan_c);
+    if (err == ERR_NONE)
+        unary_result(v);
+    return err;
 }
 
 static int mappable_asin_r(phloat x, phloat *y) {
@@ -241,8 +232,6 @@ static int mappable_asin_c(phloat xre, phloat xim, phloat *yre, phloat *yim) {
 
 int docmd_asin(arg_struct *arg) {
     vartype *v;
-    if (stack[sp]->type == TYPE_STRING)
-        return ERR_ALPHA_DATA_IS_INVALID;
     if (stack[sp]->type == TYPE_REAL) {
         phloat x = ((vartype_real *) stack[sp])->x;
         if (x < -1 || x > 1) {
@@ -300,8 +289,6 @@ static int mappable_acos_c(phloat xre, phloat xim, phloat *yre, phloat *yim) {
 
 int docmd_acos(arg_struct *arg) {
     vartype *v;
-    if (stack[sp]->type == TYPE_STRING)
-        return ERR_ALPHA_DATA_IS_INVALID;
     if (stack[sp]->type == TYPE_REAL) {
         phloat x = ((vartype_real *) stack[sp])->x;
         if (x < -1 || x > 1) {
@@ -356,15 +343,11 @@ static int mappable_atan_c(phloat xre, phloat xim, phloat *yre, phloat *yim) {
 }
 
 int docmd_atan(arg_struct *arg) {
-    if (stack[sp]->type == TYPE_STRING)
-        return ERR_ALPHA_DATA_IS_INVALID;
-    else {
-        vartype *v;
-        int err = map_unary(stack[sp], &v, mappable_atan_r, mappable_atan_c);
-        if (err == ERR_NONE)
-            unary_result(v);
-        return err;
-    }
+    vartype *v;
+    int err = map_unary(stack[sp], &v, mappable_atan_r, mappable_atan_c);
+    if (err == ERR_NONE)
+        unary_result(v);
+    return err;
 }
 
 static int mappable_log_r(phloat x, phloat *y) {
@@ -411,9 +394,7 @@ static int mappable_log_c(phloat xre, phloat xim, phloat *yre, phloat *yim) {
 }
 
 int docmd_log(arg_struct *arg) {
-    if (stack[sp]->type == TYPE_STRING)
-        return ERR_ALPHA_DATA_IS_INVALID;
-    else if (stack[sp]->type == TYPE_REAL) {
+    if (stack[sp]->type == TYPE_REAL) {
         vartype_real *x = (vartype_real *) stack[sp];
         if (x->x == 0)
             return ERR_INVALID_DATA;
@@ -489,15 +470,12 @@ static int mappable_10_pow_x_c(phloat xre, phloat xim, phloat *yre, phloat *yim)
 }
 
 int docmd_10_pow_x(arg_struct *arg) {
-    if (stack[sp]->type != TYPE_STRING) {
-        vartype *v;
-        int err = map_unary(stack[sp], &v, mappable_10_pow_x_r,
-                                       mappable_10_pow_x_c);
-        if (err == ERR_NONE)
-            unary_result(v);
-        return err;
-    } else
-        return ERR_ALPHA_DATA_IS_INVALID;
+    vartype *v;
+    int err = map_unary(stack[sp], &v, mappable_10_pow_x_r,
+                                    mappable_10_pow_x_c);
+    if (err == ERR_NONE)
+        unary_result(v);
+    return err;
 }
 
 static int mappable_ln_r(phloat x, phloat *y) {
@@ -544,9 +522,7 @@ static int mappable_ln_c(phloat xre, phloat xim, phloat *yre, phloat *yim) {
 }
 
 int docmd_ln(arg_struct *arg) {
-    if (stack[sp]->type == TYPE_STRING)
-        return ERR_ALPHA_DATA_IS_INVALID;
-    else if (stack[sp]->type == TYPE_REAL) {
+    if (stack[sp]->type == TYPE_REAL) {
         vartype_real *x = (vartype_real *) stack[sp];
         if (x->x == 0)
             return ERR_INVALID_DATA;
@@ -618,14 +594,11 @@ static int mappable_e_pow_x_c(phloat xre, phloat xim, phloat *yre, phloat *yim){
 }
 
 int docmd_e_pow_x(arg_struct *arg) {
-    if (stack[sp]->type != TYPE_STRING) {
-        vartype *v;
-        int err = map_unary(stack[sp], &v, mappable_e_pow_x_r, mappable_e_pow_x_c);
-        if (err == ERR_NONE)
-            unary_result(v);
-        return err;
-    } else
-        return ERR_ALPHA_DATA_IS_INVALID;
+    vartype *v;
+    int err = map_unary(stack[sp], &v, mappable_e_pow_x_r, mappable_e_pow_x_c);
+    if (err == ERR_NONE)
+        unary_result(v);
+    return err;
 }
 
 static int mappable_sqrt_r(phloat x, phloat *y) {
@@ -685,8 +658,6 @@ int docmd_sqrt(arg_struct *arg) {
             return ERR_INSUFFICIENT_MEMORY;
         unary_result(v);
         return ERR_NONE;
-    } else if (stack[sp]->type == TYPE_STRING) {
-        return ERR_ALPHA_DATA_IS_INVALID;
     } else {
         vartype *v;
         int err = map_unary(stack[sp], &v, mappable_sqrt_r, mappable_sqrt_c);
@@ -732,15 +703,11 @@ static int mappable_square_c(phloat xre, phloat xim, phloat *yre, phloat *yim) {
 }
 
 int docmd_square(arg_struct *arg) {
-    if (stack[sp]->type == TYPE_STRING)
-        return ERR_ALPHA_DATA_IS_INVALID;
-    else {
-        vartype *v;
-        int err = map_unary(stack[sp], &v, mappable_square_r, mappable_square_c);
-        if (err == ERR_NONE)
-            unary_result(v);
-        return err;
-    }
+    vartype *v;
+    int err = map_unary(stack[sp], &v, mappable_square_r, mappable_square_c);
+    if (err == ERR_NONE)
+        unary_result(v);
+    return err;
 }
 
 static int mappable_inv_r(phloat x, phloat *y) {
@@ -802,15 +769,11 @@ static int mappable_inv_c(phloat xre, phloat xim, phloat *yre, phloat *yim) {
 }
 
 int docmd_inv(arg_struct *arg) {
-    if (stack[sp]->type == TYPE_STRING)
-        return ERR_ALPHA_DATA_IS_INVALID;
-    else {
-        vartype *v;
-        int err = map_unary(stack[sp], &v, mappable_inv_r, mappable_inv_c);
-        if (err == ERR_NONE)
-            unary_result(v);
-        return err;
-    }
+    vartype *v;
+    int err = map_unary(stack[sp], &v, mappable_inv_r, mappable_inv_c);
+    if (err == ERR_NONE)
+        unary_result(v);
+    return err;
 }
 
 int docmd_y_pow_x(arg_struct *arg) {

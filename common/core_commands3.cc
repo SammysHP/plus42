@@ -47,9 +47,7 @@ static int mappable_acosh_c(phloat xre, phloat xim, phloat *yre, phloat *yim) {
 
 int docmd_acosh(arg_struct *arg) {
     vartype *v;
-    if (stack[sp]->type == TYPE_STRING)
-        return ERR_ALPHA_DATA_IS_INVALID;
-    else if (stack[sp]->type == TYPE_REAL) {
+    if (stack[sp]->type == TYPE_REAL) {
         phloat x = ((vartype_real *) stack[sp])->x;
         if (x < 1) {
             if (flags.f.real_result_only)
@@ -140,15 +138,11 @@ static int mappable_asinh_c(phloat xre, phloat xim, phloat *yre, phloat *yim) {
 }
 
 int docmd_asinh(arg_struct *arg) {
-    if (stack[sp]->type == TYPE_STRING)
-        return ERR_ALPHA_DATA_IS_INVALID;
-    else {
-        vartype *v;
-        int err = map_unary(stack[sp], &v, mappable_asinh_r, mappable_asinh_c);
-        if (err == ERR_NONE)
-            unary_result(v);
-        return err;
-    }
+    vartype *v;
+    int err = map_unary(stack[sp], &v, mappable_asinh_r, mappable_asinh_c);
+    if (err == ERR_NONE)
+        unary_result(v);
+    return err;
 }
 
 static int mappable_atanh_r(phloat x, phloat *y) {
@@ -166,9 +160,7 @@ static int mappable_atanh_r(phloat x, phloat *y) {
 int docmd_atanh(arg_struct *arg) {
     vartype *v;
     int err;
-    if (stack[sp]->type == TYPE_STRING)
-        return ERR_ALPHA_DATA_IS_INVALID;
-    else if (stack[sp]->type == TYPE_REAL) {
+    if (stack[sp]->type == TYPE_REAL) {
         phloat x = ((vartype_real *) stack[sp])->x;
         if (x == 1 || x == -1)
             return ERR_INVALID_DATA;
@@ -258,14 +250,11 @@ static int mappable_cosh_c(phloat xre, phloat xim, phloat *yre, phloat *yim) {
 }
 
 int docmd_cosh(arg_struct *arg) {
-    if (stack[sp]->type != TYPE_STRING) {
-        vartype *v;
-        int err = map_unary(stack[sp], &v, mappable_cosh_r, mappable_cosh_c);
-        if (err == ERR_NONE)
-            unary_result(v);
-        return err;
-    } else
-        return ERR_ALPHA_DATA_IS_INVALID;
+    vartype *v;
+    int err = map_unary(stack[sp], &v, mappable_cosh_r, mappable_cosh_c);
+    if (err == ERR_NONE)
+        unary_result(v);
+    return err;
 }
 
 int docmd_cross(arg_struct *arg) {

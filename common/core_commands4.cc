@@ -738,14 +738,11 @@ static int mappable_sinh_c(phloat xre, phloat xim, phloat *yre, phloat *yim) {
 }
 
 int docmd_sinh(arg_struct *arg) {
-    if (stack[sp]->type != TYPE_STRING) {
-        vartype *v;
-        int err = map_unary(stack[sp], &v, mappable_sinh_r, mappable_sinh_c);
-        if (err == ERR_NONE)
-            unary_result(v);
-        return err;
-    } else
-        return ERR_ALPHA_DATA_IS_INVALID;
+    vartype *v;
+    int err = map_unary(stack[sp], &v, mappable_sinh_r, mappable_sinh_c);
+    if (err == ERR_NONE)
+        unary_result(v);
+    return err;
 }
 
 int docmd_stoel(arg_struct *arg) {
@@ -934,14 +931,11 @@ static int mappable_tanh_c(phloat xre, phloat xim, phloat *yre, phloat *yim) {
 }
 
 int docmd_tanh(arg_struct *arg) {
-    if (stack[sp]->type != TYPE_STRING) {
-        vartype *v;
-        int err = map_unary(stack[sp], &v, mappable_tanh_r, mappable_tanh_c);
-        if (err == ERR_NONE)
-            unary_result(v);
-        return err;
-    } else
-        return ERR_ALPHA_DATA_IS_INVALID;
+    vartype *v;
+    int err = map_unary(stack[sp], &v, mappable_tanh_r, mappable_tanh_c);
+    if (err == ERR_NONE)
+        unary_result(v);
+    return err;
 }
 
 int docmd_trans(arg_struct *arg) {

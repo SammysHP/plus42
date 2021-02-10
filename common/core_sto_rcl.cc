@@ -33,10 +33,12 @@ static bool trace_stack;
 
 
 static int apply_sto_operation(char operation, vartype *oldval, bool trace_stk) {
+    int error = assert_numeric(oldval);
+    if (error != ERR_NONE)
+        return error;
     if (!ensure_var_space(1))
         return ERR_INSUFFICIENT_MEMORY;
     vartype *newval;
-    int error;
     trace_stack = trace_stk;
     switch (operation) {
         case '/':
@@ -60,11 +62,18 @@ static int apply_sto_operation(char operation, vartype *oldval, bool trace_stk) 
     }
 }
 
-int generic_div(const vartype *px, const vartype *py, void (*completion)(int, vartype *)) {
-    if (px->type == TYPE_STRING || py->type == TYPE_STRING) {
-        completion(ERR_ALPHA_DATA_IS_INVALID, NULL);
+int assert_numeric(vartype *v) {
+    if (v->type == TYPE_REAL || v->type == TYPE_COMPLEX
+            || v->type == TYPE_REALMATRIX || v->type == TYPE_COMPLEXMATRIX)
+        return ERR_NONE;
+    else if (v->type == TYPE_STRING)
         return ERR_ALPHA_DATA_IS_INVALID;
-    } else if ((px->type == TYPE_REALMATRIX || px->type == TYPE_COMPLEXMATRIX)
+    else
+        return ERR_INVALID_DATA;
+}
+
+int generic_div(const vartype *px, const vartype *py, void (*completion)(int, vartype *)) {
+    if ((px->type == TYPE_REALMATRIX || px->type == TYPE_COMPLEXMATRIX)
             && (py->type == TYPE_REALMATRIX || py->type == TYPE_COMPLEXMATRIX)){
         return linalg_div(py, px, completion);
     } else {
@@ -76,10 +85,7 @@ int generic_div(const vartype *px, const vartype *py, void (*completion)(int, va
 }
 
 int generic_mul(const vartype *px, const vartype *py, void (*completion)(int, vartype *)) {
-    if (px->type == TYPE_STRING || py->type == TYPE_STRING) {
-        completion(ERR_ALPHA_DATA_IS_INVALID, NULL);
-        return ERR_ALPHA_DATA_IS_INVALID;
-    } else if ((px->type == TYPE_REALMATRIX || px->type == TYPE_COMPLEXMATRIX)
+    if ((px->type == TYPE_REALMATRIX || px->type == TYPE_COMPLEXMATRIX)
             && (py->type == TYPE_REALMATRIX || py->type == TYPE_COMPLEXMATRIX)){
         return linalg_mul(py, px, completion);
     } else {
@@ -166,9 +172,7 @@ int generic_sub(const vartype *px, const vartype *py, vartype **dst) {
             return ERR_INSUFFICIENT_MEMORY;
         else
             return ERR_NONE;
-    } else if (px->type == TYPE_STRING || py->type == TYPE_STRING)
-        return ERR_ALPHA_DATA_IS_INVALID;
-    else
+    } else
         return map_binary(px, py, dst, sub_rr, sub_rc, sub_cr, sub_cc);
 }
 
@@ -247,9 +251,7 @@ int generic_add(const vartype *px, const vartype *py, vartype **dst) {
             return ERR_INSUFFICIENT_MEMORY;
         else
             return ERR_NONE;
-    } else if (px->type == TYPE_STRING || py->type == TYPE_STRING)
-        return ERR_ALPHA_DATA_IS_INVALID;
-    else
+    } else
         return map_binary(px, py, dst, add_rr, add_rc, add_cr, add_cc);
 }
 

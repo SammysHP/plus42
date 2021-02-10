@@ -270,11 +270,6 @@ static int jd2greg(int4 jd, int4 *y, int4 *m, int4 *d) {
 
 
 int docmd_adate(arg_struct *arg) {
-    if (stack[sp]->type == TYPE_STRING)
-        return ERR_ALPHA_DATA_IS_INVALID;
-    if (stack[sp]->type != TYPE_REAL)
-        return ERR_INVALID_TYPE;
-
     phloat x = ((vartype_real *) stack[sp])->x;
     if (x < 0)
         x = -x;
@@ -368,11 +363,6 @@ int docmd_adate(arg_struct *arg) {
 }
 
 int docmd_atime(arg_struct *arg) {
-    if (stack[sp]->type == TYPE_STRING)
-        return ERR_ALPHA_DATA_IS_INVALID;
-    if (stack[sp]->type != TYPE_REAL)
-        return ERR_INVALID_TYPE;
-
     phloat x = ((vartype_real *) stack[sp])->x;
     bool neg = x < 0;
     if (neg)

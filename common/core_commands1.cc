@@ -286,7 +286,7 @@ int docmd_complex(arg_struct *arg) {
         case TYPE_STRING:
             return ERR_ALPHA_DATA_IS_INVALID;
         default:
-            return ERR_INTERNAL_ERROR;
+            return ERR_INVALID_TYPE;
     }
 }
 

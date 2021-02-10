@@ -883,14 +883,15 @@ int handle(int cmd, arg_struct *arg) {
         // Note that we don't handle argcount = -1 here,
         // that is left up to the functions that use it themselves.
         int argcount = cs->argcount;
-        int types = 0;
-        for (int i = 0; i < argcount; i++)
-            types |= 1 << (stack[sp - i]->type - 1);
-        types &= ~cs->rttypes;
-        if ((types & (1 << (TYPE_STRING - 1))) != 0)
-            return ERR_ALPHA_DATA_IS_INVALID;
-        else if (types != 0)
-            return ERR_INVALID_TYPE;
+        int rttypes = cs->rttypes;
+        for (int i = 0; i < argcount; i++) {
+            int type = 1 << (stack[sp - i]->type - 1);
+            if ((type & rttypes) == 0)
+                if (type == 1 << (TYPE_STRING - 1))
+                    return ERR_ALPHA_DATA_IS_INVALID;
+                else
+                    return ERR_INVALID_TYPE;
+        }
     }
     return cs->handler(arg);
 }

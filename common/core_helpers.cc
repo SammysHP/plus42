@@ -505,10 +505,6 @@ void set_base(int base) {
 }
 
 int get_base_param(const vartype *v, int8 *n) {
-    if (v->type == TYPE_STRING)
-        return ERR_ALPHA_DATA_IS_INVALID;
-    else if (v->type != TYPE_REAL)
-        return ERR_INVALID_TYPE;
     phloat x = ((vartype_real *) v)->x;
     return phloat2base(x, n) ? ERR_NONE : ERR_INVALID_DATA;
 }

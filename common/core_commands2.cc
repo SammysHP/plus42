@@ -157,54 +157,45 @@ int docmd_fcc_t(arg_struct *arg) {
 }
 
 int docmd_comb(arg_struct *arg) {
-    if (stack[sp]->type == TYPE_REAL && stack[sp - 1]->type == TYPE_REAL) {
-        phloat y = ((vartype_real *) stack[sp - 1])->x;
-        phloat x = ((vartype_real *) stack[sp])->x;
-        phloat r, s, q = 1;
-        vartype *v;
-        if (x < 0 || x != floor(x) || x == x - 1 || y < 0 || y != floor(y))
-            return ERR_INVALID_DATA;
-        if (y < x)
-            return ERR_INVALID_DATA;
-        if (x > y / 2)
-            x = y - x;
-        #ifdef BCD_MATH
-            s = x == 0 ? 1 : pow(10, 1 + floor(log10(x)));
-        #else
-            s = x == 0 ? 1 : pow(2, 1 + floor(log2(x)));
-        #endif
-        r = 1 / s;
-        while (q <= x) {
-            r *= y--;
-            if (p_isinf(r)) {
-                if (flags.f.range_error_ignore) {
-                    r = POS_HUGE_PHLOAT;
-                    break;
-                } else
-                    return ERR_OUT_OF_RANGE;
-            }
-            r /= q++;
-        }
-        r *= s;
+    phloat y = ((vartype_real *) stack[sp - 1])->x;
+    phloat x = ((vartype_real *) stack[sp])->x;
+    phloat r, s, q = 1;
+    vartype *v;
+    if (x < 0 || x != floor(x) || x == x - 1 || y < 0 || y != floor(y))
+        return ERR_INVALID_DATA;
+    if (y < x)
+        return ERR_INVALID_DATA;
+    if (x > y / 2)
+        x = y - x;
+    #ifdef BCD_MATH
+        s = x == 0 ? 1 : pow(10, 1 + floor(log10(x)));
+    #else
+        s = x == 0 ? 1 : pow(2, 1 + floor(log2(x)));
+    #endif
+    r = 1 / s;
+    while (q <= x) {
+        r *= y--;
         if (p_isinf(r)) {
-            if (flags.f.range_error_ignore)
+            if (flags.f.range_error_ignore) {
                 r = POS_HUGE_PHLOAT;
-            else
+                break;
+            } else
                 return ERR_OUT_OF_RANGE;
         }
-        v = new_real(r);
-        if (v == NULL)
-            return ERR_INSUFFICIENT_MEMORY;
-        binary_result(v);
-        return ERR_NONE;
-    } else if (stack[sp]->type == TYPE_STRING)
-        return ERR_ALPHA_DATA_IS_INVALID;
-    else if (stack[sp]->type != TYPE_REAL)
-        return ERR_INVALID_TYPE;
-    else if (stack[sp - 1]->type == TYPE_STRING)
-        return ERR_ALPHA_DATA_IS_INVALID;
-    else
-        return ERR_INVALID_TYPE;
+        r /= q++;
+    }
+    r *= s;
+    if (p_isinf(r)) {
+        if (flags.f.range_error_ignore)
+            r = POS_HUGE_PHLOAT;
+        else
+            return ERR_OUT_OF_RANGE;
+    }
+    v = new_real(r);
+    if (v == NULL)
+        return ERR_INSUFFICIENT_MEMORY;
+    binary_result(v);
+    return ERR_NONE;
 }
 
 int docmd_perm(arg_struct *arg) {
@@ -746,17 +737,12 @@ int docmd_dse(arg_struct *arg) {
 }
 
 int docmd_aip(arg_struct *arg) {
-    if (stack[sp]->type == TYPE_REAL) {
-        char buf[44];
-        int size = ip2revstring(((vartype_real *) stack[sp])->x, buf, 44);
-        append_alpha_string(buf, size, 1);
-        if (flags.f.trace_print && flags.f.printer_exists)
-            docmd_pra(NULL);
-        return ERR_NONE;
-    } else if (stack[sp]->type == TYPE_STRING)
-        return ERR_ALPHA_DATA_IS_INVALID;
-    else
-        return ERR_INVALID_TYPE;
+    char buf[44];
+    int size = ip2revstring(((vartype_real *) stack[sp])->x, buf, 44);
+    append_alpha_string(buf, size, 1);
+    if (flags.f.trace_print && flags.f.printer_exists)
+        docmd_pra(NULL);
+    return ERR_NONE;
 }
 
 int docmd_xtoa(arg_struct *arg) {

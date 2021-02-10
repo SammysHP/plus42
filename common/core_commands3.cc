@@ -93,34 +93,29 @@ int docmd_aon(arg_struct *arg) {
 }
 
 int docmd_arot(arg_struct *arg) {
-    if (stack[sp]->type == TYPE_REAL) {
-        phloat x;
-        char buf[44];
-        int i, j;
-        if (reg_alpha_length == 0)
-            goto done;
-        x = ((vartype_real *) stack[sp])->x;
-        if (x < 0)
-            x = -floor(-x);
-        else
-            x = floor(x);
-        j = to_int(fmod(x, reg_alpha_length));
-        if (j == 0)
-            goto done;
-        if (j < 0)
-            j += reg_alpha_length;
-        for (i = 0; i < reg_alpha_length; i++)
-            buf[i] = reg_alpha[i];
-        for (i = 0; i < reg_alpha_length; i++)
-            reg_alpha[i] = buf[(i + j) % reg_alpha_length];
-        done:
-        if (flags.f.trace_print && flags.f.printer_exists)
-            docmd_pra(NULL);
-        return ERR_NONE;
-    } else if (stack[sp]->type == TYPE_STRING)
-        return ERR_ALPHA_DATA_IS_INVALID;
+    phloat x;
+    char buf[44];
+    int i, j;
+    if (reg_alpha_length == 0)
+        goto done;
+    x = ((vartype_real *) stack[sp])->x;
+    if (x < 0)
+        x = -floor(-x);
     else
-        return ERR_INVALID_TYPE;
+        x = floor(x);
+    j = to_int(fmod(x, reg_alpha_length));
+    if (j == 0)
+        goto done;
+    if (j < 0)
+        j += reg_alpha_length;
+    for (i = 0; i < reg_alpha_length; i++)
+        buf[i] = reg_alpha[i];
+    for (i = 0; i < reg_alpha_length; i++)
+        reg_alpha[i] = buf[(i + j) % reg_alpha_length];
+    done:
+    if (flags.f.trace_print && flags.f.printer_exists)
+        docmd_pra(NULL);
+    return ERR_NONE;
 }
 
 int docmd_ashf(arg_struct *arg) {

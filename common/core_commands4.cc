@@ -210,12 +210,7 @@ static void invrt_completion(int error, vartype *res) {
 }
 
 int docmd_invrt(arg_struct *arg) {
-    if (stack[sp]->type == TYPE_REAL || stack[sp]->type == TYPE_COMPLEX)
-        return ERR_INVALID_TYPE;
-    else if (stack[sp]->type == TYPE_STRING)
-        return ERR_ALPHA_DATA_IS_INVALID;
-    else
-        return linalg_inv(stack[sp], invrt_completion);
+    return linalg_inv(stack[sp], invrt_completion);
 }
 
 int docmd_j_add(arg_struct *arg) {
@@ -281,16 +276,11 @@ static int mappable_ln_1_x(phloat x, phloat *y) {
 }   
 
 int docmd_ln_1_x(arg_struct *arg) {
-    if (stack[sp]->type == TYPE_REAL || stack[sp]->type == TYPE_REALMATRIX) {
-        vartype *v;
-        int err = map_unary(stack[sp], &v, mappable_ln_1_x, NULL);
-        if (err == ERR_NONE)
-            unary_result(v);
-        return err;
-    } else if (stack[sp]->type == TYPE_STRING)
-        return ERR_ALPHA_DATA_IS_INVALID;
-    else
-        return ERR_INVALID_TYPE;
+    vartype *v;
+    int err = map_unary(stack[sp], &v, mappable_ln_1_x, NULL);
+    if (err == ERR_NONE)
+        unary_result(v);
+    return err;
 }
 
 int docmd_posa(arg_struct *arg) {
@@ -508,7 +498,7 @@ int docmd_rnrm(arg_struct *arg) {
             return ERR_INSUFFICIENT_MEMORY;
         unary_result(v);
         return ERR_NONE;
-    } else if (stack[sp]->type == TYPE_COMPLEXMATRIX) {
+    } else {
         vartype *v;
         vartype_complexmatrix *cm = (vartype_complexmatrix *) stack[sp];
         int4 i, j;
@@ -535,10 +525,7 @@ int docmd_rnrm(arg_struct *arg) {
             return ERR_INSUFFICIENT_MEMORY;
         unary_result(v);
         return ERR_NONE;
-    } else if (stack[sp]->type == TYPE_STRING)
-        return ERR_ALPHA_DATA_IS_INVALID;
-    else
-        return ERR_INVALID_TYPE;
+    }
 }
 
 int docmd_rsum(arg_struct *arg) {
@@ -976,7 +963,7 @@ int docmd_trans(arg_struct *arg) {
             }
         unary_result((vartype *) dst);
         return ERR_NONE;
-    } else if (stack[sp]->type == TYPE_COMPLEXMATRIX) {
+    } else {
         vartype_complexmatrix *src = (vartype_complexmatrix *) stack[sp];
         vartype_complexmatrix *dst;
         int4 rows = src->rows;
@@ -994,10 +981,7 @@ int docmd_trans(arg_struct *arg) {
             }
         unary_result((vartype *) dst);
         return ERR_NONE;
-    } else if (stack[sp]->type == TYPE_STRING)
-        return ERR_ALPHA_DATA_IS_INVALID;
-    else
-        return ERR_INVALID_TYPE;
+    }
 }
 
 int docmd_wrap(arg_struct *arg) {

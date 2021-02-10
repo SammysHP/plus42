@@ -575,12 +575,7 @@ static void det_completion(int error, vartype *det) {
 }
 
 int docmd_det(arg_struct *arg) {
-    if (stack[sp]->type == TYPE_REALMATRIX || stack[sp]->type == TYPE_COMPLEXMATRIX)
-        return linalg_det(stack[sp], det_completion);
-    else if (stack[sp]->type == TYPE_STRING)
-        return ERR_ALPHA_DATA_IS_INVALID;
-    else
-        return ERR_INVALID_TYPE;
+    return linalg_det(stack[sp], det_completion);
 }
 
 int docmd_dim(arg_struct *arg) {
@@ -962,16 +957,11 @@ static int mappable_e_pow_x_1(phloat x, phloat *y) {
 }   
 
 int docmd_e_pow_x_1(arg_struct *arg) {
-    if (stack[sp]->type == TYPE_REAL || stack[sp]->type == TYPE_REALMATRIX) {
-        vartype *v;
-        int err = map_unary(stack[sp], &v, mappable_e_pow_x_1, NULL);
-        if (err == ERR_NONE)
-            unary_result(v);
-        return err;
-    } else if (stack[sp]->type == TYPE_STRING)
-        return ERR_ALPHA_DATA_IS_INVALID;
-    else
-        return ERR_INVALID_TYPE;
+    vartype *v;
+    int err = map_unary(stack[sp], &v, mappable_e_pow_x_1, NULL);
+    if (err == ERR_NONE)
+        unary_result(v);
+    return err;
 }
 
 static int fnrm(vartype *m, phloat *norm) {
@@ -997,7 +987,7 @@ static int fnrm(vartype *m, phloat *norm) {
             nrm = sqrt(nrm);
         *norm = nrm;
         return ERR_NONE;
-    } else if (m->type == TYPE_COMPLEXMATRIX) {
+    } else {
         vartype_complexmatrix *cm = (vartype_complexmatrix *) m;
         int4 size = 2 * cm->rows * cm->columns;
         int4 i;
@@ -1016,10 +1006,7 @@ static int fnrm(vartype *m, phloat *norm) {
             nrm = sqrt(nrm);
         *norm = nrm;
         return ERR_NONE;
-    } else if (m->type == TYPE_STRING)
-        return ERR_ALPHA_DATA_IS_INVALID;
-    else
-        return ERR_INVALID_TYPE;
+    }
 }
 
 int docmd_fnrm(arg_struct *arg) {
@@ -1394,8 +1381,6 @@ int docmd_uvec(arg_struct *arg) {
     phloat norm;
     int err;
     vartype *v;
-    if (stack[sp]->type == TYPE_COMPLEXMATRIX)
-        return ERR_INVALID_TYPE;
     if (stack[sp]->type == TYPE_COMPLEX) {
         vartype_complex *z = (vartype_complex *) stack[sp];
         if (z->re == 0 && z->im == 0)

@@ -244,16 +244,11 @@ static int mappable_fact(phloat x, phloat *y) {
 }
 
 int docmd_fact(arg_struct *arg) {
-    if (stack[sp]->type == TYPE_REAL || stack[sp]->type == TYPE_REALMATRIX) {
-        vartype *v;
-        int err = map_unary(stack[sp], &v, mappable_fact, NULL);
-        if (err == ERR_NONE)
-            unary_result(v);
-        return err;
-    } else if (stack[sp]->type == TYPE_STRING)
-        return ERR_ALPHA_DATA_IS_INVALID;
-    else
-        return ERR_INVALID_TYPE;
+    vartype *v;
+    int err = map_unary(stack[sp], &v, mappable_fact, NULL);
+    if (err == ERR_NONE)
+        unary_result(v);
+    return err;
 }
 
 static int mappable_gamma(phloat x, phloat *y) {
@@ -270,17 +265,11 @@ static int mappable_gamma(phloat x, phloat *y) {
 }
 
 int docmd_gamma(arg_struct *arg) {
-    if (stack[sp]->type == TYPE_STRING)
-        return ERR_ALPHA_DATA_IS_INVALID;
-    else if (stack[sp]->type == TYPE_COMPLEX || stack[sp]->type == TYPE_COMPLEXMATRIX)
-        return ERR_INVALID_TYPE;
-    else {
-        vartype *v;
-        int err = map_unary(stack[sp], &v, mappable_gamma, NULL);
-        if (err == ERR_NONE)
-            unary_result(v);
-        return err;
-    }
+    vartype *v;
+    int err = map_unary(stack[sp], &v, mappable_gamma, NULL);
+    if (err == ERR_NONE)
+        unary_result(v);
+    return err;
 }
 
 int docmd_ran(arg_struct *arg) {
@@ -1702,13 +1691,10 @@ int docmd_dim_t(arg_struct *arg) {
     if (stack[sp]->type == TYPE_REALMATRIX) {
         rows = ((vartype_realmatrix *) stack[sp])->rows;
         columns = ((vartype_realmatrix *) stack[sp])->columns;
-    } else if (stack[sp]->type == TYPE_COMPLEXMATRIX) {
+    } else {
         rows = ((vartype_complexmatrix *) stack[sp])->rows;
         columns = ((vartype_complexmatrix *) stack[sp])->columns;
-    } else if (stack[sp]->type == TYPE_STRING)
-        return ERR_ALPHA_DATA_IS_INVALID;
-    else
-        return ERR_INVALID_TYPE;
+    }
     vartype *new_y = new_real(rows);
     vartype *new_x = new_real(columns);
     if (new_x == NULL || new_y == NULL) {

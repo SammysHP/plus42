@@ -826,16 +826,11 @@ static int mappable_to_deg(phloat x, phloat *y) {
 }
 
 int docmd_to_deg(arg_struct *arg) {
-    if (stack[sp]->type == TYPE_REAL || stack[sp]->type == TYPE_REALMATRIX) {
-        vartype *v;
-        int err = map_unary(stack[sp], &v, mappable_to_deg, NULL);
-        if (err == ERR_NONE)
-            unary_result(v);
-        return err;
-    } else if (stack[sp]->type == TYPE_STRING)
-        return ERR_ALPHA_DATA_IS_INVALID;
-    else
-        return ERR_INVALID_TYPE;
+    vartype *v;
+    int err = map_unary(stack[sp], &v, mappable_to_deg, NULL);
+    if (err == ERR_NONE)
+        unary_result(v);
+    return err;
 }
 
 static int mappable_to_rad(phloat x, phloat *y) {
@@ -844,16 +839,11 @@ static int mappable_to_rad(phloat x, phloat *y) {
 }
 
 int docmd_to_rad(arg_struct *arg) {
-    if (stack[sp]->type == TYPE_REAL || stack[sp]->type == TYPE_REALMATRIX) {
-        vartype *v;
-        int err = map_unary(stack[sp], &v, mappable_to_rad, NULL);
-        if (err == ERR_NONE)
-            unary_result(v);
-        return err;
-    } else if (stack[sp]->type == TYPE_STRING)
-        return ERR_ALPHA_DATA_IS_INVALID;
-    else
-        return ERR_INVALID_TYPE;
+    vartype *v;
+    int err = map_unary(stack[sp], &v, mappable_to_rad, NULL);
+    if (err == ERR_NONE)
+        unary_result(v);
+    return err;
 }
 
 static int mappable_to_hr(phloat x, phloat *y) {
@@ -900,16 +890,11 @@ static int mappable_to_hr(phloat x, phloat *y) {
 }
 
 int docmd_to_hr(arg_struct *arg) {
-    if (stack[sp]->type == TYPE_REAL || stack[sp]->type == TYPE_REALMATRIX) {
-        vartype *v;
-        int err = map_unary(stack[sp], &v, mappable_to_hr, NULL);
-        if (err == ERR_NONE)
-            unary_result(v);
-        return err;
-    } else if (stack[sp]->type == TYPE_STRING)
-        return ERR_ALPHA_DATA_IS_INVALID;
-    else
-        return ERR_INVALID_TYPE;
+    vartype *v;
+    int err = map_unary(stack[sp], &v, mappable_to_hr, NULL);
+    if (err == ERR_NONE)
+        unary_result(v);
+    return err;
 }
 
 static int mappable_to_hms(phloat x, phloat *y) {
@@ -932,16 +917,11 @@ static int mappable_to_hms(phloat x, phloat *y) {
 }
 
 int docmd_to_hms(arg_struct *arg) {
-    if (stack[sp]->type == TYPE_REAL || stack[sp]->type == TYPE_REALMATRIX) {
-        vartype *v;
-        int err = map_unary(stack[sp], &v, mappable_to_hms, NULL);
-        if (err == ERR_NONE)
-            unary_result(v);
-        return err;
-    } else if (stack[sp]->type == TYPE_STRING)
-        return ERR_ALPHA_DATA_IS_INVALID;
-    else
-        return ERR_INVALID_TYPE;
+    vartype *v;
+    int err = map_unary(stack[sp], &v, mappable_to_hms, NULL);
+    if (err == ERR_NONE)
+        unary_result(v);
+    return err;
 }
 
 int docmd_to_rec(arg_struct *arg) {
@@ -1087,16 +1067,11 @@ static int mappable_ip(phloat x, phloat *y) {
 }
 
 int docmd_ip(arg_struct *arg) {
-    if (stack[sp]->type == TYPE_REAL || stack[sp]->type == TYPE_REALMATRIX) {
-        vartype *v;
-        int err = map_unary(stack[sp], &v, mappable_ip, NULL);
-        if (err == ERR_NONE)
-            unary_result(v);
-        return err;
-    } else if (stack[sp]->type == TYPE_STRING)
-        return ERR_ALPHA_DATA_IS_INVALID;
-    else
-        return ERR_INVALID_TYPE;
+    vartype *v;
+    int err = map_unary(stack[sp], &v, mappable_ip, NULL);
+    if (err == ERR_NONE)
+        unary_result(v);
+    return err;
 }
 
 static int mappable_fp(phloat x, phloat *y) {
@@ -1108,16 +1083,11 @@ static int mappable_fp(phloat x, phloat *y) {
 }
 
 int docmd_fp(arg_struct *arg) {
-    if (stack[sp]->type == TYPE_REAL || stack[sp]->type == TYPE_REALMATRIX) {
-        vartype *v;
-        int err = map_unary(stack[sp], &v, mappable_fp, NULL);
-        if (err == ERR_NONE)
-            unary_result(v);
-        return err;
-    } else if (stack[sp]->type == TYPE_STRING)
-        return ERR_ALPHA_DATA_IS_INVALID;
-    else
-        return ERR_INVALID_TYPE;
+    vartype *v;
+    int err = map_unary(stack[sp], &v, mappable_fp, NULL);
+    if (err == ERR_NONE)
+        unary_result(v);
+    return err;
 }
 
 static phloat rnd_multiplier;
@@ -1228,8 +1198,6 @@ int docmd_abs(arg_struct *arg) {
             unary_result(r);
             return ERR_NONE;
         }
-        case TYPE_STRING:
-            return ERR_ALPHA_DATA_IS_INVALID;
         case TYPE_REALMATRIX: {
             if (contains_strings((vartype_realmatrix *) stack[sp]))
                 return ERR_ALPHA_DATA_IS_INVALID;
@@ -1251,8 +1219,6 @@ int docmd_abs(arg_struct *arg) {
             unary_result((vartype *) dst);
             return ERR_NONE;
         }
-        case TYPE_COMPLEXMATRIX:
-            return ERR_INVALID_TYPE;
         default:
             return ERR_INTERNAL_ERROR;
     }

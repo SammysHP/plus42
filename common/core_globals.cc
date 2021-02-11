@@ -1237,18 +1237,18 @@ static bool unpersist_vartype(vartype **v, bool padded) {
                 vartype_list *list = (vartype_list *) new_list(size);
                 if (list == NULL)
                     return false;
-                for (int4 i = 0; i < size; i++) {
-                    if (!unpersist_vartype(&list->array->data[i], false)) {
-                        free_vartype((vartype *) list);
-                        return false;
-                    }
-                }
                 if (shared) {
                     if (!array_list_grow()) {
                         free_vartype((vartype *) list);
                         return false;
                     }
                     array_list[array_count++] = list;
+                }
+                for (int4 i = 0; i < size; i++) {
+                    if (!unpersist_vartype(&list->array->data[i], false)) {
+                        free_vartype((vartype *) list);
+                        return false;
+                    }
                 }
                 *v = (vartype *) list;
                 return true;

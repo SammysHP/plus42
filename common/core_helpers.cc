@@ -42,16 +42,7 @@ int resolve_ind_arg(arg_struct *arg) {
                 int4 num = arg->val.num;
                 if (num >= size)
                     return ERR_SIZE_ERROR;
-                if (rm->array->is_string[num]) {
-                    phloat *d = &rm->array->data[num];
-                    int len = phloat_length(*d);
-                    if (len == 0)
-                        return ERR_RESTRICTED_OPERATION;
-                    arg->type = ARGTYPE_STR;
-                    arg->length = len;
-                    for (int i = 0; i < len; i++)
-                        arg->val.text[i] = phloat_text(*d)[i];
-                } else {
+                if (rm->array->is_string[num] == 0) {
                     phloat x = rm->array->data[num];
                     if (x < 0)
                         x = -x;
@@ -60,6 +51,16 @@ int resolve_ind_arg(arg_struct *arg) {
                     else
                         arg->val.num = to_int4(x);
                     arg->type = ARGTYPE_NUM;
+                } else if (rm->array->is_string[num] == 1) {
+                    char *t = (char *) &rm->array->data[num];
+                    int len = t[0];
+                    if (len == 0)
+                        return ERR_RESTRICTED_OPERATION;
+                    arg->type = ARGTYPE_STR;
+                    arg->length = len;
+                    memcpy(arg->val.text, t + 1, len);
+                } else {
+                    return ERR_NAME_TOO_LONG;
                 }
                 return ERR_NONE;
             }
@@ -101,10 +102,11 @@ int resolve_ind_arg(arg_struct *arg) {
                 vartype_string *s = (vartype_string *) v;
                 if (s->length == 0)
                     return ERR_RESTRICTED_OPERATION;
+                if (s->length > 7)
+                    return ERR_NAME_TOO_LONG;
                 arg->type = ARGTYPE_STR;
                 arg->length = s->length;
-                for (int i = 0; i < s->length; i++)
-                    arg->val.text[i] = s->text[i];
+                memcpy(arg->val.text, s->t.buf, s->length);
                 return ERR_NONE;
             } else
                 return ERR_INVALID_TYPE;
@@ -1334,7 +1336,7 @@ int vartype2string(const vartype *v, char *buf, int buflen, int max_mant_digits)
             int chars_so_far = 0;
             char2buf(buf, buflen, &chars_so_far, '"');
             for (i = 0; i < s->length; i++)
-                char2buf(buf, buflen, &chars_so_far, s->text[i]);
+                char2buf(buf, buflen, &chars_so_far, s->length > 8 ? s->t.ptr[i] : s->t.buf[i]);
             char2buf(buf, buflen, &chars_so_far, '"');
             return chars_so_far;
         }

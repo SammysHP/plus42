@@ -273,14 +273,18 @@ int generic_rcl(arg_struct *arg, vartype **dst) {
                 vartype_realmatrix *rm = (vartype_realmatrix *) regs;
                 int4 size = rm->rows * rm->columns;
                 int4 index = arg->val.num;
-                phloat ds;
                 if (index >= size)
                     return ERR_SIZE_ERROR;
-                ds = rm->array->data[index];
-                if (rm->array->is_string[index])
-                    *dst = new_string(phloat_text(ds), phloat_length(ds));
-                else
-                    *dst = new_real(ds);
+                if (rm->array->is_string[index] == 0) {
+                    *dst = new_real(rm->array->data[index]);
+                } else if (rm->array->is_string[index] == 1) {
+                    char *text = (char *) &rm->array->data[index];
+                    *dst = new_string(text + 1, text[0]);
+                } else {
+                    char *text = *(char **) &rm->array->data[index];
+                    int4 len = *(int4 *) text;
+                    *dst = new_string(text + 4, len);
+                }
                 if (*dst == NULL)
                     return ERR_INSUFFICIENT_MEMORY;
                 return ERR_NONE;
@@ -406,21 +410,33 @@ int generic_sto(arg_struct *arg, char operation) {
                     phloat *ds = rm->array->data + num;
                     int len, i;
                     len = vs->length;
-                    phloat_length(*ds) = len;
-                    for (i = 0; i < len; i++)
-                        phloat_text(*ds)[i] = vs->text[i];
-                    rm->array->is_string[num] = 1;
+                    if (len > 7) {
+                        char *text = (char *) malloc(len + 4);
+                        if (text == NULL)
+                            return ERR_INSUFFICIENT_MEMORY;
+                        *(int4 *) text = len;
+                        memcpy(text + 4, len > 8 ? vs->t.ptr : vs->t.buf, len);
+                        *(char **) ds = text;
+                        rm->array->is_string[num] = 2;
+                    } else {
+                        char *text = (char *) ds;
+                        text[0] = len;
+                        memcpy(text + 1, vs->t.buf, len);
+                        rm->array->is_string[num] = 1;
+                    }
                     return ERR_NONE;
                 } else if (stack[sp]->type == TYPE_REAL) {
                     if (!disentangle((vartype *) rm))
                         return ERR_INSUFFICIENT_MEMORY;
                     if (operation == 0) {
+                        if (rm->array->is_string[num] == 2)
+                            free(*(void **) &rm->array->data[num]);
                         rm->array->data[num] = ((vartype_real *) stack[sp])->x;
                         rm->array->is_string[num] = 0;
                     } else {
                         phloat x, n;
                         int inf;
-                        if (rm->array->is_string[num])
+                        if (rm->array->is_string[num] != 0)
                             return ERR_ALPHA_DATA_IS_INVALID;
                         x = ((vartype_real *) stack[sp])->x;
                         n = rm->array->data[num];
@@ -682,7 +698,7 @@ int map_unary(const vartype *src, vartype **dst, mappable_r mr, mappable_c mc) {
                 return ERR_INSUFFICIENT_MEMORY;
             size = sm->rows * sm->columns;
             for (i = 0; i < size; i++) {
-                if (sm->array->is_string[i]) {
+                if (sm->array->is_string[i] != 0) {
                     free_vartype((vartype *) dm);
                     return ERR_ALPHA_DATA_IS_INVALID;
                 }
@@ -765,7 +781,7 @@ int map_binary(const vartype *src1, const vartype *src2, vartype **dst,
                         return ERR_INSUFFICIENT_MEMORY;
                     size = sm->rows * sm->columns;
                     for (i = 0; i < size; i++)
-                        if (sm->array->is_string[i]) {
+                        if (sm->array->is_string[i] != 0) {
                             free_vartype((vartype *) dm);
                             return ERR_ALPHA_DATA_IS_INVALID;
                         }
@@ -848,7 +864,7 @@ int map_binary(const vartype *src1, const vartype *src2, vartype **dst,
                         return ERR_INSUFFICIENT_MEMORY;
                     size = sm->rows * sm->columns;
                     for (i = 0; i < size; i++)
-                        if (sm->array->is_string[i]) {
+                        if (sm->array->is_string[i] != 0) {
                             free_vartype((vartype *) dm);
                             return ERR_ALPHA_DATA_IS_INVALID;
                         }
@@ -907,7 +923,7 @@ int map_binary(const vartype *src1, const vartype *src2, vartype **dst,
                         return ERR_INSUFFICIENT_MEMORY;
                     size = sm->rows * sm->columns;
                     for (i = 0; i < size; i++)
-                        if (sm->array->is_string[i]) {
+                        if (sm->array->is_string[i] != 0) {
                             free_vartype((vartype *) dm);
                             return ERR_ALPHA_DATA_IS_INVALID;
                         }
@@ -934,7 +950,7 @@ int map_binary(const vartype *src1, const vartype *src2, vartype **dst,
                         return ERR_INSUFFICIENT_MEMORY;
                     size = sm->rows * sm->columns;
                     for (i = 0; i < size; i++)
-                        if (sm->array->is_string[i]) {
+                        if (sm->array->is_string[i] != 0) {
                             free_vartype((vartype *) dm);
                             return ERR_ALPHA_DATA_IS_INVALID;
                         }
@@ -966,8 +982,8 @@ int map_binary(const vartype *src1, const vartype *src2, vartype **dst,
                         return ERR_INSUFFICIENT_MEMORY;
                     size = sm1->rows * sm1->columns;
                     for (i = 0; i < size; i++)
-                        if (sm1->array->is_string[i]
-                                    || sm2->array->is_string[i]) {
+                        if (sm1->array->is_string[i] != 0
+                                    || sm2->array->is_string[i] != 0) {
                             free_vartype((vartype *) dm);
                             return ERR_ALPHA_DATA_IS_INVALID;
                         }
@@ -997,7 +1013,7 @@ int map_binary(const vartype *src1, const vartype *src2, vartype **dst,
                         return ERR_INSUFFICIENT_MEMORY;
                     size = sm1->rows * sm1->columns;
                     for (i = 0; i < size; i++)
-                        if (sm1->array->is_string[i]) {
+                        if (sm1->array->is_string[i] != 0) {
                             free_vartype((vartype *) dm);
                             return ERR_ALPHA_DATA_IS_INVALID;
                         }
@@ -1083,7 +1099,7 @@ int map_binary(const vartype *src1, const vartype *src2, vartype **dst,
                         return ERR_INSUFFICIENT_MEMORY;
                     size = sm1->rows * sm1->columns;
                     for (i = 0; i < size; i++)
-                        if (sm2->array->is_string[i]) {
+                        if (sm2->array->is_string[i] != 0) {
                             free_vartype((vartype *) dm);
                             return ERR_ALPHA_DATA_IS_INVALID;
                         }

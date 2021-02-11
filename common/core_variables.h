@@ -28,6 +28,7 @@ vartype *new_complexmatrix(int4 rows, int4 columns);
 vartype *new_list(int4 size);
 void free_vartype(vartype *v);
 void clean_vartype_pools();
+void free_long_strings(char *is_string, phloat *data, int4 n);
 vartype *dup_vartype(const vartype *v);
 int disentangle(vartype *v);
 int lookup_var(const char *name, int namelength);

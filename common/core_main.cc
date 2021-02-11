@@ -2443,7 +2443,7 @@ char *core_copy() {
     } else if (stack[sp]->type == TYPE_STRING) {
         vartype_string *s = (vartype_string *) stack[sp];
         char *buf = (char *) malloc(5 * s->length + 1);
-        int bufptr = hp2ascii(buf, s->text, s->length);
+        int bufptr = hp2ascii(buf, s->length > 8 ? s->t.ptr : s->t.buf, s->length);
         buf[bufptr] = 0;
         return buf;
     } else if (stack[sp]->type == TYPE_REALMATRIX) {
@@ -2460,10 +2460,15 @@ char *core_copy() {
         for (int r = 0; r < rm->rows; r++) {
             for (int c = 0; c < rm->columns; c++) {
                 int bufptr;
-                if (is_string[n])
-                    bufptr = hp2ascii(buf, phloat_text(data[n]), phloat_length(data[n]));
-                else
+                if (is_string[n] == 0) {
                     bufptr = real2buf(buf, data[n]);
+                } else if (is_string[n] == 1) {
+                    char *text = (char *) &data[n];
+                    bufptr = hp2ascii(buf, text + 1, text[0]);
+                } else {
+                    int4 *p = *(int4 **) &data[n];
+                    bufptr = hp2ascii(buf, *p, (char *) (p + 1));
+                }
                 if (c < rm->columns - 1)
                     buf[bufptr++] = '\t';
                 tb_write(&tb, buf, bufptr);
@@ -3141,8 +3146,8 @@ static int parse_scalar(const char *buf, int len, bool strict, phloat *re, phloa
         return TYPE_REAL;
 
     finish_string:
-    if (len > 6)
-        len = 6;
+    if (len > *slen)
+        len = *slen;
     memcpy(s, buf, len);
     *slen = len;
     return TYPE_STRING;
@@ -3810,8 +3815,8 @@ void core_paste(const char *buf) {
             v = parse_base(hpbuf, len);
             if (v == NULL) {
                 phloat re, im;
-                char s[6];
-                int slen;
+                char s[256];
+                int slen = 256;
                 int type = parse_scalar(hpbuf, len, false, &re, &im, s, &slen);
                 switch (type) {
                     case TYPE_REAL:
@@ -3823,6 +3828,11 @@ void core_paste(const char *buf) {
                     case TYPE_STRING:
                         v = new_string(s, slen);
                         break;
+                }
+                if (v == NULL) {
+                    display_error(ERR_INSUFFICIENT_MEMORY, 0);
+                    redisplay();
+                    return;
                 }
             }
             free(hpbuf);
@@ -3876,8 +3886,8 @@ void core_paste(const char *buf) {
                     asciibuf[cellsize] = 0;
                     int hplen = ascii2hp(hpbuf, asciibuf, cellsize);
                     phloat re, im;
-                    char s[6];
-                    int slen;
+                    char s[256];
+                    int slen = 256;
                     int type = parse_scalar(hpbuf, hplen, true, &re, &im, s, &slen);
                     if (is_string != NULL) {
                         switch (type) {
@@ -3886,14 +3896,16 @@ void core_paste(const char *buf) {
                                 is_string[p] = 0;
                                 break;
                             case TYPE_COMPLEX:
+                                free_long_strings(is_string, data, p);
                                 for (int i = 0; i < p; i++)
-                                    if (is_string[i])
+                                    if (is_string[i] != 0) {
                                         data[i] = 0;
                                 free(is_string);
                                 is_string = NULL;
                                 phloat *newdata;
                                 newdata = (phloat *) realloc(data, 2 * n * sizeof(phloat));
                                 if (newdata == NULL) {
+                                    nomem:
                                     free(data);
                                     free(asciibuf);
                                     free(hpbuf);
@@ -3914,10 +3926,21 @@ void core_paste(const char *buf) {
                                 if (slen == 0) {
                                     data[p] = 0;
                                     is_string[p] = 0;
-                                } else {
-                                    memcpy(phloat_text(data[p]), s, slen);
-                                    phloat_length(data[p]) = slen;
+                                } else if (slen <= 7) {
+                                    char *text = (char *) data[p];
+                                    memcpy(text + 1, s, slen);
+                                    text[0] = slen;
                                     is_string[p] = 1;
+                                } else {
+                                    int4 *t = (int4 *) malloc(slen + 4);
+                                    if (t == NULL) {
+                                        free_long_strings(is_string, data, p);
+                                        free(is_string);
+                                        goto nomem;
+                                    }
+                                    *t = slen;
+                                    memcpy(t + 1, s, slen);
+                                    is_string[p] = 2;
                                 }
                                 break;
                         }
@@ -3971,6 +3994,7 @@ void core_paste(const char *buf) {
                 vartype_realmatrix *rm = (vartype_realmatrix *)
                                 malloc(sizeof(vartype_realmatrix));
                 if (rm == NULL) {
+                    free_long_strings(data, is_string, p);
                     free(data);
                     free(is_string);
                     display_error(ERR_INSUFFICIENT_MEMORY, 0);
@@ -3981,6 +4005,7 @@ void core_paste(const char *buf) {
                                 malloc(sizeof(realmatrix_data));
                 if (rm->array == NULL) {
                     free(rm);
+                    free_long_strings(data, is_string, p);
                     free(data);
                     free(is_string);
                     display_error(ERR_INSUFFICIENT_MEMORY, 0);

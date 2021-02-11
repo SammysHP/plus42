@@ -69,6 +69,7 @@ extern FILE *gfile;
 #define ERR_NUMBER_TOO_SMALL       35
 #define ERR_BIG_STACK_DISABLED     36
 #define ERR_INVALID_CONTEXT        37
+#define ERR_NAME_TOO_LONG          38
 
 typedef struct {
     const char *text;
@@ -270,8 +271,12 @@ typedef struct {
 
 typedef struct {
     int type;
-    int length;
-    char text[6];
+    int4 length;
+    /* When length <= 8, use buf; otherwise, use ptr */
+    union {
+        char buf[8];
+        char *ptr;
+    } t;
 } vartype_string;
 
 

@@ -961,81 +961,87 @@ int docmd_x_ge_0(arg_struct *arg) {
     return ((vartype_real *) stack[sp])->x >= 0 ? ERR_YES : ERR_NO;
 }
 
-int docmd_x_eq_y(arg_struct *arg) {
-    if (stack[sp]->type != stack[sp - 1]->type)
-        return ERR_NO;
-    switch (stack[sp]->type) {
+static bool recursive_eq(vartype *v1, vartype *v2) {
+    if (v1->type != v2->type)
+        return false;
+    switch (v1->type) {
         case TYPE_REAL: {
-            vartype_real *x = (vartype_real *) stack[sp];
-            vartype_real *y = (vartype_real *) stack[sp - 1];
-            return x->x == y->x ? ERR_YES : ERR_NO;
+            vartype_real *x = (vartype_real *) v1;
+            vartype_real *y = (vartype_real *) v2;
+            return x->x == y->x;
         }
         case TYPE_COMPLEX: {
-            vartype_complex *x = (vartype_complex *) stack[sp];
-            vartype_complex *y = (vartype_complex *) stack[sp - 1];
-            return x->re == y->re && x->im == y->im ? ERR_YES : ERR_NO;
+            vartype_complex *x = (vartype_complex *) v1;
+            vartype_complex *y = (vartype_complex *) v2;
+            return x->re == y->re && x->im == y->im;
         }
         case TYPE_REALMATRIX: {
-            vartype_realmatrix *x = (vartype_realmatrix *) stack[sp];
-            vartype_realmatrix *y = (vartype_realmatrix *) stack[sp - 1];
+            vartype_realmatrix *x = (vartype_realmatrix *) v1;
+            vartype_realmatrix *y = (vartype_realmatrix *) v2;
             int4 sz, i;
             if (x->rows != y->rows || x->columns != y->columns)
-                return ERR_NO;
+                return false;
             sz = x->rows * x->columns;
             for (i = 0; i < sz; i++) {
                 int xstr = x->array->is_string[i];
                 int ystr = y->array->is_string[i];
                 if (xstr != ystr)
-                    return ERR_NO;
+                    return false;
                 if (xstr) {
                     if (!string_equals(phloat_text(x->array->data[i]),
                                        phloat_length(x->array->data[i]),
                                        phloat_text(y->array->data[i]),
                                        phloat_length(y->array->data[i])))
-                        return ERR_NO;
+                        return false;
                 } else {
                     if (x->array->data[i] != y->array->data[i])
-                        return ERR_NO;
+                        return false;
                 }
             }
-            return ERR_YES;
+            return true;
         }
         case TYPE_COMPLEXMATRIX: {
-            vartype_complexmatrix *x = (vartype_complexmatrix *) stack[sp];
-            vartype_complexmatrix *y = (vartype_complexmatrix *) stack[sp - 1];
+            vartype_complexmatrix *x = (vartype_complexmatrix *) v1;
+            vartype_complexmatrix *y = (vartype_complexmatrix *) v2;
             int4 sz, i;
             if (x->rows != y->rows || x->columns != y->columns)
-                return ERR_NO;
+                return false;
             sz = 2 * x->rows * x->columns;
             for (i = 0; i < sz; i++)
                 if (x->array->data[i] != y->array->data[i])
-                    return ERR_NO;
-            return ERR_YES;
+                    return false;
+            return true;
         }
         case TYPE_STRING: {
-            vartype_string *x = (vartype_string *) stack[sp];
-            vartype_string *y = (vartype_string *) stack[sp - 1];
-            if (string_equals(x->text, x->length, y->text, y->length))
-                return ERR_YES;
-            else
-                return ERR_NO;
+            vartype_string *x = (vartype_string *) v1;
+            vartype_string *y = (vartype_string *) v2;
+            return string_equals(x->text, x->length, y->text, y->length);
+        }
+        case TYPE_LIST: {
+            vartype_list *x = (vartype_list *) v1;
+            vartype_list *y = (vartype_list *) v2;
+            if (x->size != y->size)
+                return false;
+            int4 sz = x->size;
+            vartype **data1 = x->array->data;
+            vartype **data2 = y->array->data;
+            for (int4 i = 0; i < sz; i++)
+                if (!recursive_eq(data1[i], data2[i]))
+                    return false;
+            return true;
         }
         default:
             /* Looks like someone added a type that we're not handling yet! */
-            return ERR_INTERNAL_ERROR;
+            return false;
     }
 }
 
+int docmd_x_eq_y(arg_struct *arg) {
+    return recursive_eq(stack[sp], stack[sp - 1]) ? ERR_YES : ERR_NO;
+}
+
 int docmd_x_ne_y(arg_struct *arg) {
-    int err = docmd_x_eq_y(arg);
-    switch (err) {
-        case ERR_YES:
-            return ERR_NO;
-        case ERR_NO:
-            return ERR_YES;
-        default:
-            return err;
-    }
+    return recursive_eq(stack[sp], stack[sp - 1]) ? ERR_NO : ERR_YES;
 }
 
 int docmd_x_lt_y(arg_struct *arg) {
@@ -1177,7 +1183,7 @@ int docmd_prv(arg_struct *arg) {
         rlen = vartype2string(v, rbuf, 100);
         print_wide(lbuf, llen, rbuf, rlen);
 
-        if (v->type == TYPE_REALMATRIX || v->type == TYPE_COMPLEXMATRIX) {
+        if (v->type == TYPE_REALMATRIX || v->type == TYPE_COMPLEXMATRIX || v->type == TYPE_LIST) {
             prv_var = v;
             prv_index = 0;
             mode_interruptible = prv_worker;
@@ -1219,7 +1225,7 @@ static int prv_worker(int interrupted) {
             rlen = easy_phloat2string(rm->array->data[prv_index],
                                         rbuf, 100, 0);
         print_wide(lbuf, llen, rbuf, rlen);
-    } else /* prv_var->type == TYPE_COMPLEXMATRIX) */ {
+    } else if (prv_var->type == TYPE_COMPLEXMATRIX) {
         vartype_complexmatrix *cm = (vartype_complexmatrix *) prv_var;
         vartype_complex cpx;
         cpx.type = TYPE_COMPLEX;
@@ -1233,6 +1239,15 @@ static int prv_worker(int interrupted) {
         cpx.re = cm->array->data[2 * prv_index];
         cpx.im = cm->array->data[2 * prv_index + 1];
         rlen = vartype2string((vartype *) &cpx, rbuf, 100);
+        print_wide(lbuf, llen, rbuf, rlen);
+    } else /* prv_var->type == TYPE_LIST */ {
+        vartype_list *list = (vartype_list *) prv_var;
+        i = prv_index;
+        sz = list->size;
+        llen = int2string(i + 1, lbuf, 32);
+        char2buf(lbuf, 32, &llen, '=');
+        vartype *v = list->array->data[i];
+        rlen = vartype2string(v, rbuf, 100);
         print_wide(lbuf, llen, rbuf, rlen);
     }
 
@@ -1336,7 +1351,8 @@ int docmd_prx(arg_struct *arg) {
         }
 
         if (arg != NULL && (stack[sp]->type == TYPE_REALMATRIX
-                            || stack[sp]->type == TYPE_COMPLEXMATRIX)) {
+                            || stack[sp]->type == TYPE_COMPLEXMATRIX
+                            || stack[sp]->type == TYPE_LIST)) {
             prv_var = stack[sp];
             prv_index = 0;
             mode_interruptible = prv_worker;

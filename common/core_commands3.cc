@@ -291,10 +291,10 @@ int docmd_cross(arg_struct *arg) {
         if (ls > 3 || rs > 3)
             return ERR_DIMENSION_ERROR;
         for (i = 0; i < ls; i++)
-            if (left->array->is_string[i])
+            if (left->array->is_string[i] != 0)
                 return ERR_ALPHA_DATA_IS_INVALID;
         for (i = 0; i < rs; i++)
-            if (right->array->is_string[i])
+            if (right->array->is_string[i] != 0)
                 return ERR_ALPHA_DATA_IS_INVALID;
         switch (ls) {
             case 3: zl = left->array->data[2];

@@ -277,6 +277,9 @@ typedef struct {
         char buf[8];
         char *ptr;
     } t;
+    char *txt() {
+        return length > 8 ? ptr : buf;
+    }
 } vartype_string;
 
 

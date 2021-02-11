@@ -459,11 +459,17 @@ int docmd_null(arg_struct *arg) {
 }
 
 int docmd_asto(arg_struct *arg) {
-    /* I'm lazy enough to spot that ASTO has exactly the same side effects as
-     * STO with the first 6 characters of ALPHA in ST X (as long as the
-     * destination is not ST X or IND ST X). If you're also aware that
-     * new_string() constructs a string of no more than 6 characters,
-     * you'll see that this code does the job quite nicely.
+    int temp_alpha_length = reg_alpha_length;
+    if (reg_alpha_length > 6)
+        reg_alpha_length = 6;
+    int err = docmd_xasto(arg);
+    reg_alpha_length = temp_alpha_length;
+    return err;
+}
+
+int docmd_xasto(arg_struct *arg) {
+    /* Using STO to do the dirty work. Just need a bit of special care
+     * in case the destination is ST X or IND ST X.
      */
     vartype *s = new_string(reg_alpha, reg_alpha_length);
     if (s == NULL)
@@ -540,7 +546,7 @@ int docmd_arcl(arg_struct *arg) {
      */
     if (v->type == TYPE_STRING) {
         vartype_string *s = (vartype_string *) v;
-        append_alpha_string(s->text, s->length, 0);
+        append_alpha_string(s->txt(), s->length, 0);
     } else {
         char buf[100];
         int bufptr = vartype2string(v, buf, 100);
@@ -652,6 +658,8 @@ int docmd_clsigma(arg_struct *arg) {
     if (last > size)
         return ERR_SIZE_ERROR;
     for (i = first; i < last; i++) {
+        if (r->array->is_string[i] == 2)
+            free(*(void **) &r->array->data[i]);
         r->array->is_string[i] = 0;
         r->array->data[i] = 0;
     }
@@ -711,6 +719,7 @@ int docmd_clrg(arg_struct *arg) {
             return ERR_INSUFFICIENT_MEMORY;
         rm = (vartype_realmatrix *) regs;
         sz = rm->rows * rm->columns;
+        free_long_strings(rm->array->is_string, rm->array->data, sz);
         for (i = 0; i < sz; i++)
             rm->array->data[i] = 0;
         for (i = 0; i < sz; i++)
@@ -1287,7 +1296,7 @@ int docmd_sign(arg_struct *arg) {
                 return ERR_INSUFFICIENT_MEMORY;
             size = src->rows * src->columns;
             for (i = 0; i < size; i++) {
-                if (src->array->is_string[i])
+                if (src->array->is_string[i] != 0)
                     dst->array->data[i] = 0;
                 else
                     dst->array->data[i] = src->array->data[i] < 0 ? -1 : 1;

@@ -1888,7 +1888,7 @@ void show() {
                 vartype_string *s = (vartype_string *) rx;
                 bufptr = 0;
                 char2buf(buf, 44, &bufptr, '"');
-                string2buf(buf, 44, &bufptr, s->length > 8 ? s->t.ptr : s->t.buf, s->length);
+                string2buf(buf, 44, &bufptr, s->txt(), s->length);
                 if (bufptr < 44)
                     char2buf(buf, 44, &bufptr, '"');
                 goto show_one_or_two_lines;
@@ -1931,15 +1931,7 @@ void show() {
                 if (rm->array->is_string[0]) {
                     char *text;
                     int4 len;
-                    if (rm->array->is_string[0] == 1) {
-                        text = (char *) d;
-                        len = text[0];
-                        text++;
-                    } else {
-                        int4 *p = *(int4 **) d;
-                        text = (char *) (p + 1);
-                        len = *p;
-                    }
+                    get_matrix_string(rm, 0, &text, &len);
                     char2buf(buf, 18, &bufptr, '"');
                     string2buf(buf, 18, &bufptr, text, len);
                     if (bufptr < 18)

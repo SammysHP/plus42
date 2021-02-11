@@ -775,6 +775,15 @@ int docmd_lsto(arg_struct *arg) {
 }
 
 int docmd_lasto(arg_struct *arg) {
+    int temp_alpha_length = reg_alpha_length;
+    if (reg_alpha_length > 6)
+        reg_alpha_length = 6;
+    int err = docmd_lxasto(arg);
+    reg_alpha_length = temp_alpha_length;
+    return err;
+}
+
+int docmd_lxasto(arg_struct *arg) {
     /* This relates to LSTO the same way ASTO relates to STO. */
     vartype *s = new_string(reg_alpha, reg_alpha_length);
     if (s == NULL)
@@ -1242,18 +1251,6 @@ int docmd_mvarcat(arg_struct *arg) {
 ///////////////////////////////////
 ///// String & List Functions /////
 ///////////////////////////////////
-
-int docmd_xasto(arg_struct *arg) {
-    // XASTO: like ASTO, but the entire ALPHA register, not just
-    // the first 6 characters.
-    return ERR_NOT_YET_IMPLEMENTED;
-}
-
-int docmd_lxasto(arg_struct *arg) {
-    // LXASTO: like LASTO, but the entire ALPHA register, not just
-    // the first 6 characters.
-    return ERR_NOT_YET_IMPLEMENTED;
-}
 
 static int concat(bool extend) {
     if (stack[sp - 1]->type == TYPE_STRING) {

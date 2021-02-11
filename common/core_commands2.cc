@@ -646,7 +646,7 @@ static int generic_loop(arg_struct *arg, bool isg) {
                 int4 index = arg->val.num;
                 if (index >= size)
                     return ERR_SIZE_ERROR;
-                if (rm->array->is_string[index])
+                if (rm->array->is_string[index] != 0)
                     return ERR_ALPHA_DATA_IS_INVALID;
                 else {
                     if (!disentangle(regs))
@@ -730,7 +730,7 @@ int docmd_xtoa(arg_struct *arg) {
         append_alpha_char(to_char(x));
     } else if (stack[sp]->type == TYPE_STRING) {
         vartype_string *s = (vartype_string *) stack[sp];
-        append_alpha_string(s->text, s->length, 0);
+        append_alpha_string(s->txt(), s->length, 0);
     } else if (stack[sp]->type == TYPE_REALMATRIX) {
         vartype_realmatrix *m = (vartype_realmatrix *) stack[sp];
         int4 size = m->rows * m->columns;
@@ -738,10 +738,12 @@ int docmd_xtoa(arg_struct *arg) {
         char buf[44];
         int buflen = 0;
         for (i = size - 1; i >= 0; i--) {
-            if (m->array->is_string[i]) {
-                int j;
-                for (j = phloat_length(m->array->data[i]) - 1; j >= 0; j--) {
-                    buf[buflen++] = phloat_text(m->array->data[i])[j];
+            if (m->array->is_string[i] != 0) {
+                int4 len;
+                char *text;
+                get_matrix_string(m, i, &text, &len);
+                for (int4 j = len - 1; j >= 0; j--) {
+                    buf[buflen++] = text[j];
                     if (buflen == 44)
                         goto done;
                 }
@@ -987,14 +989,15 @@ static bool recursive_eq(vartype *v1, vartype *v2) {
                 int ystr = y->array->is_string[i];
                 if (xstr != ystr)
                     return false;
-                if (xstr) {
-                    if (!string_equals(phloat_text(x->array->data[i]),
-                                       phloat_length(x->array->data[i]),
-                                       phloat_text(y->array->data[i]),
-                                       phloat_length(y->array->data[i])))
+                if (xstr == 0) {
+                    if (x->array->data[i] != y->array->data[i])
                         return false;
                 } else {
-                    if (x->array->data[i] != y->array->data[i])
+                    int len1, len2;
+                    char *text1, *text2;
+                    get_matrix_string(x, i, &text1, &len1);
+                    get_matrix_string(y, i, &text2, &len2);
+                    if (!string_equals(text1, len1, text2, len2))
                         return false;
                 }
             }
@@ -1015,7 +1018,7 @@ static bool recursive_eq(vartype *v1, vartype *v2) {
         case TYPE_STRING: {
             vartype_string *x = (vartype_string *) v1;
             vartype_string *y = (vartype_string *) v2;
-            return string_equals(x->text, x->length, y->text, y->length);
+            return string_equals(x->txt(), x->length, y->txt(), y->length);
         }
         case TYPE_LIST: {
             vartype_list *x = (vartype_list *) v1;
@@ -1120,11 +1123,13 @@ int docmd_prsigma(arg_struct *arg) {
     print_text(NULL, 0, 1);
     for (i = 0; i < nr; i++) {
         int4 j = i + mode_sigma_reg;
-        if (rm->array->is_string[j]) {
+        if (rm->array->is_string[j] != 0) {
+            char *text;
+            int4 len;
+            get_matrix_string(rm, j, &text, &len);
             bufptr = 0;
             char2buf(buf, 100, &bufptr, '"');
-            string2buf(buf, 100, &bufptr, phloat_text(rm->array->data[j]),
-                                          phloat_length(rm->array->data[j]));
+            string2buf(buf, 100, &bufptr, text, len);
             char2buf(buf, 100, &bufptr, '"');
         } else
             bufptr = easy_phloat2string(rm->array->data[j], buf, 100, 0);
@@ -1216,10 +1221,12 @@ static int prv_worker(int interrupted) {
         llen += int2string(j + 1, lbuf + llen, 32 - llen);
         char2buf(lbuf, 32, &llen, '=');
         if (rm->array->is_string[prv_index]) {
+            char *text;
+            int4 len;
+            get_matrix_string(rm, prv_index, &text, &len);
             rlen = 0;
             char2buf(rbuf, 100, &rlen, '"');
-            string2buf(rbuf, 100, &rlen, phloat_text(rm->array->data[prv_index]),
-                                    phloat_length(rm->array->data[prv_index]));
+            string2buf(rbuf, 100, &rlen, text, len);
             char2buf(rbuf, 100, &rlen, '"');
         } else
             rlen = easy_phloat2string(rm->array->data[prv_index],

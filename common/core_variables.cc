@@ -283,6 +283,18 @@ void free_long_strings(char *is_string, phloat *data, int4 n) {
             free(*(void **) &data[i]);
 }
 
+void get_matrix_string(vartype_realmatrix *rm, int i, char **text, int4 *length) {
+    if (rm->array->is_string[i] == 1) {
+        char *t = (char *) &rm->array->data[i];
+        *text = t + 1;
+        *length = *t;
+    } else {
+        int4 *p = *(int4 **) &rm->array->data[i];
+        *text = (char *) (p + 1);
+        *length = *p;
+    }
+}
+
 vartype *dup_vartype(const vartype *v) {
     if (v == NULL)
         return NULL;

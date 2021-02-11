@@ -920,7 +920,7 @@ static bool persist_vartype(vartype *v) {
         case TYPE_STRING: {
             vartype_string *s = (vartype_string *) v;
             return write_int4(s->length)
-                && fwrite(s->length > 8 ? s->t.ptr : s->t.buf, 1, s->length, gfile) == s->length;
+                && fwrite(s->txt(), 1, s->length, gfile) == s->length;
         }
         case TYPE_REALMATRIX: {
             vartype_realmatrix *rm = (vartype_realmatrix *) v;

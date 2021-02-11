@@ -44,6 +44,7 @@ int docmd_fptest(arg_struct *arg);
 
 int docmd_lsto(arg_struct *arg);
 int docmd_lasto(arg_struct *arg);
+int docmd_lxasto(arg_struct *arg);
 int docmd_wsize(arg_struct *arg);
 int docmd_wsize_t(arg_struct *arg);
 int docmd_bsigned(arg_struct *arg);
@@ -74,8 +75,6 @@ int docmd_rupn(arg_struct *arg);
 
 int docmd_mvarcat(arg_struct *arg);
 
-int docmd_xasto(arg_struct *arg);
-int docmd_lxasto(arg_struct *arg);
 int docmd_append(arg_struct *arg);
 int docmd_extend(arg_struct *arg);
 int docmd_substr(arg_struct *arg);

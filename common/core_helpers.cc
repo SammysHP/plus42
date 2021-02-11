@@ -1013,6 +1013,30 @@ int dimension_array_ref(vartype *matrix, int4 rows, int4 columns) {
         if (oldmatrix->rows == rows && oldmatrix->columns == columns)
             return ERR_NONE;
         if (oldmatrix->array->refcount == 1) {
+            int4 oldsize = oldmatrix->rows * oldmatrix->columns;
+            if (size == oldsize) {
+                /* Easy case! */
+                oldmatrix->rows = rows;
+                oldmatrix->columns = columns;
+                return ERR_NONE;
+            } else if (size < oldsize) {
+                /* Also pretty easy, shrinking means we don't have to worry
+                 * about allocation failures. We do deal with realloc()
+                 * failures, because technically, realloc() can fail even when
+                 * shrinking, but that is easy to handle by simply hanging onto
+                 * the existing block.
+                 */
+                free_long_strings(oldmatrix->array->is_string + size, oldmatrix->array->data + size, oldsize - size);
+                char *new_is_string = (char *) realloc(oldmatrix->array->is_string, size);
+                if (new_is_string != NULL)
+                    oldmatrix->array->is_string = new_is_string;
+                phloat *new_data = (phloat *) realloc(oldmatrix->array->data, size * sizeof(phloat));
+                if (new_data != NULL)
+                    oldmatrix->array->data = new_data;
+                oldmatrix->rows = rows;
+                oldmatrix->columns = columns;
+                return ERR_NONE;
+            }
             /* Since there are no shared references to this array,
              * I can modify it in place using a realloc(). However, I
              * only use realloc() on the 'data' array, not on the
@@ -1025,19 +1049,14 @@ int dimension_array_ref(vartype *matrix, int4 rows, int4 columns) {
             char *new_is_string = (char *) malloc(size);
             if (new_is_string == NULL)
                 return ERR_INSUFFICIENT_MEMORY;
-            int4 i, s, oldsize;
-            phloat *new_data = (phloat *)
-                                    realloc(oldmatrix->array->data,
-                                            size * sizeof(phloat));
+            phloat *new_data = (phloat *) realloc(oldmatrix->array->data, size * sizeof(phloat));
             if (new_data == NULL) {
                 free(new_is_string);
                 return ERR_INSUFFICIENT_MEMORY;
             }
-            oldsize = oldmatrix->rows * oldmatrix->columns;
-            s = oldsize < size ? oldsize : size;
-            for (i = 0; i < s; i++)
+            for (int4 i = 0; i < oldsize; i++)
                 new_is_string[i] = oldmatrix->array->is_string[i];
-            for (i = s; i < size; i++) {
+            for (int4 i = oldsize; i < size; i++) {
                 new_is_string[i] = 0;
                 new_data[i] = 0;
             }
@@ -1066,6 +1085,7 @@ int dimension_array_ref(vartype *matrix, int4 rows, int4 columns) {
             }
             new_array->is_string = (char *) malloc(size);
             if (new_array->is_string == NULL) {
+                nomem:
                 free(new_array->data);
                 free(new_array);
                 return ERR_INSUFFICIENT_MEMORY;
@@ -1074,7 +1094,19 @@ int dimension_array_ref(vartype *matrix, int4 rows, int4 columns) {
             s = oldsize < size ? oldsize : size;
             for (i = 0; i < s; i++) {
                 new_array->is_string[i] = oldmatrix->array->is_string[i];
-                new_array->data[i] = oldmatrix->array->data[i];
+                if (oldmatrix->array->is_string[i] == 2) {
+                    int4 *sp = *(int4 **) &oldmatrix->array->data[i];
+                    int4 *dp = (int4 *) malloc(*sp + 4);
+                    if (dp == NULL) {
+                        free_long_strings(new_array->is_string, new_array->data, i);
+                        free(new_array->is_string);
+                        goto nomem;
+                    }
+                    memcpy(dp, sp, *sp + 4);
+                    *(int4 **) &new_array->data[i] = dp;
+                } else {
+                    new_array->data[i] = oldmatrix->array->data[i];
+                }
             }
             for (i = s; i < size; i++) {
                 new_array->is_string[i] = 0;
@@ -1335,8 +1367,9 @@ int vartype2string(const vartype *v, char *buf, int buflen, int max_mant_digits)
             int i;
             int chars_so_far = 0;
             char2buf(buf, buflen, &chars_so_far, '"');
+            char *txt = s->txt();
             for (i = 0; i < s->length; i++)
-                char2buf(buf, buflen, &chars_so_far, s->length > 8 ? s->t.ptr[i] : s->t.buf[i]);
+                char2buf(buf, buflen, &chars_so_far, txt[i]);
             char2buf(buf, buflen, &chars_so_far, '"');
             return chars_so_far;
         }

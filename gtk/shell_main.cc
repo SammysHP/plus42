@@ -925,7 +925,7 @@ static int read_shell_state(int4 *ver) {
 
     if (fread(&magic, 1, sizeof(int4), statefile) != sizeof(int4))
         return 0;
-    if (magic != FREE42_MAGIC)
+    if (magic != PLUS42_MAGIC && magic != FREE42_MAGIC)
         return 0;
 
     if (fread(&version, 1, sizeof(int4), statefile) != sizeof(int4))
@@ -962,7 +962,7 @@ static int read_shell_state(int4 *ver) {
 }
 
 static int write_shell_state() {
-    int4 magic = FREE42_MAGIC;
+    int4 magic = PLUS42_MAGIC;
     int4 version = 27;
     int4 state_size = sizeof(state_type);
     int4 state_version = SHELL_VERSION;
@@ -1290,7 +1290,7 @@ static void states_menu_new() {
     char path[FILENAMELEN];
     snprintf(path, FILENAMELEN, "%s/%s.p42", free42dirname, name);
     FILE *f = fopen(path, "w");
-    fprintf(f, FREE42_MAGIC_STR);
+    fprintf(f, PLUS42_MAGIC_STR);
     fclose(f);
     free(name);
     gtk_dialog_response(GTK_DIALOG(dlg), 4);
@@ -1650,7 +1650,7 @@ static void statesCB() {
     snprintf(buf, FILENAMELEN, "%s/%s.p42", free42dirname, state.coreName);
     if (!file_exists(buf)) {
         FILE *f = fopen(buf, "w");
-        fwrite(FREE42_MAGIC_STR, 1, 4, f);
+        fwrite(PLUS42_MAGIC_STR, 1, 4, f);
         fclose(f);
     }
 

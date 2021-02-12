@@ -1754,7 +1754,7 @@ static int read_shell_state(int4 *ver) {
     
     if (fread(&magic, 1, sizeof(int4), statefile) != sizeof(int4))
         return 0;
-    if (magic != FREE42_MAGIC)
+    if (magic != PLUS42_MAGIC && magic != FREE42_MAGIC)
         return 0;
     
     if (fread(&version, 1, sizeof(int4), statefile) != sizeof(int4))
@@ -1793,7 +1793,7 @@ static int read_shell_state(int4 *ver) {
 }
 
 static int write_shell_state() {
-    int4 magic = FREE42_MAGIC;
+    int4 magic = PLUS42_MAGIC;
     int4 version = 27;
     int4 state_size = sizeof(state_type);
     int4 state_version = SHELL_VERSION;

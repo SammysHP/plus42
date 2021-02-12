@@ -199,7 +199,7 @@ static void doNew(HWND hDlg) {
 	path += name;
 	path += L".p42";
     FILE *f = _wfopen(path.c_str(), L"wb");
-    fprintf(f, FREE42_MAGIC_STR);
+    fprintf(f, PLUS42_MAGIC_STR);
     fclose(f);
 	updateUI(hDlg, true);
 }
@@ -398,7 +398,7 @@ LRESULT CALLBACK StatesDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
             const wchar_t *currentStateNameC = currentStateName.c_str();
             if (GetFileAttributesW(currentStateNameC) == INVALID_FILE_ATTRIBUTES) {
                 FILE *f = _wfopen(currentStateNameC, L"wb");
-                fwrite(FREE42_MAGIC_STR, 1, 4, f);
+                fwrite(PLUS42_MAGIC_STR, 1, 4, f);
                 fclose(f);
             }
 

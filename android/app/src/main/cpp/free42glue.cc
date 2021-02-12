@@ -89,6 +89,16 @@ static JNIEnv *getJniEnv() {
 /*******************************************************/
 
 extern "C" jint
+Java_com_thomasokken_free42_Free42Activity_PLUS42_1MAGIC(JNIEnv *env, jobject thiz) {
+    return PLUS42_MAGIC;
+}
+
+extern "C" jstring
+Java_com_thomasokken_free42_Free42Activity_PLUS42_1MAGIC_1STR(JNIEnv *env, jobject thiz) {
+    return env->NewStringUTF(PLUS42_MAGIC_STR);
+}
+
+extern "C" jint
 Java_com_thomasokken_free42_Free42Activity_FREE42_1MAGIC(JNIEnv *env, jobject thiz) {
     return FREE42_MAGIC;
 }

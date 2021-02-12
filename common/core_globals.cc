@@ -771,7 +771,7 @@ bool no_keystrokes_yet;
  * Version 33: 3.0    Big stack; parameterized RTNERR
  * Version 34: 3.0    Long strings
  */
-#define FREE42_VERSION 34
+#define PLUS42_VERSION 34
 
 
 /*******************/
@@ -4006,7 +4006,7 @@ static bool load_state2(bool *clear, bool *too_new) {
         int4 magic;
         if (!read_int4(&magic))
             return false;
-        if (magic != FREE42_MAGIC)
+        if (magic != PLUS42_MAGIC && magic != FREE42_MAGIC)
             return false;
         if (!read_int4(&ver)) {
             // A state file containing nothing after the magic number
@@ -4018,7 +4018,7 @@ static bool load_state2(bool *clear, bool *too_new) {
         }
     }
 
-    if (ver > FREE42_VERSION) {
+    if (ver > PLUS42_VERSION) {
         *too_new = true;
         return false;
     }
@@ -4230,7 +4230,7 @@ static bool load_state2(bool *clear, bool *too_new) {
 #endif
 
     if (!read_int4(&magic)) return false;
-    if (magic != FREE42_MAGIC)
+    if (magic != PLUS42_MAGIC && magic != FREE42_MAGIC)
         return false;
     if (!read_int4(&version)) return false;
     if (version != ver)
@@ -4259,7 +4259,7 @@ bool load_state(int4 ver_p, bool *clear, bool *too_new) {
 }
 
 void save_state() {
-    if (!write_int4(FREE42_MAGIC) || !write_int4(FREE42_VERSION))
+    if (!write_int4(PLUS42_MAGIC) || !write_int4(PLUS42_VERSION))
         return;
 
     // Write app version and platform, for troubleshooting purposes
@@ -4349,8 +4349,8 @@ void save_state() {
     if (!persist_math())
         return;
 
-    if (!write_int4(FREE42_MAGIC)) return;
-    if (!write_int4(FREE42_VERSION)) return;
+    if (!write_int4(PLUS42_MAGIC)) return;
+    if (!write_int4(PLUS42_VERSION)) return;
 }
 
 // Reason:

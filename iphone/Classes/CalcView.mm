@@ -692,7 +692,7 @@ static int read_shell_state(int *ver) {
     
     if (fread(&magic, 1, sizeof(int), statefile) != sizeof(int))
         return 0;
-    if (magic != FREE42_MAGIC)
+    if (magic != PLUS42_MAGIC && magic != FREE42_MAGIC)
         return 0;
     
     if (fread(&version, 1, sizeof(int), statefile) != sizeof(int))
@@ -904,7 +904,7 @@ static void shell_keyup() {
 
 static int write_shell_state() {
     TRACE("write_shell_state");
-    int magic = FREE42_MAGIC;
+    int magic = PLUS42_MAGIC;
     int version = 27;
     int state_size = sizeof(state);
     int state_version = SHELL_VERSION;

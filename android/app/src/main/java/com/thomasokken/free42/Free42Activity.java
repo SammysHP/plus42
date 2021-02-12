@@ -1693,7 +1693,8 @@ public class Free42Activity extends Activity {
     
     private boolean read_shell_state(IntHolder version) {
         try {
-            if (state_read_int() != FREE42_MAGIC())
+            int magic = state_read_int();
+            if (magic != PLUS42_MAGIC() && magic != FREE42_MAGIC())
                 return false;
             version.value = state_read_int();
             if (version.value < 0)
@@ -1855,7 +1856,7 @@ public class Free42Activity extends Activity {
 
     private void write_shell_state() {
         try {
-            state_write_int(FREE42_MAGIC());
+            state_write_int(PLUS42_MAGIC());
             state_write_int(27);
             state_write_int(SHELL_VERSION);
             state_write_boolean(ShellSpool.printToGif);
@@ -2014,6 +2015,8 @@ public class Free42Activity extends Activity {
     ///// Stubs for accessing the FREE42_MAGIC and FREE42_MAGIC_STR macros /////
     ////////////////////////////////////////////////////////////////////////////
     
+    private static native int PLUS42_MAGIC();
+    public static native String PLUS42_MAGIC_STR();
     private static native int FREE42_MAGIC();
     public static native String FREE42_MAGIC_STR();
     

@@ -3897,7 +3897,7 @@ void core_paste(const char *buf) {
                             case TYPE_COMPLEX:
                                 free_long_strings(is_string, data, p);
                                 for (int i = 0; i < p; i++)
-                                    if (is_string[i] != 0) {
+                                    if (is_string[i] != 0)
                                         data[i] = 0;
                                 free(is_string);
                                 is_string = NULL;
@@ -3939,7 +3939,7 @@ void core_paste(const char *buf) {
                                     }
                                     *t = slen;
                                     memcpy(t + 1, s, slen);
-                                    *(int4 **) data[p] = t;
+                                    *(int4 **) &data[p] = t;
                                     is_string[p] = 2;
                                 }
                                 break;

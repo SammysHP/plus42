@@ -61,7 +61,7 @@ int resolve_ind_arg(arg_struct *arg) {
                         return ERR_NAME_TOO_LONG;
                     arg->type = ARGTYPE_STR;
                     arg->length = len;
-                    memcpy(arg->val.text, t + 1, len);
+                    memcpy(arg->val.text, txt, len);
                 }
                 return ERR_NONE;
             }
@@ -107,7 +107,7 @@ int resolve_ind_arg(arg_struct *arg) {
                     return ERR_NAME_TOO_LONG;
                 arg->type = ARGTYPE_STR;
                 arg->length = s->length;
-                memcpy(arg->val.text, s->t.buf, s->length);
+                memcpy(arg->val.text, s->txt(), s->length);
                 return ERR_NONE;
             } else
                 return ERR_INVALID_TYPE;
@@ -1055,8 +1055,7 @@ int dimension_array_ref(vartype *matrix, int4 rows, int4 columns) {
                 free(new_is_string);
                 return ERR_INSUFFICIENT_MEMORY;
             }
-            for (int4 i = 0; i < oldsize; i++)
-                new_is_string[i] = oldmatrix->array->is_string[i];
+            memcpy(new_is_string, oldmatrix->array->is_string, oldsize);
             for (int4 i = oldsize; i < size; i++) {
                 new_is_string[i] = 0;
                 new_data[i] = 0;

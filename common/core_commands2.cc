@@ -963,88 +963,12 @@ int docmd_x_ge_0(arg_struct *arg) {
     return ((vartype_real *) stack[sp])->x >= 0 ? ERR_YES : ERR_NO;
 }
 
-static bool recursive_eq(vartype *v1, vartype *v2) {
-    if (v1->type != v2->type)
-        return false;
-    switch (v1->type) {
-        case TYPE_REAL: {
-            vartype_real *x = (vartype_real *) v1;
-            vartype_real *y = (vartype_real *) v2;
-            return x->x == y->x;
-        }
-        case TYPE_COMPLEX: {
-            vartype_complex *x = (vartype_complex *) v1;
-            vartype_complex *y = (vartype_complex *) v2;
-            return x->re == y->re && x->im == y->im;
-        }
-        case TYPE_REALMATRIX: {
-            vartype_realmatrix *x = (vartype_realmatrix *) v1;
-            vartype_realmatrix *y = (vartype_realmatrix *) v2;
-            int4 sz, i;
-            if (x->rows != y->rows || x->columns != y->columns)
-                return false;
-            sz = x->rows * x->columns;
-            for (i = 0; i < sz; i++) {
-                int xstr = x->array->is_string[i];
-                int ystr = y->array->is_string[i];
-                if (xstr != ystr)
-                    return false;
-                if (xstr == 0) {
-                    if (x->array->data[i] != y->array->data[i])
-                        return false;
-                } else {
-                    int len1, len2;
-                    char *text1, *text2;
-                    get_matrix_string(x, i, &text1, &len1);
-                    get_matrix_string(y, i, &text2, &len2);
-                    if (!string_equals(text1, len1, text2, len2))
-                        return false;
-                }
-            }
-            return true;
-        }
-        case TYPE_COMPLEXMATRIX: {
-            vartype_complexmatrix *x = (vartype_complexmatrix *) v1;
-            vartype_complexmatrix *y = (vartype_complexmatrix *) v2;
-            int4 sz, i;
-            if (x->rows != y->rows || x->columns != y->columns)
-                return false;
-            sz = 2 * x->rows * x->columns;
-            for (i = 0; i < sz; i++)
-                if (x->array->data[i] != y->array->data[i])
-                    return false;
-            return true;
-        }
-        case TYPE_STRING: {
-            vartype_string *x = (vartype_string *) v1;
-            vartype_string *y = (vartype_string *) v2;
-            return string_equals(x->txt(), x->length, y->txt(), y->length);
-        }
-        case TYPE_LIST: {
-            vartype_list *x = (vartype_list *) v1;
-            vartype_list *y = (vartype_list *) v2;
-            if (x->size != y->size)
-                return false;
-            int4 sz = x->size;
-            vartype **data1 = x->array->data;
-            vartype **data2 = y->array->data;
-            for (int4 i = 0; i < sz; i++)
-                if (!recursive_eq(data1[i], data2[i]))
-                    return false;
-            return true;
-        }
-        default:
-            /* Looks like someone added a type that we're not handling yet! */
-            return false;
-    }
-}
-
 int docmd_x_eq_y(arg_struct *arg) {
-    return recursive_eq(stack[sp], stack[sp - 1]) ? ERR_YES : ERR_NO;
+    return vartype_equals(stack[sp], stack[sp - 1]) ? ERR_YES : ERR_NO;
 }
 
 int docmd_x_ne_y(arg_struct *arg) {
-    return recursive_eq(stack[sp], stack[sp - 1]) ? ERR_NO : ERR_YES;
+    return vartype_equals(stack[sp], stack[sp - 1]) ? ERR_NO : ERR_YES;
 }
 
 int docmd_x_lt_y(arg_struct *arg) {

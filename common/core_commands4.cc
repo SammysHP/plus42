@@ -287,38 +287,10 @@ int docmd_ln_1_x(arg_struct *arg) {
 }
 
 int docmd_posa(arg_struct *arg) {
-    int pos = -1;
-    vartype *v;
-    if (stack[sp]->type == TYPE_REAL) {
-        phloat x = ((vartype_real *) stack[sp])->x;
-        char c;
-        int i;
-        if (x < 0)
-            x = -x;
-        if (x >= 256)
-            return ERR_INVALID_DATA;
-        c = to_char(x);
-        for (i = 0; i < reg_alpha_length; i++)
-            if (reg_alpha[i] == c) {
-                pos = i;
-                break;
-            }
-    } else {
-        vartype_string *s = (vartype_string *) stack[sp];
-        if (s->length != 0) {
-            int i, j;
-            char *text = s->txt();
-            for (i = 0; i < reg_alpha_length - s->length + 1; i++) {
-                for (j = 0; j < s->length; j++)
-                    if (reg_alpha[i + j] != text[j])
-                        goto notfound;
-                pos = i;
-                break;
-                notfound:;
-            }
-        }
-    }
-    v = new_real(pos);
+    int pos = string_pos(reg_alpha, reg_alpha_length, stack[sp], 0);
+    if (pos == -2)
+        return ERR_INVALID_DATA;
+    vartype *v = new_real(pos);
     if (v == NULL)
         return ERR_INSUFFICIENT_MEMORY;
     unary_result(v);

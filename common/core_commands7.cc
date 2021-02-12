@@ -1549,9 +1549,59 @@ int docmd_rev(arg_struct *arg) {
 
 int docmd_pos(arg_struct *arg) {
     // POS: finds the first occurrence of the string or list X in Y. Or with three
-    // parameters: find the first occurrence of string or list Y in Z, starting the
-    // search from position X.
-    return ERR_NOT_YET_IMPLEMENTED;
+    // parameters: find the first occurrence of string or list X in Z, starting the
+    // search from position Y.
+    int pos, startpos;
+    int list_sp;
+    bool ternary;
+    if (stack[sp - 1]->type == TYPE_REAL) {
+        phloat start = ((vartype_real *) stack[sp - 1])->x;
+        if (start < -2147483648.0 || start > 2147483648.0) {
+            startpos = -2;
+        } else {
+            startpos = to_int(start);
+            if (startpos < 0)
+                startpos = -startpos;
+        }
+        list_sp = sp - 2;
+        ternary = true;
+    } else {
+        startpos = 0;
+        list_sp = sp - 1;
+        ternary = false;
+    }
+    if (stack[list_sp]->type == TYPE_STRING) {
+        if (stack[sp]->type != TYPE_STRING && stack[sp]->type != TYPE_REAL)
+            return ERR_INVALID_TYPE;
+        if (startpos == -2)
+            return ERR_INVALID_DATA;
+        vartype_string *s = (vartype_string *) stack[list_sp];
+        pos = string_pos(s->txt(), s->length, stack[sp], startpos);
+        if (pos == -2)
+            return ERR_INVALID_DATA;
+    } else if (stack[list_sp]->type == TYPE_LIST) {
+        if (startpos == -2)
+            return ERR_INVALID_DATA;
+        vartype_list *list = (vartype_list *) stack[list_sp];
+        pos = -1;
+        for (int4 i = startpos; i < list->size; i++) {
+            if (vartype_equals(list->array->data[i], stack[sp])) {
+                pos = i;
+                break;
+            }
+        }
+    } else {
+        return ERR_INVALID_TYPE;
+    }
+    vartype *v = new_real(pos);
+    if (v == NULL)
+        return ERR_INSUFFICIENT_MEMORY;
+    if (ternary) {
+        return ternary_result(v);
+    } else {
+        binary_result(v);
+        return ERR_NONE;
+    }
 }
 
 int docmd_s_to_n(arg_struct *arg) {

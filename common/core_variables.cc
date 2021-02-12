@@ -16,6 +16,7 @@
  *****************************************************************************/
 
 #include <stdlib.h>
+#include <string.h>
 
 #include "core_globals.h"
 #include "core_helpers.h"
@@ -100,9 +101,9 @@ vartype *new_string(const char *text, int length) {
     }
     s->s.length = length;
     if (length > SSLENV)
-        s->t.ptr = dbuf;
+        s->s.t.ptr = dbuf;
     if (text != NULL)
-        memcpy(length > SSLENV ? s->t.ptr : s->t.buf, text, length);
+        memcpy(length > SSLENV ? s->s.t.ptr : s->s.t.buf, text, length);
     return (vartype *) s;
 }
 
@@ -193,8 +194,7 @@ vartype *new_list(int4 size) {
         free(list);
         return NULL;
     }
-    for (int4 i = 0; i < size; i++)
-        list->array->data[i] = NULL;
+    memset(list->array->data, 0, size * sizeof(vartype *));
     list->array->refcount = 1;
     return (vartype *) list;
 }
@@ -217,8 +217,8 @@ void free_vartype(vartype *v) {
         }
         case TYPE_STRING: {
             pool_string *s = (pool_string *) v;
-            if (s->length > SSLENV)
-                free(s->t.ptr);
+            if (s->s.length > SSLENV)
+                free(s->s.t.ptr);
             s->next = stringpool;
             stringpool = s;
             break;
@@ -297,10 +297,12 @@ void get_matrix_string(vartype_realmatrix *rm, int i, char **text, int4 *length)
 bool put_matrix_string(vartype_realmatrix *rm, int i, char *text, int4 length) {
     char *ptext;
     int4 plength;
-    get_matrix_string(rm, i, &ptext, &plength);
-    if (plength == length) {
-        memcpy(ptext, text, length);
-        return true;
+    if (rm->array->is_string[i] != 0) {
+        get_matrix_string(rm, i, &ptext, &plength);
+        if (plength == length) {
+            memcpy(ptext, text, length);
+            return true;
+        }
     }
     if (length > SSLENM) {
         int4 *p = (int4 *) malloc(length + 4);
@@ -318,7 +320,7 @@ bool put_matrix_string(vartype_realmatrix *rm, int i, char *text, int4 length) {
         char *t = (char *) &rm->array->data[i];
         t[0] = length;
         memmove(t + 1, text, length);
-        rm->array->is_string = 1;
+        rm->array->is_string[i] = 1;
     }
     return true;
 }
@@ -645,7 +647,6 @@ bool contains_strings(const vartype_realmatrix *rm) {
  * error if any are encountered.
  */
 int matrix_copy(vartype *dst, const vartype *src) {
-    int4 size, i;
     if (src->type == TYPE_REALMATRIX) {
         vartype_realmatrix *s = (vartype_realmatrix *) src;
         if (dst->type == TYPE_REALMATRIX) {
@@ -654,13 +655,10 @@ int matrix_copy(vartype *dst, const vartype *src) {
                 return ERR_DIMENSION_ERROR;
             if (contains_strings(s))
                 return ERR_ALPHA_DATA_IS_INVALID;
-            size = s->rows * s->columns;
-            for (i = 0; i < size; i++) {
-                if (d->array->is_string[i] == 2)
-                    free(*(void **) &d->array->data[i]);
-                d->array->is_string[i] = 0;
-                d->array->data[i] = s->array->data[i];
-            }
+            int4 size = s->rows * s->columns;
+            free_long_strings(d->array->is_string, d->array->data, size);
+            memset(d->array->is_string, 0, size);
+            memcpy(d->array->data, s->array->data, size * sizeof(phloat));
             return ERR_NONE;
         } else if (dst->type == TYPE_COMPLEXMATRIX) {
             vartype_complexmatrix *d = (vartype_complexmatrix *) dst;
@@ -668,8 +666,8 @@ int matrix_copy(vartype *dst, const vartype *src) {
                 return ERR_DIMENSION_ERROR;
             if (contains_strings(s))
                 return ERR_ALPHA_DATA_IS_INVALID;
-            size = s->rows * s->columns;
-            for (i = 0; i < size; i++) {
+            int4 size = s->rows * s->columns;
+            for (int4 i = 0; i < size; i++) {
                 d->array->data[2 * i] = s->array->data[i];
                 d->array->data[2 * i + 1] = 0;
             }
@@ -682,9 +680,8 @@ int matrix_copy(vartype *dst, const vartype *src) {
         vartype_complexmatrix *d = (vartype_complexmatrix *) dst;
         if (s->rows != d->rows || s->columns != d->columns)
             return ERR_DIMENSION_ERROR;
-        size = s->rows * s->columns * 2;
-        for (i = 0; i < size; i++)
-            d->array->data[i] = s->array->data[i];
+        int4 size = s->rows * s->columns * 2;
+        memcpy(d->array->data, s->array->data, size * sizeof(phloat));
         return ERR_NONE;
     } else
         return ERR_INVALID_TYPE;

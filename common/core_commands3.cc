@@ -16,6 +16,7 @@
  *****************************************************************************/
 
 #include <stdlib.h>
+#include <string.h>
 
 #include "core_commands1.h"
 #include "core_commands2.h"
@@ -348,6 +349,8 @@ int docmd_custom(arg_struct *arg) {
 }
 
 int docmd_delr(arg_struct *arg) {
+    return ERR_NOT_YET_IMPLEMENTED;
+#if 0
     vartype *m, *newx;
     vartype_realmatrix *rm;
     vartype_complexmatrix *cm;
@@ -556,6 +559,7 @@ int docmd_delr(arg_struct *arg) {
     }
     matedit_i = newi;
     return ERR_NONE;
+#endif
 }
 
 static void det_completion(int error, vartype *det) {
@@ -616,9 +620,8 @@ int docmd_dot(arg_struct *arg) {
         int inf;
         if (size != rm2->rows * rm2->columns)
             return ERR_DIMENSION_ERROR;
-        for (i = 0; i < size; i++)
-            if (rm1->array->is_string[i] || rm2->array->is_string[i])
-                return ERR_ALPHA_DATA_IS_INVALID;
+        if (contains_strings(rm1) || contains_strings(rm2))
+            return ERR_ALPHA_DATA_IS_INVALID;
         for (i = 0; i < size; i++)
             dot += rm1->array->data[i] * rm2->array->data[i];
         if ((inf = p_isinf(dot)) != 0) {
@@ -648,9 +651,8 @@ int docmd_dot(arg_struct *arg) {
         size = rm->rows * rm->columns;
         if (size != cm->rows * cm->columns)
             return ERR_DIMENSION_ERROR;
-        for (i = 0; i < size; i++)
-            if (rm->array->is_string[i])
-                return ERR_ALPHA_DATA_IS_INVALID;
+        if (contains_strings(rm))
+            return ERR_ALPHA_DATA_IS_INVALID;
         for (i = 0; i < size; i++) {
             dot_re += rm->array->data[i] * cm->array->data[2 * i];
             dot_im += rm->array->data[i] * cm->array->data[2 * i + 1];
@@ -960,13 +962,11 @@ int docmd_e_pow_x_1(arg_struct *arg) {
 static int fnrm(vartype *m, phloat *norm) {
     if (m->type == TYPE_REALMATRIX) {
         vartype_realmatrix *rm = (vartype_realmatrix *) m;
+        if (contains_strings(rm))
+            return ERR_ALPHA_DATA_IS_INVALID;
         int4 size = rm->rows * rm->columns;
-        int4 i;
         phloat nrm = 0;
-        for (i = 0; i < size; i++)
-            if (rm->array->is_string[i])
-                return ERR_ALPHA_DATA_IS_INVALID;
-        for (i = 0; i < size; i++) {
+        for (int4 i = 0; i < size; i++) {
             /* TODO -- overflows in intermediaries */
             phloat x = rm->array->data[i];
             nrm += x * x;
@@ -1084,10 +1084,9 @@ int docmd_getm(arg_struct *arg) {
                 int4 n2 = i * dst->columns + j;
                 if (src->array->is_string[n1] == 2) {
                     int4 *sp = *(int4 **) &src->array->data[n1];
-                    char *text = (char *) (sp + 1);
                     int4 *dp = (int4 *) malloc(*sp + 4);
                     if (dp == NULL) {
-                        free_vartype(dst);
+                        free_vartype((vartype *) dst);
                         return ERR_INSUFFICIENT_MEMORY;
                     }
                     memcpy(dp, sp, *sp + 4);

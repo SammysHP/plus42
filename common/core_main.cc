@@ -3926,7 +3926,7 @@ void core_paste(const char *buf) {
                                     data[p] = 0;
                                     is_string[p] = 0;
                                 } else if (slen <= SSLENM) {
-                                    char *text = (char *) data[p];
+                                    char *text = (char *) &data[p];
                                     *text = slen;
                                     memcpy(text + 1, s, slen);
                                     is_string[p] = 1;
@@ -3994,7 +3994,7 @@ void core_paste(const char *buf) {
                 vartype_realmatrix *rm = (vartype_realmatrix *)
                                 malloc(sizeof(vartype_realmatrix));
                 if (rm == NULL) {
-                    free_long_strings(data, is_string, p);
+                    free_long_strings(is_string, data, p);
                     free(data);
                     free(is_string);
                     display_error(ERR_INSUFFICIENT_MEMORY, 0);
@@ -4005,7 +4005,7 @@ void core_paste(const char *buf) {
                                 malloc(sizeof(realmatrix_data));
                 if (rm->array == NULL) {
                     free(rm);
-                    free_long_strings(data, is_string, p);
+                    free_long_strings(is_string, data, p);
                     free(data);
                     free(is_string);
                     display_error(ERR_INSUFFICIENT_MEMORY, 0);

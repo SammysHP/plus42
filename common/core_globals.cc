@@ -886,14 +886,14 @@ static void update_decimal_in_programs();
 
 void vartype_string::trim1() {
     if (length > SSLENV + 1) {
-        memmove(ptr, ptr + 1, --length);
+        memmove(t.ptr, t.ptr + 1, --length);
     } else if (length == SSLENV + 1) {
         char temp[SSLENV];
-        memcpy(temp, ptr + 1, --length);
-        free(ptr);
-        memcpy(buf, temp, length);
+        memcpy(temp, t.ptr + 1, --length);
+        free(t.ptr);
+        memcpy(t.buf, temp, length);
     } else if (length > 0) {
-        memmove(buf, buf + 1, --length);
+        memmove(t.buf, t.buf + 1, --length);
     }
 }
 
@@ -1067,6 +1067,10 @@ struct old_vartype_string {
 // and try again in mode 2.
 
 int bug_mode;
+
+// Using a global for 'ver' so we don't have to pass it around all the time
+
+int4 ver;
 
 static bool unpersist_vartype(vartype **v, bool padded) {
     if (state_is_portable) {
@@ -1701,7 +1705,7 @@ static bool persist_globals() {
 
 static bool suppress_varmenu_update = false;
 
-static bool unpersist_globals(int4 ver) {
+static bool unpersist_globals() {
     int i;
     array_count = 0;
     array_list_capacity = 0;
@@ -3985,7 +3989,7 @@ bool write_arg(const arg_struct *arg) {
     }
 }
 
-static bool load_state2(int4 ver, bool *clear, bool *too_new) {
+static bool load_state2(bool *clear, bool *too_new) {
     int4 magic;
     int4 version;
     *clear = false;
@@ -4189,7 +4193,7 @@ static bool load_state2(int4 ver, bool *clear, bool *too_new) {
 
     if (!unpersist_display(ver))
         return false;
-    if (!unpersist_globals(ver))
+    if (!unpersist_globals())
         return false;
 
     if (ver < 4) {
@@ -4237,10 +4241,11 @@ static bool load_state2(int4 ver, bool *clear, bool *too_new) {
 
 // See the comment for bug_mode at its declaration...
 
-bool load_state(int4 ver, bool *clear, bool *too_new) {
+bool load_state(int4 ver_p, bool *clear, bool *too_new) {
     bug_mode = 0;
+    ver = ver_p;
     long fpos = ftell(gfile);
-    if (load_state2(ver, clear, too_new))
+    if (load_state2(clear, too_new))
         return true;
     if (bug_mode != 3)
         return false;
@@ -4250,7 +4255,7 @@ bool load_state(int4 ver, bool *clear, bool *too_new) {
     core_cleanup();
     fseek(gfile, fpos, SEEK_SET);
     bug_mode = 2;
-    return load_state2(ver, clear, too_new);
+    return load_state2(clear, too_new);
 }
 
 void save_state() {

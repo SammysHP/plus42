@@ -24,6 +24,7 @@
 #include "free42.h"
 #include "core_phloat.h"
 #include "core_tables.h"
+#include "core_variables.h"
 
 extern FILE *gfile;
 

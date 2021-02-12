@@ -17,6 +17,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "core_helpers.h"
 #include "core_commands2.h"
@@ -61,7 +62,7 @@ int resolve_ind_arg(arg_struct *arg) {
                         return ERR_NAME_TOO_LONG;
                     arg->type = ARGTYPE_STR;
                     arg->length = len;
-                    memcpy(arg->val.text, txt, len);
+                    memcpy(arg->val.text, text, len);
                 }
                 return ERR_NONE;
             }

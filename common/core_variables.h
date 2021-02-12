@@ -90,9 +90,9 @@ typedef struct {
         char *ptr;
     } t;
     char *txt() {
-        return length > SSLENV ? ptr : buf;
+        return length > SSLENV ? t.ptr : t.buf;
     }
-    char trim1();
+    void trim1();
 } vartype_string;
 
 

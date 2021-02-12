@@ -1928,7 +1928,7 @@ void show() {
                 draw_string(0, 0, buf, bufptr);
                 draw_string(0, 1, "1:1=", 4);
                 bufptr = 0;
-                if (rm->array->is_string[0]) {
+                if (rm->array->is_string[0] != 0) {
                     char *text;
                     int4 len;
                     get_matrix_string(rm, 0, &text, &len);

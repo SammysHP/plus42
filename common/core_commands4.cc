@@ -32,6 +32,8 @@
 /********************************************************/
 
 int docmd_insr(arg_struct *arg) {
+    return ERR_NOT_YET_IMPLEMENTED;
+#if 0
     vartype *m, *newx;
     vartype_realmatrix *rm;
     vartype_complexmatrix *cm;
@@ -202,6 +204,7 @@ int docmd_insr(arg_struct *arg) {
     }
     mode_disable_stack_lift = true;
     return ERR_NONE;
+#endif
 }
 
 static void invrt_completion(int error, vartype *res) {
@@ -323,6 +326,8 @@ int docmd_posa(arg_struct *arg) {
 }
 
 int docmd_putm(arg_struct *arg) {
+    return ERR_NOT_YET_IMPLEMENTED;
+#if 0
     vartype *m;
     int4 i, j;
 
@@ -409,6 +414,7 @@ int docmd_putm(arg_struct *arg) {
             }
         return ERR_NONE;
     }
+#endif
 }
 
 int docmd_rclel(arg_struct *arg) {
@@ -468,14 +474,13 @@ int docmd_rclij(arg_struct *arg) {
 
 int docmd_rnrm(arg_struct *arg) {
     if (stack[sp]->type == TYPE_REALMATRIX) {
-        vartype *v;
         vartype_realmatrix *rm = (vartype_realmatrix *) stack[sp];
+        if (contains_strings(rm))
+            return ERR_ALPHA_DATA_IS_INVALID;
+        vartype *v;
         int4 size = rm->rows * rm->columns;
         int4 i, j;
         phloat max = 0;
-        for (i = 0; i < size; i++)
-            if (rm->array->is_string[i] != 0)
-                return ERR_ALPHA_DATA_IS_INVALID;
         for (i = 0; i < rm->rows; i++) {
             phloat nrm = 0;
             for (j = 0; j < rm->columns; j++) {
@@ -533,19 +538,17 @@ int docmd_rnrm(arg_struct *arg) {
 int docmd_rsum(arg_struct *arg) {
     if (stack[sp]->type == TYPE_REALMATRIX) {
         vartype_realmatrix *rm = (vartype_realmatrix *) stack[sp];
+        if (contains_strings(rm))
+            return ERR_ALPHA_DATA_IS_INVALID;
         vartype_realmatrix *res;
         int4 size = rm->rows * rm->columns;
-        int4 i, j;
-        for (i = 0; i < size; i++)
-            if (rm->array->is_string[i] != 0)
-                return ERR_ALPHA_DATA_IS_INVALID;
         res = (vartype_realmatrix *) new_realmatrix(rm->rows, 1);
         if (res == NULL)
             return ERR_INSUFFICIENT_MEMORY;
-        for (i = 0; i < rm->rows; i++) {
+        for (int4 i = 0; i < rm->rows; i++) {
             phloat sum = 0;
             int inf;
-            for (j = 0; j < rm->columns; j++)
+            for (int4 j = 0; j < rm->columns; j++)
                 sum += rm->array->data[i * rm->columns + j];
             if ((inf = p_isinf(sum)) != 0) {
                 if (flags.f.range_error_ignore)
@@ -601,6 +604,8 @@ int docmd_rsum(arg_struct *arg) {
 }
 
 int docmd_swap_r(arg_struct *arg) {
+    return ERR_NOT_YET_IMPLEMENTED;
+#if 0
     vartype *m;
     phloat xx, yy;
     int4 x, y, i;
@@ -692,6 +697,7 @@ int docmd_swap_r(arg_struct *arg) {
         }
         return ERR_NONE;
     }
+#endif
 }
 
 static int mappable_sinh_r(phloat x, phloat *y) {
@@ -940,6 +946,8 @@ int docmd_tanh(arg_struct *arg) {
 }
 
 int docmd_trans(arg_struct *arg) {
+    return ERR_NOT_YET_IMPLEMENTED;
+#if 0
     if (stack[sp]->type == TYPE_REALMATRIX) {
         vartype_realmatrix *src = (vartype_realmatrix *) stack[sp];
         vartype_realmatrix *dst;
@@ -977,6 +985,7 @@ int docmd_trans(arg_struct *arg) {
         unary_result((vartype *) dst);
         return ERR_NONE;
     }
+#endif
 }
 
 int docmd_wrap(arg_struct *arg) {
@@ -1006,6 +1015,8 @@ int docmd_x_swap(arg_struct *arg) {
 #define DIR_DOWN  3
 
 static int matedit_move(int direction) {
+    return ERR_NOT_YET_IMPLEMENTED;
+#if 0
     vartype *m, *v;
     vartype_realmatrix *rm;
     vartype_complexmatrix *cm;
@@ -1160,6 +1171,7 @@ static int matedit_move(int direction) {
     mode_disable_stack_lift = true;
     print_trace();
     return ERR_NONE;
+#endif
 }
 
 int docmd_left(arg_struct *arg) {

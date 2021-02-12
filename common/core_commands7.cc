@@ -1513,7 +1513,38 @@ int docmd_head(arg_struct *arg) {
 
 int docmd_rev(arg_struct *arg) {
     // REV: reverse the string or list in X
-    return ERR_NOT_YET_IMPLEMENTED;
+    vartype *v;
+    if (stack[sp]->type == TYPE_STRING) {
+        vartype_string *src = (vartype_string *) stack[sp];
+        int4 len = src->length;
+        v = new_string(NULL, len);
+        if (v == NULL)
+            return ERR_INSUFFICIENT_MEMORY;
+        vartype_string *dst = (vartype_string *) v;
+        char *s = src->txt();
+        char *d = dst->txt() + len - 1;
+        while (len-- > 0)
+            *d-- = *s++;
+    } else {
+        vartype_list *src = (vartype_list *) stack[sp];
+        int4 len = src->size;
+        v = new_list(len);
+        if (v == NULL)
+            return ERR_INSUFFICIENT_MEMORY;
+        vartype_list *dst = (vartype_list *) v;
+        vartype **s = src->array->data;
+        vartype **d = dst->array->data + len - 1;
+        while (len-- > 0) {
+            vartype *t = dup_vartype(*s++);
+            if (t == NULL) {
+                free_vartype(v);
+                return ERR_INSUFFICIENT_MEMORY;
+            }
+            *d-- = t;
+        }
+    }
+    unary_result(v);
+    return ERR_NONE;
 }
 
 int docmd_pos(arg_struct *arg) {

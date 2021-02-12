@@ -1611,17 +1611,48 @@ int docmd_s_to_n(arg_struct *arg) {
 
 int docmd_n_to_s(arg_struct *arg) {
     // N->S: convert number to string, like ARCL
-    return ERR_NOT_YET_IMPLEMENTED;
+    vartype *v;
+    if (stack[sp]->type == TYPE_STRING) {
+        v = dup_vartype(stack[sp]);
+    } else {
+        char buf[100];
+        int bufptr = vartype2string(stack[sp], buf, 100);
+        v = new_string(buf, bufptr);
+    }
+    if (v == NULL)
+        return ERR_INSUFFICIENT_MEMORY;
+    unary_result(v);
+    return ERR_NONE;
 }
 
 int docmd_c_to_n(arg_struct *arg) {
     // C->N: convert character to number, like ATOX
-    return ERR_NOT_YET_IMPLEMENTED;
+    vartype_string *s = (vartype_string *) stack[sp];
+    int n;
+    if (s->length == 0)
+        n = 0;
+    else
+        n = (unsigned char) s->txt()[0];
+    vartype *v = new_real(n);
+    if (v == NULL)
+        return ERR_INSUFFICIENT_MEMORY;
+    unary_result(v);
+    return ERR_NONE;
 }
 
 int docmd_n_to_c(arg_struct *arg) {
     // N->C: convert number to character, like XTOA
-    return ERR_NOT_YET_IMPLEMENTED;
+    phloat n = ((vartype_real *) stack[sp])->x;
+    if (n < 0)
+        n = -n;
+    if (n >= 256)
+        return ERR_INVALID_DATA;
+    vartype_string *s = (vartype_string *) new_string(NULL, 1);
+    if (s == NULL)
+        return ERR_INSUFFICIENT_MEMORY;
+    s->txt()[0] = to_int(n);
+    unary_result((vartype *) s);
+    return ERR_NONE;
 }
 
 int docmd_list_t(arg_struct *arg) {

@@ -1187,7 +1187,6 @@ static bool unpersist_vartype(vartype **v, bool padded) {
                                     *t = len;
                                     if (fread(t + 1, 1, len, gfile) != len)
                                         break;
-                                    *(char **) &rm->array->data[i] = t;
                                 }
                             }
                         } else if (bug_mode == 1) {

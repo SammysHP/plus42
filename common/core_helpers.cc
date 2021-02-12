@@ -822,7 +822,7 @@ void print_lines(const char *text, int length, int left_justified) {
 }
 
 void print_right(const char *left, int leftlen, const char *right, int rightlen) {
-    char buf[100];
+    char buf[132];
     int len;
     int width = flags.f.double_wide_print ? 12 : 24;
     int i, pad;

@@ -20,6 +20,94 @@
 
 #include "core_phloat.h"
 
+/***********************/
+/* Variable data types */
+/***********************/
+
+#define TYPE_NULL 0
+#define TYPE_REAL 1
+#define TYPE_COMPLEX 2
+#define TYPE_REALMATRIX 3
+#define TYPE_COMPLEXMATRIX 4
+#define TYPE_STRING 5
+#define TYPE_LIST 6
+
+typedef struct {
+    int type;
+} vartype;
+
+
+typedef struct {
+    int type;
+    phloat x;
+} vartype_real;
+
+
+typedef struct {
+    int type;
+    phloat re, im;
+} vartype_complex;
+
+
+typedef struct {
+    int refcount;
+    phloat *data;
+    char *is_string;
+} realmatrix_data;
+
+typedef struct {
+    int type;
+    int4 rows;
+    int4 columns;
+    realmatrix_data *array;
+} vartype_realmatrix;
+
+
+typedef struct {
+    int refcount;
+    phloat *data;
+} complexmatrix_data;
+
+typedef struct {
+    int type;
+    int4 rows;
+    int4 columns;
+    complexmatrix_data *array;
+} vartype_complexmatrix;
+
+
+/* Maximum short string length in a stand-alone variable */
+#define SSLENV (sizeof(char *))
+/* Maximum short string length in a matrix element */
+#define SSLENM (sizeof(phloat) - 1)
+
+typedef struct {
+    int type;
+    int4 length;
+    /* When length <= SSLENV, use buf; otherwise, use ptr */
+    union {
+        char buf[SSLENV];
+        char *ptr;
+    } t;
+    char *txt() {
+        return length > SSLENV ? ptr : buf;
+    }
+    char trim1();
+} vartype_string;
+
+
+typedef struct {
+    int refcount;
+    vartype **data;
+} list_data;
+
+typedef struct {
+    int type;
+    int4 size;
+    list_data *array;
+} vartype_list;
+
+
 vartype *new_real(phloat value);
 vartype *new_complex(phloat re, phloat im);
 vartype *new_string(const char *s, int slen);

@@ -277,13 +277,11 @@ int generic_rcl(arg_struct *arg, vartype **dst) {
                     return ERR_SIZE_ERROR;
                 if (rm->array->is_string[index] == 0) {
                     *dst = new_real(rm->array->data[index]);
-                } else if (rm->array->is_string[index] == 1) {
-                    char *text = (char *) &rm->array->data[index];
-                    *dst = new_string(text + 1, text[0]);
                 } else {
-                    char *text = *(char **) &rm->array->data[index];
-                    int4 len = *(int4 *) text;
-                    *dst = new_string(text + 4, len);
+                    char *text;
+                    int4 len;
+                    get_matrix_string(rm, index, &text, &len);
+                    *dst = new_string(text, len);
                 }
                 if (*dst == NULL)
                     return ERR_INSUFFICIENT_MEMORY;
@@ -407,23 +405,8 @@ int generic_sto(arg_struct *arg, char operation) {
                     if (!disentangle((vartype *) rm))
                         return ERR_INSUFFICIENT_MEMORY;
                     vartype_string *vs = (vartype_string *) stack[sp];
-                    phloat *ds = rm->array->data + num;
-                    int len, i;
-                    len = vs->length;
-                    if (len > 7) {
-                        char *text = (char *) malloc(len + 4);
-                        if (text == NULL)
-                            return ERR_INSUFFICIENT_MEMORY;
-                        *(int4 *) text = len;
-                        memcpy(text + 4, len > 8 ? vs->t.ptr : vs->t.buf, len);
-                        *(char **) ds = text;
-                        rm->array->is_string[num] = 2;
-                    } else {
-                        char *text = (char *) ds;
-                        text[0] = len;
-                        memcpy(text + 1, vs->t.buf, len);
-                        rm->array->is_string[num] = 1;
-                    }
+                    if (!put_matrix_string(rm, num, vs->txt(), vs->length))
+                        return ERR_INSUFFICIENT_MEMORY;
                     return ERR_NONE;
                 } else if (stack[sp]->type == TYPE_REAL) {
                     if (!disentangle((vartype *) rm))

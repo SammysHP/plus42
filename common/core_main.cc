@@ -2443,7 +2443,7 @@ char *core_copy() {
     } else if (stack[sp]->type == TYPE_STRING) {
         vartype_string *s = (vartype_string *) stack[sp];
         char *buf = (char *) malloc(5 * s->length + 1);
-        int bufptr = hp2ascii(buf, s->length > 8 ? s->t.ptr : s->t.buf, s->length);
+        int bufptr = hp2ascii(buf, s->txt(), s->length);
         buf[bufptr] = 0;
         return buf;
     } else if (stack[sp]->type == TYPE_REALMATRIX) {
@@ -2462,12 +2462,11 @@ char *core_copy() {
                 int bufptr;
                 if (is_string[n] == 0) {
                     bufptr = real2buf(buf, data[n]);
-                } else if (is_string[n] == 1) {
-                    char *text = (char *) &data[n];
-                    bufptr = hp2ascii(buf, text + 1, text[0]);
                 } else {
-                    int4 *p = *(int4 **) &data[n];
-                    bufptr = hp2ascii(buf, *p, (char *) (p + 1));
+                    char *text;
+                    int4 len;
+                    get_matrix_string(rm, n, &text, &len);
+                    bufptr = hp2ascii(buf, text, len);
                 }
                 if (c < rm->columns - 1)
                     buf[bufptr++] = '\t';
@@ -3926,10 +3925,10 @@ void core_paste(const char *buf) {
                                 if (slen == 0) {
                                     data[p] = 0;
                                     is_string[p] = 0;
-                                } else if (slen <= 7) {
+                                } else if (slen <= SSLENM) {
                                     char *text = (char *) data[p];
+                                    *text = slen;
                                     memcpy(text + 1, s, slen);
-                                    text[0] = slen;
                                     is_string[p] = 1;
                                 } else {
                                     int4 *t = (int4 *) malloc(slen + 4);
@@ -3940,6 +3939,7 @@ void core_paste(const char *buf) {
                                     }
                                     *t = slen;
                                     memcpy(t + 1, s, slen);
+                                    *(int4 **) data[p] = t;
                                     is_string[p] = 2;
                                 }
                                 break;

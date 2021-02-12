@@ -885,10 +885,10 @@ static void update_decimal_in_programs();
 
 
 void vartype_string::trim1() {
-    if (length > 9) {
+    if (length > SSLENV + 1) {
         memmove(ptr, ptr + 1, --length);
-    } else if (length == 9) {
-        char temp[8];
+    } else if (length == SSLENV + 1) {
+        char temp[SSLENV];
         memcpy(temp, ptr + 1, --length);
         free(ptr);
         memcpy(buf, temp, length);
@@ -967,21 +967,11 @@ static bool persist_vartype(vartype *v) {
                         if (!write_phloat(rm->array->data[i]))
                             return false;
                     } else {
-                        int4 len;
                         char *text;
-                        if (rm->array->is_string[i] == 1) {
-                            text = (char *) &rm->array->data[i];
-                            len = text[0];
-                            if (!write_char(len))
-                                return false;
-                            text++;
-                        } else {
-                            int4 *p = (int4 *) &rm->array->data[i];
-                            len = *p;
-                            if (!write_int4(len))
-                                return false;
-                            text = (char *) (p + 1);
-                        }
+                        int4 len;
+                        get_matrix_string(rm, i, &text, &len);
+                        if (!write_int4(len))
+                            return false;
                         if (fwrite(text, 1, len, gfile) != len)
                             return false;
                     }
@@ -1111,32 +1101,25 @@ static bool unpersist_vartype(vartype **v, bool padded) {
                 return true;
             }
             case TYPE_STRING: {
+                int4 len;
                 if (ver < 34) {
-                    vartype_string *s = (vartype_string *) new_string(NULL, 0);
-                    if (s == NULL)
+                    char c;
+                    if (!read_char(&c))
                         return false;
-                    char len;
-                    if (!read_char(&len) || fread(s->text, 1, len, gfile) != len) {
-                        free_vartype((vartype *) s);
-                        return false;
-                    }
-                    s->length = len;
-                    *v = (vartype *) s;
-                    return true;
+                    len = c;
                 } else {
-                    int4 len;
                     if (!read_int4(&len))
                         return false;
-                    vartype_string *s = (vartype_string *) new_string(NULL, len);
-                    if (s == NULL)
-                        return false;
-                    if (fread(len > 8 ? s->t.ptr : s->t.buf, 1, len, gfile) != len) {
-                        free_vartype((vartype *) s);
-                        return false;
-                    }
-                    *v = (vartype *) s;
-                    return true;
                 }
+                vartype_string *s = (vartype_string *) new_string(NULL, len);
+                if (s == NULL)
+                    return false;
+                if (fread(s->txt(), 1, len, gfile) != len) {
+                    free_vartype((vartype *) s);
+                    return false;
+                }
+                *v = (vartype *) s;
+                return true;
             }
             case TYPE_REALMATRIX: {
                 int4 rows, columns;
@@ -1171,48 +1154,51 @@ static bool unpersist_vartype(vartype **v, bool padded) {
                         if (!read_phloat(&rm->array->data[i]))
                             break;
                     } else {
-                        char *dst = (char *) &rm->array->data[i];
+                        rm->array->is_string[i] = 1;
                         if (bug_mode == 0) {
                             if (ver < 34) {
                                 // 6 bytes of text followed by length byte
-                                if (fread(dst + 1, 1, 7, gfile) != 7)
+                                char *t = (char *) &rm->array->data[i];
+                                if (fread(t + 1, 1, 7, gfile) != 7)
                                     break;
-                                dst[0] = dst[7];
-                            } else if (rm->array->is_string[i] == 1) {
-                                // 1 length byte followed by n bytes of text,
-                                // with n always <= 7
-                                char len;
-                                if (!read_char(&len))
-                                    break;
-                                dst[0] = len;
-                                if (fread(dst + 1, 1, len, gfile) != len)
-                                    break;
+                                t[0] = t[7];
                             } else {
                                 // 4-byte length followed by n bytes of text
                                 int4 len;
                                 if (!read_int4(&len))
                                     break;
-                                char *text = (char *) malloc(len + 4);
-                                if (text == NULL)
-                                    break;
-                                if (fread(txt + 4, 1, len, gfile) != len) {
-                                    free(text);
-                                    break;
+                                if (len > SSLENM) {
+                                    int4 *p = (int4 *) malloc(len + 4);
+                                    if (p == NULL)
+                                        break;
+                                    if (fread(p + 1, 1, len, gfile) != len) {
+                                        free(p);
+                                        break;
+                                    }
+                                    *p = len;
+                                    *(int4 **) &rm->array->data[i] = p;
+                                    rm->array->is_string[i] = 2;
+                                } else {
+                                    char *t = (char *) &rm->array->data[i];
+                                    *t = len;
+                                    if (fread(t + 1, 1, len, gfile) != len)
+                                        break;
+                                    *(char **) &rm->array->data[i] = t;
                                 }
-                                *(int4 *) text = len;
-                                *(char **) dst = text;
                             }
                         } else if (bug_mode == 1) {
                             // Could be as above, or could be length-prefixed.
                             // Read 7 bytes, and if byte 7 looks plausible,
                             // carry on; otherwise, set bug_mode to 3, signalling
                             // we should start over in bug-compatibility mode.
-                            if (fread(dst, 1, 7, gfile) != 7)
+                            char *t = (char *) &rm->array->data[i];
+                            if (fread(t + 1, 1, 7, gfile) != 7)
                                 break;
-                            if (dst[6] < 0 || dst[6] > 6) {
+                            if (t[7] < 0 || t[7] > 6) {
                                 bug_mode = 3;
                                 break;
                             }
+                            t[0] = t[7];
                         } else {
                             // bug_mode == 2, means this has to be a file with
                             // length-prefixed strings in matrices. Bear in
@@ -1223,9 +1209,10 @@ static bool unpersist_vartype(vartype **v, bool padded) {
                             if (fread(&len, 1, 1, gfile) != 1)
                                 break;
                             unsigned char reallen = len > 6 ? 6 : len;
-                            dst[0] = len;
-                            if (fread(dst + 1, 1, reallen, gfile) != reallen)
+                            char *t = (char *) &rm->array->data[i];
+                            if (fread(t + 1, 1, reallen, gfile) != reallen)
                                 break;
+                            t[0] = reallen;
                             len -= reallen;
                             if (len > 0 && fseek(gfile, len, SEEK_CUR) != 0)
                                 break;
@@ -1436,20 +1423,15 @@ static bool unpersist_vartype(vartype **v, bool padded) {
             return true;
         }
         case TYPE_STRING: {
-            vartype_string *s = (vartype_string *) new_string(NULL, 0);
-            if (s == NULL)
-                return false;
             old_vartype_string os;
             int n = sizeof(old_vartype_string) - sizeof(int);
-            if (fread(&os.type + 1, 1, n, gfile) != n) {
-                free_vartype((vartype *) s);
+            if (fread(&os.type + 1, 1, n, gfile) != n)
                 return false;
-            } else {
-                s->length = os.length;
-                memcpy(s->t.buf, os.text, os.length);
-                *v = (vartype *) s;
-                return true;
-            }
+            vartype_string *s = (vartype_string *) new_string(os.text, os.length);
+            if (s == NULL)
+                return false;
+            *v = (vartype *) s;
+            return true;
         }
         case TYPE_REALMATRIX: {
             matrix_persister mp;
@@ -3182,14 +3164,14 @@ int pop_func_state(bool error) {
 
     if (st != NULL) {
         vartype **st_data = st->array->data;
-        char big = ((vartype_string *) st_data[0])->t.buf[0] == '1';
+        char big = ((vartype_string *) st_data[0])->txt()[0] == '1';
         if (big == flags.f.big_stack)
             st = NULL;
     }
 
     if (st != NULL && fd == NULL) {
         vartype **st_data = st->array->data;
-        char big = ((vartype_string *) st_data[0])->t.buf[0] == '1';
+        char big = ((vartype_string *) st_data[0])->txt()[0] == '1';
         if (big) {
             if (!core_settings.allow_big_stack)
                 return ERR_BIG_STACK_DISABLED;
@@ -3284,7 +3266,7 @@ int pop_func_state(bool error) {
         lastx = fd_data[li];
         fd_data[li] = NULL;
 
-        char f25 = ((vartype_string *) fd_data[2])->t.buf[0] == '1';
+        char f25 = ((vartype_string *) fd_data[2])->txt()[0] == '1';
         flags.f.error_ignore = f25;
 
         goto done;
@@ -3292,7 +3274,7 @@ int pop_func_state(bool error) {
 
     if (st != NULL && fd != NULL) {
         vartype **st_data = st->array->data;
-        char st_big = ((vartype_string *) st_data[0])->t.buf[0] == '1';
+        char st_big = ((vartype_string *) st_data[0])->txt()[0] == '1';
         vartype **fd_data = fd->array->data;
         int old_depth = to_int(((vartype_real *) fd_data[1])->x);
         char fd_big = old_depth >= 0;
@@ -3385,7 +3367,7 @@ int pop_func_state(bool error) {
         lastx = fd_data[li];
         fd_data[li] = NULL;
 
-        char f25 = ((vartype_string *) fd_data[2])->t.buf[0] == '1';
+        char f25 = ((vartype_string *) fd_data[2])->txt()[0] == '1';
         flags.f.error_ignore = f25;
 
         flags.f.big_stack = fd_big;
@@ -4824,13 +4806,7 @@ bool off_enabled() {
     if (sp == -1 || stack[sp]->type != TYPE_STRING)
         return false;
     vartype_string *str = (vartype_string *) stack[sp];
-    off_enable_flag = str->length == 6
-                      && str->t.buf[0] == 'Y'
-                      && str->t.buf[1] == 'E'
-                      && str->t.buf[2] == 'S'
-                      && str->t.buf[3] == 'O'
-                      && str->t.buf[4] == 'F'
-                      && str->t.buf[5] == 'F';
+    off_enable_flag = string_equals(str->txt(), str->length, "YESOFF", 6);
     return off_enable_flag;
 }
 #endif

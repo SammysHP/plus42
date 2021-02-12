@@ -51,16 +51,17 @@ int resolve_ind_arg(arg_struct *arg) {
                     else
                         arg->val.num = to_int4(x);
                     arg->type = ARGTYPE_NUM;
-                } else if (rm->array->is_string[num] == 1) {
-                    char *t = (char *) &rm->array->data[num];
-                    int len = t[0];
+                } else {
+                    char *text;
+                    int4 len;
+                    get_matrix_string(rm, num, &text, &len);
                     if (len == 0)
                         return ERR_RESTRICTED_OPERATION;
+                    if (len > 7)
+                        return ERR_NAME_TOO_LONG;
                     arg->type = ARGTYPE_STR;
                     arg->length = len;
                     memcpy(arg->val.text, t + 1, len);
-                } else {
-                    return ERR_NAME_TOO_LONG;
                 }
                 return ERR_NONE;
             }

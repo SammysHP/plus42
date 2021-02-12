@@ -80,7 +80,7 @@ vartype *new_complex(phloat re, phloat im) {
 
 vartype *new_string(const char *text, int length) {
     char *dbuf;
-    if (length > 8) {
+    if (length > SSLENV) {
         dbuf = (char *) malloc(length);
         if (dbuf == NULL)
             return NULL;
@@ -89,7 +89,7 @@ vartype *new_string(const char *text, int length) {
     if (stringpool == NULL) {
         s = (pool_string *) malloc(sizeof(pool_string));
         if (s == NULL) {
-            if (length > 8)
+            if (length > SSLENV)
                 free(dbuf);
             return NULL;
         }
@@ -99,10 +99,10 @@ vartype *new_string(const char *text, int length) {
         stringpool = stringpool->next;
     }
     s->s.length = length;
-    if (length > 8)
+    if (length > SSLENV)
         s->t.ptr = dbuf;
     if (text != NULL)
-        memcpy(length > 8 ? s->t.ptr : s->t.buf, text, length);
+        memcpy(length > SSLENV ? s->t.ptr : s->t.buf, text, length);
     return (vartype *) s;
 }
 
@@ -140,8 +140,7 @@ vartype *new_realmatrix(int4 rows, int4 columns) {
     }
     for (i = 0; i < sz; i++)
         rm->array->data[i] = 0;
-    for (i = 0; i < sz; i++)
-        rm->array->is_string[i] = 0;
+    memset(rm->array->is_string, 0, sz);
     rm->array->refcount = 1;
     return (vartype *) rm;
 }
@@ -218,7 +217,7 @@ void free_vartype(vartype *v) {
         }
         case TYPE_STRING: {
             pool_string *s = (pool_string *) v;
-            if (s->length > 8)
+            if (s->length > SSLENV)
                 free(s->t.ptr);
             s->next = stringpool;
             stringpool = s;
@@ -303,7 +302,7 @@ bool put_matrix_string(vartype_realmatrix *rm, int i, char *text, int4 length) {
         memcpy(ptext, text, length);
         return true;
     }
-    if (length > 8) {
+    if (length > SSLENM) {
         int4 *p = (int4 *) malloc(length + 4);
         if (p == NULL)
             return false;
@@ -358,7 +357,7 @@ vartype *dup_vartype(const vartype *v) {
         }
         case TYPE_STRING: {
             vartype_string *s = (vartype_string *) v;
-            return new_string(s->length > 8 ? s->t.ptr : s->t.buf, s->length);
+            return new_string(s->txt(), s->length);
         }
         case TYPE_LIST: {
             vartype_list *list = (vartype_list *) v;
@@ -398,8 +397,6 @@ int disentangle(vartype *v) {
                     free(md);
                     return 0;
                 }
-                for (i = 0; i < sz; i++)
-                    md->data[i] = rm->array->data[i];
                 for (i = 0; i < sz; i++) {
                     md->is_string[i] = rm->array->is_string[i];
                     if (md->is_string[i] == 2) {
@@ -414,6 +411,9 @@ int disentangle(vartype *v) {
                             return 0;
                         }
                         memcpy(dp, sp, len);
+                        *(int4 **) &md->data[i] = dp;
+                    } else {
+                        md->data[i] = rm->array->data[i];
                     }
                 }
                 md->refcount = 1;

@@ -1225,7 +1225,7 @@ int docmd_mvarcat(arg_struct *arg) {
     int n = 0;
     vartype *res;
     for (int i = 0; i < labels_count; i++)
-        if (labels[i].length < 7 && label_has_mvar(i))
+        if (label_has_mvar(i))
             n++;
     if (n == 0) {
         res = new_real(0);
@@ -1237,12 +1237,12 @@ int docmd_mvarcat(arg_struct *arg) {
             return ERR_INSUFFICIENT_MEMORY;
         vartype_realmatrix *rm = (vartype_realmatrix *) res;
         for (int i = 0; i < labels_count; i++)
-            if (labels[i].length < 7 && label_has_mvar(i)) {
+            if (label_has_mvar(i)) {
                 n--;
                 rm->array->is_string[n] = 1;
                 char *d = (char *) &rm->array->data[n];
-                d[6] = labels[i].length;
-                memcpy(d, labels[i].name, labels[i].length);
+                d[0] = labels[i].length;
+                memcpy(d + 1, labels[i].name, labels[i].length);
             }
     }
     return recall_result(res);
@@ -1259,8 +1259,9 @@ static int concat(bool extend) {
         char buf[44];
         int templen;
         if (stack[sp]->type == TYPE_STRING) {
-            text = ((vartype_string *) stack[sp])->text;
-            len = ((vartype_string *) stack[sp])->length;
+            vartype_string *s = (vartype_string *) stack[sp];
+            text = s->txt();
+            len = s->length;
         } else {
             memcpy(buf, reg_alpha, reg_alpha_length);
             templen = reg_alpha_length;
@@ -1276,8 +1277,8 @@ static int concat(bool extend) {
         vartype *v = new_string(NULL, s->length + len);
         if (v != NULL) {
             vartype_string *s2 = (vartype_string *) v;
-            memcpy(s2->text, s->text, s->length);
-            memcpy(s2->text + s->length, text, len);
+            memcpy(s2->txt(), s->txt(), s->length);
+            memcpy(s2->txt() + s->length, text, len);
         }
         if (text == reg_alpha) {
             memcpy(reg_alpha, buf, templen);
@@ -1385,19 +1386,23 @@ int docmd_head(arg_struct *arg) {
             int4 n = arg->val.num;
             if (n >= sz)
                 return ERR_SIZE_ERROR;
-            if (!rm->array->is_string[n])
+            if (rm->array->is_string[n] == 0)
                 return ERR_INVALID_TYPE;
-            int len = phloat_length(rm->array->data[n]);
+            char *text;
+            int len;
+            get_matrix_string(rm, n, &text, &len);
             if (len == 0)
                 return ERR_NO;
             if (!disentangle(regs))
                 return ERR_INSUFFICIENT_MEMORY;
-            char *text = (char *) &rm->array->data[n];
+            get_matrix_string(rm, n, &text, &len);
             v = new_string(text, 1);
             if (v == NULL)
                 return ERR_INSUFFICIENT_MEMORY;
-            memmove(text, text + 1, len - 1);
-            text[6]--;
+            if (!put_matrix_string(rm, n, text + 1, len - 1)) {
+                free_vartype(v);
+                return ERR_INSUFFICIENT_MEMORY;
+            }
             err = recall_result(v);
             return err == ERR_NONE ? ERR_YES : err;
         }
@@ -1422,10 +1427,10 @@ int docmd_head(arg_struct *arg) {
                 vartype_string *str = (vartype_string *) s;
                 if (str->length == 0)
                     return ERR_NO;
-                v = new_string(str->text, 1);
+                v = new_string(str->txt(), 1);
                 if (v == NULL)
                     return ERR_INSUFFICIENT_MEMORY;
-                memmove(str->text, str->text + 1, --str->length);
+                str->trim1();
                 err = recall_result(v);
                 return err == ERR_NONE ? ERR_YES : err;
             } else if (s->type == TYPE_LIST) {

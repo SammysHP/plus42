@@ -295,6 +295,35 @@ void get_matrix_string(vartype_realmatrix *rm, int i, char **text, int4 *length)
     }
 }
 
+bool put_matrix_string(vartype_realmatrix *rm, int i, char *text, int4 length) {
+    char *ptext;
+    int4 plength;
+    get_matrix_string(rm, i, &ptext, &plength);
+    if (plength == length) {
+        memcpy(ptext, text, length);
+        return true;
+    }
+    if (length > 8) {
+        int4 *p = (int4 *) malloc(length + 4);
+        if (p == NULL)
+            return false;
+        *p = length;
+        memcpy(p + 1, text, length);
+        if (rm->array->is_string[i] == 2)
+            free(*(void **) &rm->array->data[i]);
+        *(int4 **) &rm->array->data[i] = p;
+        rm->array->is_string[i] = 2;
+    } else {
+        if (rm->array->is_string[i] == 2)
+            free(*(void **) &rm->array->data[i]);
+        char *t = (char *) &rm->array->data[i];
+        t[0] = length;
+        memmove(t + 1, text, length);
+        rm->array->is_string = 1;
+    }
+    return true;
+}
+
 vartype *dup_vartype(const vartype *v) {
     if (v == NULL)
         return NULL;

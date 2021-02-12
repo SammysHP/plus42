@@ -884,6 +884,19 @@ static void update_decimal_in_programs();
 #endif
 
 
+void vartype_string::trim1() {
+    if (length > 9) {
+        memmove(ptr, ptr + 1, --length);
+    } else if (length == 9) {
+        char temp[8];
+        memcpy(temp, ptr + 1, --length);
+        free(ptr);
+        memcpy(buf, temp, length);
+    } else if (length > 0) {
+        memmove(buf, buf + 1, --length);
+    }
+}
+
 static bool array_list_grow() {
     if (array_count < array_list_capacity)
         return true;

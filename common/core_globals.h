@@ -280,6 +280,7 @@ typedef struct {
     char *txt() {
         return length > 8 ? ptr : buf;
     }
+    char trim1();
 } vartype_string;
 
 

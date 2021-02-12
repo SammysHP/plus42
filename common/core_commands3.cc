@@ -834,10 +834,12 @@ int docmd_edit(arg_struct *arg) {
         vartype *v;
         if (stack[sp]->type == TYPE_REALMATRIX) {
             vartype_realmatrix *rm = (vartype_realmatrix *) stack[sp];
-            if (rm->array->is_string[0])
-                v = new_string(phloat_text(rm->array->data[0]),
-                               phloat_length(rm->array->data[0]));
-            else
+            if (rm->array->is_string[0]) {
+                char *text;
+                int4 len;
+                get_matrix_string(rm, 0, &text, &len);
+                v = new_string(text, len);
+            } else
                 v = new_real(rm->array->data[0]);
         } else {
             vartype_complexmatrix *cm = (vartype_complexmatrix *) stack[sp];
@@ -891,10 +893,12 @@ int docmd_editn(arg_struct *arg) {
         int i;
         if (m->type == TYPE_REALMATRIX) {
             vartype_realmatrix *rm = (vartype_realmatrix *) m;
-            if (rm->array->is_string[0])
-                v = new_string(phloat_text(rm->array->data[0]),
-                               phloat_length(rm->array->data[0]));
-            else
+            if (rm->array->is_string[0]) {
+                char *text;
+                int4 len;
+                get_matrix_string(rm , 0, &text, &len);
+                v = new_string(text, len);
+            } else
                 v = new_real(rm->array->data[0]);
         } else {
             vartype_complexmatrix *cm = (vartype_complexmatrix *) m;
@@ -1078,8 +1082,20 @@ int docmd_getm(arg_struct *arg) {
             for (j = 0; j < x; j++) {
                 int4 n1 = (i + matedit_i) * src->columns + j + matedit_j;
                 int4 n2 = i * dst->columns + j;
+                if (src->array->is_string[n1] == 2) {
+                    int4 *sp = *(int4 **) &src->array->data[n1];
+                    char *text = (char *) (sp + 1);
+                    int4 *dp = (int4 *) malloc(*sp + 4);
+                    if (dp == NULL) {
+                        free_vartype(dst);
+                        return ERR_INSUFFICIENT_MEMORY;
+                    }
+                    memcpy(dp, sp, *sp + 4);
+                    *(int4 **) &dst->array->data[n2] = dp;
+                } else {
+                    dst->array->data[n2] = src->array->data[n1];
+                }
                 dst->array->is_string[n2] = src->array->is_string[n1];
-                dst->array->data[n2] = src->array->data[n1];
             }
         binary_result((vartype *) dst);
         return ERR_NONE;

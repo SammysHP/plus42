@@ -30,6 +30,7 @@ void free_vartype(vartype *v);
 void clean_vartype_pools();
 void free_long_strings(char *is_string, phloat *data, int4 n);
 void get_matrix_string(vartype_realmatrix *rm, int4 i, char **text, int4 *length);
+bool put_matrix_string(vartype_realmatrix *rm, int4 i, char *text, int4 length);
 vartype *dup_vartype(const vartype *v);
 int disentangle(vartype *v);
 int lookup_var(const char *name, int namelength);

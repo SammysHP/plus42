@@ -409,7 +409,7 @@ static int get_summation() {
     if (last > size)
         return ERR_SIZE_ERROR;
     for (i = first; i < last; i++)
-        if (r->array->is_string[i])
+        if (r->array->is_string[i] != 0)
             return ERR_ALPHA_DATA_IS_INVALID;
     sigmaregs = r->array->data + first;
     sum.x = sigmaregs[0];
@@ -1265,7 +1265,7 @@ static int sigma_helper_1(int weight) {
     if (last > size)
         return ERR_SIZE_ERROR;
     for (i = first; i < last; i++)
-        if (r->array->is_string[i])
+        if (r->array->is_string[i] != 0)
             return ERR_ALPHA_DATA_IS_INVALID;
     sigmaregs = r->array->data + first;
 
@@ -1297,7 +1297,7 @@ static int sigma_helper_1(int weight) {
             if (rm->columns != 2)
                 return ERR_DIMENSION_ERROR;
             for (i = 0; i < rm->rows * 2; i++)
-                if (rm->array->is_string[i])
+                if (rm->array->is_string[i] != 0)
                     return ERR_ALPHA_DATA_IS_INVALID;
             x = (vartype_real *) new_real(0);
             if (x == NULL)

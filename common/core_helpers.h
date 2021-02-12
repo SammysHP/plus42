@@ -36,6 +36,7 @@ int recall_two_results(vartype *x, vartype *y);
 void unary_result(vartype *x);
 int unary_two_results(vartype *x, vartype *y);
 void binary_result(vartype *x);
+int ternary_result(vartype *x);
 bool ensure_stack_capacity(int n);
 void shrink_stack();
 phloat rad_to_angle(phloat x);

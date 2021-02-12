@@ -878,33 +878,7 @@ int docmd_fma(arg_struct *arg) {
     vartype *res = new_real(r);
     if (res == NULL)
         return ERR_INSUFFICIENT_MEMORY;
-    if (flags.f.big_stack) {
-        free_vartype(lastx);
-        lastx = stack[sp];
-        free_vartype(stack[sp - 1]);
-        free_vartype(stack[sp - 2]);
-        sp -= 2;
-    } else {
-        vartype *tt = dup_vartype(stack[REG_T]);
-        if (tt == NULL) {
-            free_vartype(res);
-            return ERR_INSUFFICIENT_MEMORY;
-        }
-        vartype *ttt = dup_vartype(stack[REG_T]);
-        if (ttt == NULL) {
-            free_vartype(res);
-            free_vartype(tt);
-            return ERR_INSUFFICIENT_MEMORY;
-        }
-        free_vartype(lastx);
-        lastx = stack[REG_X];
-        free_vartype(stack[REG_Y]);
-        free_vartype(stack[REG_Z]);
-        stack[REG_Y] = tt;
-        stack[REG_Z] = ttt;
-    }
-    stack[sp] = res;
-    return ERR_NONE;
+    return ternary_result(res);
 }
 
 int docmd_func(arg_struct *arg) {
@@ -1351,12 +1325,91 @@ int docmd_substr(arg_struct *arg) {
     // the end, rather than the beginning. The very end of the string or list can be
     // specified by leaving off the 'end' parameter, i.e. by having the string or list
     // in Y and the starting index in X.
-    return ERR_NOT_YET_IMPLEMENTED;
+    if (sp + 1 < 2)
+        return ERR_TOO_FEW_ARGUMENTS;
+    vartype *s, *b, *e;
+    if (stack[sp - 1]->type == TYPE_STRING || stack[sp - 1]->type == TYPE_LIST) {
+        s = stack[sp - 1];
+        b = stack[sp];
+        e = NULL;
+    } else {
+        if (sp + 1 < 3)
+            return ERR_TOO_FEW_ARGUMENTS;
+        s = stack[sp - 2];
+        b = stack[sp - 1];
+        e = stack[sp];
+        if (s->type != TYPE_STRING && s->type != TYPE_LIST)
+            return ERR_INVALID_TYPE;
+    }
+    if (b->type != TYPE_REAL || e != NULL && e->type != TYPE_REAL)
+        return ERR_INVALID_TYPE;
+    phloat bp = ((vartype_real *) b)->x;
+    if (bp <= -2147483648.0 || bp >= 2147483648.0)
+        return ERR_INVALID_DATA;
+    int4 begin = to_int4(bp);
+    phloat ep;
+    int4 end;
+    if (e != NULL) {
+        ep = ((vartype_real *) e)->x;
+        if (bp <= -2147483648.0 || bp >= 2147483648.0)
+            return ERR_INVALID_DATA;
+        end = to_int4(ep);
+    }
+    int4 len = s->type == TYPE_STRING ? ((vartype_string *) s)->length
+                : ((vartype_list *) s)->size;
+    if (begin < 0)
+        begin += len;
+    if (e == NULL)
+        end = len;
+    else if (end < 0)
+        end += len;
+    if (begin < 0 || begin > end || end > len)
+        return ERR_INVALID_DATA;
+    int4 newlen = end - begin;
+    vartype *v;
+    if (newlen == len) {
+        v = s;
+        stack[sp - (e == NULL ? 1 : 2)] = NULL;
+    } if (s->type == TYPE_STRING) {
+        vartype_string *str = (vartype_string *) s;
+        char *text = str->txt();
+        v = new_string(text + begin, newlen);
+        if (v == NULL)
+            return ERR_INSUFFICIENT_MEMORY;
+    } else {
+        vartype_list *list = (vartype_list *) s;
+        vartype_list *r = (vartype_list *) new_list(newlen);
+        if (r == NULL)
+            return ERR_INSUFFICIENT_MEMORY;
+        for (int i = 0; i < newlen; i++) {
+            r->array->data[i] = dup_vartype(list->array->data[begin + i]);
+            if (r->array->data[i] == NULL) {
+                free_vartype((vartype *) r);
+                return ERR_INSUFFICIENT_MEMORY;
+            }
+        }
+        v = (vartype *) r;
+    }
+    if (e == NULL) {
+        binary_result(v);
+        return ERR_NONE;
+    } else {
+        return ternary_result(v);
+    }
 }
 
 int docmd_length(arg_struct *arg) {
     // LENGTH: returns the length of the string or list in X.
-    return ERR_NOT_YET_IMPLEMENTED;
+    int4 len;
+    if (stack[sp]->type == TYPE_STRING)
+        len = ((vartype_string *) stack[sp])->length;
+    else
+        len = ((vartype_list *) stack[sp])->size;
+    vartype *v = new_real(len);
+    if (v == NULL)
+        return ERR_INSUFFICIENT_MEMORY;
+    unary_result(v);
+    return ERR_NONE;
 }
 
 int docmd_head(arg_struct *arg) {

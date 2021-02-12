@@ -239,6 +239,37 @@ void binary_result(vartype *x) {
     print_trace();
 }
 
+int ternary_result(vartype *x) {
+    if (flags.f.big_stack) {
+        free_vartype(lastx);
+        lastx = stack[sp];
+        free_vartype(stack[sp - 1]);
+        free_vartype(stack[sp - 2]);
+        sp -= 2;
+    } else {
+        vartype *tt = dup_vartype(stack[REG_T]);
+        if (tt == NULL) {
+            free_vartype(x);
+            return ERR_INSUFFICIENT_MEMORY;
+        }
+        vartype *ttt = dup_vartype(stack[REG_T]);
+        if (ttt == NULL) {
+            free_vartype(x);
+            free_vartype(tt);
+            return ERR_INSUFFICIENT_MEMORY;
+        }
+        free_vartype(lastx);
+        lastx = stack[REG_X];
+        free_vartype(stack[REG_Y]);
+        free_vartype(stack[REG_Z]);
+        stack[REG_Y] = tt;
+        stack[REG_Z] = ttt;
+    }
+    stack[sp] = x;
+    print_trace();
+    return ERR_NONE;
+}
+
 bool ensure_stack_capacity(int n) {
     if (!flags.f.big_stack)
         return true;

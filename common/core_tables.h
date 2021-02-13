@@ -530,7 +530,7 @@
 #define ARGTYPE_LBLINDEX 11
 
 
-typedef struct {
+struct arg_struct {
     unsigned char type;
     unsigned char length;
     int4 target;
@@ -544,10 +544,10 @@ typedef struct {
     // This used to be a member of the 'val' union, but once I changed it
     // from 'double' to 'phloat', that was no longer possible.
     phloat val_d;
-} arg_struct;
+};
 
 
-typedef struct {
+struct command_spec {
     int (*handler)(arg_struct *arg);
     const char *name;
     unsigned char flags;
@@ -558,7 +558,7 @@ typedef struct {
     unsigned char argtype;
     signed char argcount;
     unsigned char rttypes;
-} command_spec;
+};
 
 extern const command_spec cmd_array[];
 

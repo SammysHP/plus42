@@ -299,14 +299,14 @@ static void div_cc_completion2(int error, vartype_complexmatrix *a, int4 *perm,
 /***** Matrix-matrix multiplication *****/
 /****************************************/
 
-typedef struct {
+struct mul_rr_data_struct {
     vartype_realmatrix *left;
     vartype_realmatrix *right;
     vartype *result;
     int4 i, j, k;
     phloat sum;
     void (*completion)(int error, vartype *result);
-} mul_rr_data_struct;
+};
 
 static mul_rr_data_struct *mul_rr_data;
 
@@ -553,14 +553,14 @@ static int matrix_mul_rr(vartype_realmatrix *left, vartype_realmatrix *right,
 }
 #endif
 
-typedef struct {
+struct mul_rc_data_struct {
     vartype_realmatrix *left;
     vartype_complexmatrix *right;
     vartype *result;
     int4 i, j, k;
     phloat sum_re, sum_im;
     void (*completion)(int error, vartype *result);
-} mul_rc_data_struct;
+};
 
 static mul_rc_data_struct *mul_rc_data;
 
@@ -686,14 +686,14 @@ static int matrix_mul_rc_worker(int interrupted) {
     return ERR_INTERRUPTIBLE;
 }
 
-typedef struct {
+struct mul_cr_data_struct {
     vartype_complexmatrix *left;
     vartype_realmatrix *right;
     vartype *result;
     int4 i, j, k;
     phloat sum_re, sum_im;
     void (*completion)(int error, vartype *result);
-} mul_cr_data_struct;
+};
 
 static mul_cr_data_struct *mul_cr_data;
 
@@ -819,14 +819,14 @@ static int matrix_mul_cr_worker(int interrupted) {
     return ERR_INTERRUPTIBLE;
 }
 
-typedef struct {
+struct mul_cc_data_struct {
     vartype_complexmatrix *left;
     vartype_complexmatrix *right;
     vartype *result;
     int4 i, j, k;
     phloat sum_re, sum_im;
     void (*completion)(int error, vartype *result);
-} mul_cc_data_struct;
+};
 
 static mul_cc_data_struct *mul_cc_data;
 

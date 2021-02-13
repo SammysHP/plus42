@@ -72,10 +72,10 @@ extern FILE *gfile;
 #define ERR_INVALID_CONTEXT        37
 #define ERR_NAME_TOO_LONG          38
 
-typedef struct {
+struct error_spec {
     const char *text;
     int length;
-} error_spec;
+};
 
 extern const error_spec errors[];
 
@@ -198,18 +198,18 @@ extern const error_spec errors[];
 #define MENU_INTEG_PARAMS  66
 
 
-typedef struct {
+struct menu_item_spec {
     int2 menuid;
     unsigned char title_length;
     const char *title;
-} menu_item_spec;
+};
 
-typedef struct {
+struct menu_spec {
     int2 parent;
     int2 next;
     int2 prev;
     menu_item_spec child[6];
-} menu_spec;
+};
 
 extern const menu_spec menus[];
 
@@ -325,39 +325,39 @@ extern const char *virtual_flags;
 #define VAR_PRIVATE 4
 
 /* Variables */
-typedef struct {
+struct var_struct {
     unsigned char length;
     char name[7];
     int2 level;
     int2 flags;
     vartype *value;
-} var_struct;
+};
 extern int vars_capacity;
 extern int vars_count;
 extern var_struct *vars;
 
 /* Programs */
-typedef struct {
+struct prgm_struct {
     int4 capacity;
     int4 size;
     int lclbl_invalid;
     unsigned char *text;
-} prgm_struct;
-typedef struct {
+};
+struct prgm_struct_32bit {
     int4 capacity;
     int4 size;
     int lclbl_invalid;
     int4 text;
-} prgm_struct_32bit;
+};
 extern int prgms_capacity;
 extern int prgms_count;
 extern prgm_struct *prgms;
-typedef struct {
+struct label_struct {
     unsigned char length;
     char name[7];
     int prgm;
     int4 pc;
-} label_struct;
+};
 extern int labels_capacity;
 extern int labels_count;
 extern label_struct *labels;

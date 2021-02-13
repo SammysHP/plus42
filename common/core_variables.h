@@ -32,48 +32,48 @@
 #define TYPE_STRING 5
 #define TYPE_LIST 6
 
-typedef struct {
+struct vartype {
     int type;
-} vartype;
+};
 
 
-typedef struct {
+struct vartype_real {
     int type;
     phloat x;
-} vartype_real;
+};
 
 
-typedef struct {
+struct vartype_complex {
     int type;
     phloat re, im;
-} vartype_complex;
+};
 
 
-typedef struct {
+struct realmatrix_data {
     int refcount;
     phloat *data;
     char *is_string;
-} realmatrix_data;
+};
 
-typedef struct {
+struct vartype_realmatrix {
     int type;
     int4 rows;
     int4 columns;
     realmatrix_data *array;
-} vartype_realmatrix;
+};
 
 
-typedef struct {
+struct complexmatrix_data {
     int refcount;
     phloat *data;
-} complexmatrix_data;
+};
 
-typedef struct {
+struct vartype_complexmatrix {
     int type;
     int4 rows;
     int4 columns;
     complexmatrix_data *array;
-} vartype_complexmatrix;
+};
 
 
 /* Maximum short string length in a stand-alone variable */
@@ -81,7 +81,7 @@ typedef struct {
 /* Maximum short string length in a matrix element */
 #define SSLENM (sizeof(phloat) - 1)
 
-typedef struct {
+struct vartype_string {
     int type;
     int4 length;
     /* When length <= SSLENV, use buf; otherwise, use ptr */
@@ -93,19 +93,19 @@ typedef struct {
         return length > SSLENV ? t.ptr : t.buf;
     }
     void trim1();
-} vartype_string;
+};
 
 
-typedef struct {
+struct list_data {
     int refcount;
     vartype **data;
-} list_data;
+};
 
-typedef struct {
+struct vartype_list {
     int type;
     int4 size;
     list_data *array;
-} vartype_list;
+};
 
 
 vartype *new_real(phloat value);

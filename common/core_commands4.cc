@@ -449,13 +449,10 @@ int docmd_rnrm(arg_struct *arg) {
         vartype_realmatrix *rm = (vartype_realmatrix *) stack[sp];
         if (contains_strings(rm))
             return ERR_ALPHA_DATA_IS_INVALID;
-        vartype *v;
-        int4 size = rm->rows * rm->columns;
-        int4 i, j;
         phloat max = 0;
-        for (i = 0; i < rm->rows; i++) {
+        for (int4 i = 0; i < rm->rows; i++) {
             phloat nrm = 0;
-            for (j = 0; j < rm->columns; j++) {
+            for (int4 j = 0; j < rm->columns; j++) {
                 phloat x = rm->array->data[i * rm->columns + j];
                 if (x >= 0)
                     nrm += x;
@@ -472,7 +469,7 @@ int docmd_rnrm(arg_struct *arg) {
             if (nrm > max)
                 max = nrm;
         }
-        v = new_real(max);
+        vartype *v = new_real(max);
         if (v == NULL)
             return ERR_INSUFFICIENT_MEMORY;
         unary_result(v);
@@ -513,7 +510,6 @@ int docmd_rsum(arg_struct *arg) {
         if (contains_strings(rm))
             return ERR_ALPHA_DATA_IS_INVALID;
         vartype_realmatrix *res;
-        int4 size = rm->rows * rm->columns;
         res = (vartype_realmatrix *) new_realmatrix(rm->rows, 1);
         if (res == NULL)
             return ERR_INSUFFICIENT_MEMORY;

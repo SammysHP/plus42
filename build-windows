@@ -9,10 +9,10 @@ cd windows
 sh ./build-intel-lib.sh
 cmd /c build-all.bat
 cd ..
-rm -rf Free42Windows
-mkdir Free42Windows
-cp windows/README.txt Free42Windows
-cp windows/Free42Binary.exe Free42Windows
-cp windows/Free42Decimal.exe Free42Windows
-zip -r packages/Free42Windows.zip Free42Windows
-rm -rf Free42Windows
+rm -rf Plus42Windows
+mkdir Plus42Windows
+cp windows/README.txt Plus42Windows
+cp windows/Plus42Binary.exe Plus42Windows
+cp windows/Plus42Decimal.exe Plus42Windows
+zip -r packages/Plus42Windows.zip Plus42Windows
+rm -rf Plus42Windows

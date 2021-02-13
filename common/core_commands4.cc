@@ -296,8 +296,6 @@ int docmd_posa(arg_struct *arg) {
 }
 
 int docmd_putm(arg_struct *arg) {
-    return ERR_NOT_YET_IMPLEMENTED;
-#if 0
     vartype *m;
     int4 i, j;
 
@@ -338,15 +336,32 @@ int docmd_putm(arg_struct *arg) {
         if (src->rows + matedit_i > dst->rows
                 || src->columns + matedit_j > dst->columns)
             return ERR_DIMENSION_ERROR;
-        if (!disentangle(m))
+        /* Duplicate and disentangle the source matrix, in order to get
+         * a deep copy with all the long strings replicated; it
+         * simplifies the logic by making rollbacks easier, and it
+         * enables some nice sleight-of-hand for cleaning up the
+         * overwritten entries in the destination as well.
+         */
+        vartype *v = dup_vartype((vartype *) src);
+        if (v == NULL)
             return ERR_INSUFFICIENT_MEMORY;
+        if (!disentangle(v) || !disentangle(m)) {
+            free_vartype(v);
+            return ERR_INSUFFICIENT_MEMORY;
+        }
+        src = (vartype_realmatrix *) v;
         for (i = 0; i < src->rows; i++)
             for (j = 0; j < src->columns; j++) {
                 int4 n1 = i * src->columns + j;
                 int4 n2 = (i + matedit_i) * dst->columns + j + matedit_j;
+                char tc = dst->array->is_string[n2];
                 dst->array->is_string[n2] = src->array->is_string[n1];
+                src->array->is_string[n1] = tc;
+                phloat tp = dst->array->data[n2];
                 dst->array->data[n2] = src->array->data[n1];
+                src->array->data[n1] = tp;
             }
+        free_vartype(v);
         return ERR_NONE;
     } else if (stack[sp]->type == TYPE_REALMATRIX) {
         vartype_realmatrix *src = (vartype_realmatrix *) stack[sp];
@@ -354,9 +369,8 @@ int docmd_putm(arg_struct *arg) {
         if (src->rows + matedit_i > dst->rows
                 || src->columns + matedit_j > dst->columns)
             return ERR_DIMENSION_ERROR;
-        for (i = 0; i < src->rows * src->columns; i++)
-            if (src->array->is_string[i])
-                return ERR_ALPHA_DATA_IS_INVALID;
+        if (contains_strings(src))
+            return ERR_ALPHA_DATA_IS_INVALID;
         if (!disentangle(m))
             return ERR_INSUFFICIENT_MEMORY;
         for (i = 0; i < src->rows; i++)
@@ -384,7 +398,6 @@ int docmd_putm(arg_struct *arg) {
             }
         return ERR_NONE;
     }
-#endif
 }
 
 int docmd_rclel(arg_struct *arg) {

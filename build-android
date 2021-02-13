@@ -9,4 +9,4 @@ sh ./link-files.sh
 sh ./build-intel-lib.sh
 cd ../../../..
 ./gradlew --warning-mode all assembleRelease
-mv app/build/outputs/apk/release/app-release.apk ../packages/Free42Android.apk
+mv app/build/outputs/apk/release/app-release.apk ../packages/Plus42Android.apk

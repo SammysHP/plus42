@@ -470,6 +470,98 @@ bool vartype_equals(vartype *v1, vartype *v2) {
     }
 }
 
+int anum(const char *text, int len, phloat *res) {
+    char buf[50];
+    bool have_mant = false;
+    bool neg_mant = false;
+    bool have_radix = false;
+    bool have_exp = false;
+    bool neg_exp = false;
+    int exp_pos = 0;
+    int buf_pos = 0;
+    buf[buf_pos++] = '+';
+    for (int src_pos = 0; src_pos < len; src_pos++) {
+        char c = text[src_pos];
+        if (!flags.f.decimal_point)
+            if (c == '.')
+                c = ',';
+            else if (c == ',')
+                c = '.';
+        if (c == '+' || flags.f.thousands_separators && c == ',')
+            continue;
+        if (!have_mant) {
+            if (c == '-') {
+                neg_mant = !neg_mant;
+            } else if (c >= '0' && c <= '9') {
+                buf[buf_pos++] = c;
+                have_mant = true;
+            } else if (c == '.') {
+                buf[buf_pos++] = '0';
+                buf[buf_pos++] = '.';
+                have_mant = true;
+                have_radix = true;
+            } else {
+                neg_mant = false;
+            }
+        } else if (!have_exp) {
+            if (c == '-') {
+                neg_mant = !neg_mant;
+            } else if (c >= '0' && c <= '9') {
+                buf[buf_pos++] = c;
+            } else if (c == '.') {
+                if (!have_radix) {
+                    buf[buf_pos++] = c;
+                    have_radix = true;
+                }
+            } else if (c == 'E' || c == 'e' || c == 24) {
+                buf[buf_pos++] = 'e';
+                exp_pos = buf_pos;
+                buf[buf_pos++] = '+';
+                have_exp = true;
+            } else if (c == '.') {
+                /* ignore */
+            } else {
+                break;
+            }
+        } else {
+            if (c == '-') {
+                neg_exp = !neg_exp;
+            } else if (c >= '0' && c <= '9') {
+                buf[buf_pos++] = c;
+            } else if (c == '.' || c == 'E' || c == 'e' || c == 24) {
+                /* ignore */
+            } else {
+                break;
+            }
+        }
+    }
+    if (!have_mant)
+        return false;
+    if (neg_mant)
+        buf[0] = '-';
+    if (have_exp && buf_pos == exp_pos + 1) {
+        buf_pos -= 2;
+        have_exp = false;
+    }
+    if (have_exp && neg_exp)
+        buf[exp_pos] = '-';
+    buf[buf_pos++] = 0;
+    phloat p;
+#ifdef BCD_MATH
+    BID_UINT128 b;
+    bid128_from_string(&b, buf);
+    p = b;
+#else
+    sscanf(buf, "%le", &p);
+#endif
+    if (p_isnan(p))
+        return false;
+    if (p_isinf(p))
+        p = p > 0 ? POS_HUGE_PHLOAT : NEG_HUGE_PHLOAT;
+    *res = p;
+    return true;
+}
+
 #if (!defined(ANDROID) && !defined(IPHONE))
 static bool always_on = false;
 int shell_always_on(int ao) {

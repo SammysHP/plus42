@@ -1606,7 +1606,15 @@ int docmd_pos(arg_struct *arg) {
 
 int docmd_s_to_n(arg_struct *arg) {
     // S->N: convert string to number, like ANUM
-    return ERR_NOT_YET_IMPLEMENTED;
+    phloat res;
+    vartype_string *s = (vartype_string *) stack[sp];
+    if (!anum(s->txt(), s->length, &res))
+        return ERR_INVALID_DATA;
+    vartype *v = new_real(res);
+    if (v == NULL)
+        return ERR_INSUFFICIENT_MEMORY;
+    unary_result(v);
+    return ERR_NONE;
 }
 
 int docmd_n_to_s(arg_struct *arg) {

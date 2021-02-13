@@ -1144,7 +1144,7 @@ static int prv_worker(int interrupted) {
         char2buf(lbuf, 32, &llen, ':');
         llen += int2string(j + 1, lbuf + llen, 32 - llen);
         char2buf(lbuf, 32, &llen, '=');
-        if (rm->array->is_string[prv_index]) {
+        if (rm->array->is_string[prv_index] != 0) {
             char *text;
             int4 len;
             get_matrix_string(rm, prv_index, &text, &len);

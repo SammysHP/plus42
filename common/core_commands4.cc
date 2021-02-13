@@ -33,8 +33,6 @@
 /********************************************************/
 
 int docmd_insr(arg_struct *arg) {
-    return ERR_NOT_YET_IMPLEMENTED;
-#if 0
     vartype *m, *newx;
     vartype_realmatrix *rm;
     vartype_complexmatrix *cm;
@@ -205,7 +203,6 @@ int docmd_insr(arg_struct *arg) {
     }
     mode_disable_stack_lift = true;
     return ERR_NONE;
-#endif
 }
 
 static void invrt_completion(int error, vartype *res) {

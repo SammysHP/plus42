@@ -16,6 +16,7 @@
  *****************************************************************************/
 
 #include <stdlib.h>
+#include <string.h>
 
 #include "core_commands2.h"
 #include "core_commands3.h"
@@ -572,8 +573,6 @@ int docmd_rsum(arg_struct *arg) {
 }
 
 int docmd_swap_r(arg_struct *arg) {
-    return ERR_NOT_YET_IMPLEMENTED;
-#if 0
     vartype *m;
     phloat xx, yy;
     int4 x, y, i;
@@ -665,7 +664,6 @@ int docmd_swap_r(arg_struct *arg) {
         }
         return ERR_NONE;
     }
-#endif
 }
 
 static int mappable_sinh_r(phloat x, phloat *y) {
@@ -914,8 +912,6 @@ int docmd_tanh(arg_struct *arg) {
 }
 
 int docmd_trans(arg_struct *arg) {
-    return ERR_NOT_YET_IMPLEMENTED;
-#if 0
     if (stack[sp]->type == TYPE_REALMATRIX) {
         vartype_realmatrix *src = (vartype_realmatrix *) stack[sp];
         vartype_realmatrix *dst;
@@ -930,7 +926,17 @@ int docmd_trans(arg_struct *arg) {
                 int4 n1 = i * columns + j;
                 int4 n2 = j * rows + i;
                 dst->array->is_string[n2] = src->array->is_string[n1];
-                dst->array->data[n2] = src->array->data[n1];
+                if (dst->array->is_string[n2] == 2) {
+                    int4 *sp = *(int4 **) &src->array->data[n1];
+                    int4 *dp = (int4 *) malloc(*sp + 4);
+                    if (dp == NULL) {
+                        free_vartype((vartype *) dst);
+                        return ERR_INSUFFICIENT_MEMORY;
+                    }
+                    memcpy(dp, sp, *sp + 4);
+                    *(int4 **) &dst->array->data[n2] = dp;
+                } else
+                    dst->array->data[n2] = src->array->data[n1];
             }
         unary_result((vartype *) dst);
         return ERR_NONE;
@@ -953,7 +959,6 @@ int docmd_trans(arg_struct *arg) {
         unary_result((vartype *) dst);
         return ERR_NONE;
     }
-#endif
 }
 
 int docmd_wrap(arg_struct *arg) {

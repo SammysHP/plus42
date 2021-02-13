@@ -349,8 +349,6 @@ int docmd_custom(arg_struct *arg) {
 }
 
 int docmd_delr(arg_struct *arg) {
-    return ERR_NOT_YET_IMPLEMENTED;
-#if 0
     vartype *m, *newx;
     vartype_realmatrix *rm;
     vartype_complexmatrix *cm;
@@ -412,10 +410,12 @@ int docmd_delr(arg_struct *arg) {
     interactive = matedit_mode == 2 || matedit_mode == 3;
     if (interactive) {
         if (m->type == TYPE_REALMATRIX) {
-            if (rm->array->is_string[n])
-                newx = new_string(phloat_text(rm->array->data[n]),
-                                  phloat_length(rm->array->data[n]));
-            else
+            if (rm->array->is_string[n] != 0) {
+                char *text;
+                int4 len;
+                get_matrix_string(rm, n, &text, &len);
+                newx = new_string(text, len);
+            } else
                 newx = new_real(rm->array->data[n]);
         } else
             newx = new_complex(cm->array->data[2 * n],
@@ -520,6 +520,9 @@ int docmd_delr(arg_struct *arg) {
                 array->is_string[i] = rm->array->is_string[i];
                 array->data[i] = rm->array->data[i];
             }
+            for (i = matedit_i * columns; i < (matedit_i + 1) * columns; i++)
+                if (array->is_string[i] == 2)
+                    free(*(void **) &array->data[i]);
             for (i = matedit_i * columns; i < newsize; i++) {
                 array->is_string[i] = rm->array->is_string[i + columns];
                 array->data[i] = rm->array->data[i + columns];
@@ -559,7 +562,6 @@ int docmd_delr(arg_struct *arg) {
     }
     matedit_i = newi;
     return ERR_NONE;
-#endif
 }
 
 static void det_completion(int error, vartype *det) {
@@ -836,7 +838,7 @@ int docmd_edit(arg_struct *arg) {
         vartype *v;
         if (stack[sp]->type == TYPE_REALMATRIX) {
             vartype_realmatrix *rm = (vartype_realmatrix *) stack[sp];
-            if (rm->array->is_string[0]) {
+            if (rm->array->is_string[0] != 0) {
                 char *text;
                 int4 len;
                 get_matrix_string(rm, 0, &text, &len);
@@ -895,7 +897,7 @@ int docmd_editn(arg_struct *arg) {
         int i;
         if (m->type == TYPE_REALMATRIX) {
             vartype_realmatrix *rm = (vartype_realmatrix *) m;
-            if (rm->array->is_string[0]) {
+            if (rm->array->is_string[0] != 0) {
                 char *text;
                 int4 len;
                 get_matrix_string(rm , 0, &text, &len);

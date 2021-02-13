@@ -103,7 +103,8 @@ public class FileImportActivity extends Activity {
             if (importIsState) {
                 // Check magic number first; don't bother importing if this is wrong
                 n = is.read(buf, 0, 4);
-                if (n != 4 || buf[0] != '2' || buf[1] != '4' || buf[2] != 'k' || buf[3] != 'F')
+                if ((n != 4 || buf[0] != '2' || buf[1] != '4' || buf[2] != 'k' || buf[3] != 'F')
+                    && (n != 4 || buf[0] != '2' || buf[1] != '4' || buf[2] != 'l' || buf[3] != 'P'))
                     throw new FormatException();
                 os.write(buf, 0, 4);
                 while ((n = is.read(buf)) >= 0)
@@ -148,7 +149,7 @@ public class FileImportActivity extends Activity {
             Free42Activity f42instance = Free42Activity.instance;
             Intent i = new Intent(Intent.ACTION_MAIN);
             i.addCategory(Intent.CATEGORY_LAUNCHER);
-            i.setClassName("com.thomasokken.free42", "com.thomasokken.free42.Free42Activity");
+            i.setClassName(getPackageName(), "com.thomasokken.free42.Free42Activity");
             if (f42instance != null) {
                 if (importIsState)
                     f42instance.importedState = importedState;

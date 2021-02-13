@@ -988,8 +988,6 @@ int docmd_x_swap(arg_struct *arg) {
 #define DIR_DOWN  3
 
 static int matedit_move(int direction) {
-    return ERR_NOT_YET_IMPLEMENTED;
-#if 0
     vartype *m, *v;
     vartype_realmatrix *rm;
     vartype_complexmatrix *cm;
@@ -1090,24 +1088,27 @@ static int matedit_move(int direction) {
 
     if (m->type == TYPE_REALMATRIX) {
         if (old_n != new_n) {
-            if (rm->array->is_string[new_n])
-                v = new_string(phloat_text(rm->array->data[new_n]),
-                            phloat_length(rm->array->data[new_n]));
-            else
+            if (rm->array->is_string[new_n] != 0) {
+                char *text;
+                int4 len;
+                get_matrix_string(rm, new_n, &text, &len);
+                v = new_string(text, len);
+            } else
                 v = new_real(rm->array->data[new_n]);
             if (v == NULL)
                 return ERR_INSUFFICIENT_MEMORY;
         }
         if (stack[sp]->type == TYPE_REAL) {
+            if (rm->array->is_string[old_n] == 2)
+                free(*(void **) &rm->array->data[old_n]);
             rm->array->is_string[old_n] = 0;
             rm->array->data[old_n] = ((vartype_real *) stack[sp])->x;
         } else if (stack[sp]->type == TYPE_STRING) {
             vartype_string *s = (vartype_string *) stack[sp];
-            int i;
-            rm->array->is_string[old_n] = 1;
-            phloat_length(rm->array->data[old_n]) = s->length;
-            for (i = 0; i < s->length; i++)
-                phloat_text(rm->array->data[old_n])[i] = s->text[i];
+            if (!put_matrix_string(rm, old_n, s->txt(), s->length)) {
+                free_vartype(v);
+                return ERR_INSUFFICIENT_MEMORY;
+            }
         } else {
             free_vartype(v);
             return ERR_INVALID_TYPE;
@@ -1144,7 +1145,6 @@ static int matedit_move(int direction) {
     mode_disable_stack_lift = true;
     print_trace();
     return ERR_NONE;
-#endif
 }
 
 int docmd_left(arg_struct *arg) {

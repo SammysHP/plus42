@@ -1599,10 +1599,8 @@ int docmd_newmat(arg_struct *arg) {
     m = new_realmatrix(yy, xx);
     if (m == NULL)
         return ERR_INSUFFICIENT_MEMORY;
-    else {
-        binary_result(m);
-        return ERR_NONE;
-    }
+    else
+        return binary_result(m);
 }
 
 int docmd_rup(arg_struct *arg) {

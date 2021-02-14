@@ -1198,10 +1198,10 @@ int docmd_percent_ch(arg_struct *arg) {
 
 static vartype *matx_v;
 
-static void matx_completion(int error, vartype *res) {
+static int matx_completion(int error, vartype *res) {
     if (error != ERR_NONE) {
         free_vartype(matx_v);
-        return;
+        return error;
     }
     store_var("MATX", 4, res);
     matedit_prev_appmenu = MENU_MATRIX_SIMQ;
@@ -1232,6 +1232,7 @@ static void matx_completion(int error, vartype *res) {
     matedit_i = 0;
     matedit_j = 0;
     mode_disable_stack_lift = flags.f.stack_lift_disable;
+    return ERR_NONE;
 }
 
 static int matabx(int which) {

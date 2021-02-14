@@ -28,29 +28,29 @@
 /***** Matrix-matrix division *****/
 /**********************************/
 
-static void (*linalg_div_completion)(int, vartype *);
+static int (*linalg_div_completion)(int, vartype *);
 static const vartype *linalg_div_left;
 static vartype *linalg_div_result;
 
 static int div_rr_completion1(int error, vartype_realmatrix *a, int4 *perm,
                                     phloat det);
-static void div_rr_completion2(int error, vartype_realmatrix *a, int4 *perm,
+static int div_rr_completion2(int error, vartype_realmatrix *a, int4 *perm,
                                     vartype_realmatrix *b);
 static int div_rc_completion1(int error, vartype_complexmatrix *a, int4 *perm,
                                     phloat det_re, phloat det_im);
-static void div_rc_completion2(int error, vartype_complexmatrix *a, int4 *perm,
+static int div_rc_completion2(int error, vartype_complexmatrix *a, int4 *perm,
                                     vartype_complexmatrix *b);
 static int div_cr_completion1(int error, vartype_realmatrix *a, int4 *perm,
                                     phloat det);
-static void div_cr_completion2(int error, vartype_realmatrix *a, int4 *perm,
+static int div_cr_completion2(int error, vartype_realmatrix *a, int4 *perm,
                                     vartype_complexmatrix *b);
 static int div_cc_completion1(int error, vartype_complexmatrix *a, int4 *perm,
                                     phloat det_re, phloat det_im);
-static void div_cc_completion2(int error, vartype_complexmatrix *a, int4 *perm,
+static int div_cc_completion2(int error, vartype_complexmatrix *a, int4 *perm,
                                     vartype_complexmatrix *b);
 
 int linalg_div(const vartype *left, const vartype *right,
-                                    void (*completion)(int, vartype *)) {
+                                    int (*completion)(int, vartype *)) {
     if (left->type == TYPE_REALMATRIX) {
         if (right->type == TYPE_REALMATRIX) {
             vartype_realmatrix *num = (vartype_realmatrix *) left;
@@ -59,27 +59,21 @@ int linalg_div(const vartype *left, const vartype *right,
             int4 rows = num->rows;
             int4 columns = num->columns;
             int4 *perm;
-            if (denom->rows != rows || denom->columns != rows) {
-                completion(ERR_DIMENSION_ERROR, NULL);
-                return ERR_DIMENSION_ERROR;
-            }
+            if (denom->rows != rows || denom->columns != rows)
+                return completion(ERR_DIMENSION_ERROR, NULL);
             perm = (int4 *) malloc(rows * sizeof(int4));
-            if (perm == NULL) {
-                completion(ERR_INSUFFICIENT_MEMORY, NULL);
-                return ERR_INSUFFICIENT_MEMORY;
-            }
+            if (perm == NULL)
+                return completion(ERR_INSUFFICIENT_MEMORY, NULL);
             lu = new_realmatrix(rows, rows);
             if (lu == NULL) {
                 free(perm);
-                completion(ERR_INSUFFICIENT_MEMORY, NULL);
-                return ERR_INSUFFICIENT_MEMORY;
+                return completion(ERR_INSUFFICIENT_MEMORY, NULL);
             }
             res = new_realmatrix(rows, columns);
             if (res == NULL) {
                 free(perm);
                 free_vartype(lu);
-                completion(ERR_INSUFFICIENT_MEMORY, NULL);
-                return ERR_INSUFFICIENT_MEMORY;
+                return completion(ERR_INSUFFICIENT_MEMORY, NULL);
             }
             matrix_copy(lu, right);
             linalg_div_completion = completion;
@@ -94,27 +88,21 @@ int linalg_div(const vartype *left, const vartype *right,
             int4 rows = num->rows;
             int4 columns = num->columns;
             int4 *perm;
-            if (denom->rows != rows || denom->columns != rows) {
-                completion(ERR_DIMENSION_ERROR, NULL);
-                return ERR_DIMENSION_ERROR;
-            }
+            if (denom->rows != rows || denom->columns != rows)
+                return completion(ERR_DIMENSION_ERROR, NULL);
             perm = (int4 *) malloc(rows * sizeof(int4));
-            if (perm == NULL) {
-                completion(ERR_INSUFFICIENT_MEMORY, NULL);
-                return ERR_INSUFFICIENT_MEMORY;
-            }
+            if (perm == NULL)
+                return completion(ERR_INSUFFICIENT_MEMORY, NULL);
             lu = new_complexmatrix(rows, rows);
             if (lu == NULL) {
                 free(perm);
-                completion(ERR_INSUFFICIENT_MEMORY, NULL);
-                return ERR_INSUFFICIENT_MEMORY;
+                return completion(ERR_INSUFFICIENT_MEMORY, NULL);
             }
             res = new_complexmatrix(rows, columns);
             if (res == NULL) {
                 free(perm);
                 free_vartype(lu);
-                completion(ERR_INSUFFICIENT_MEMORY, NULL);
-                return ERR_INSUFFICIENT_MEMORY;
+                return completion(ERR_INSUFFICIENT_MEMORY, NULL);
             }
             matrix_copy(lu, right);
             linalg_div_completion = completion;
@@ -131,27 +119,21 @@ int linalg_div(const vartype *left, const vartype *right,
             int4 rows = num->rows;
             int4 columns = num->columns;
             int4 *perm;
-            if (denom->rows != rows || denom->columns != rows) {
-                completion(ERR_DIMENSION_ERROR, 0);
-                return ERR_DIMENSION_ERROR;
-            }
+            if (denom->rows != rows || denom->columns != rows)
+                return completion(ERR_DIMENSION_ERROR, 0);
             perm = (int4 *) malloc(rows * sizeof(int4));
-            if (perm == NULL) {
-                completion(ERR_INSUFFICIENT_MEMORY, NULL);
-                return ERR_INSUFFICIENT_MEMORY;
-            }
+            if (perm == NULL)
+                return completion(ERR_INSUFFICIENT_MEMORY, NULL);
             lu = new_realmatrix(rows, rows);
             if (lu == NULL) {
                 free(perm);
-                completion(ERR_INSUFFICIENT_MEMORY, NULL);
-                return ERR_INSUFFICIENT_MEMORY;
+                return completion(ERR_INSUFFICIENT_MEMORY, NULL);
             }
             res = new_complexmatrix(rows, columns);
             if (res == NULL) {
                 free(perm);
                 free_vartype(lu);
-                completion(ERR_INSUFFICIENT_MEMORY, NULL);
-                return ERR_INSUFFICIENT_MEMORY;
+                return completion(ERR_INSUFFICIENT_MEMORY, NULL);
             }
             matrix_copy(lu, right);
             linalg_div_completion = completion;
@@ -166,27 +148,21 @@ int linalg_div(const vartype *left, const vartype *right,
             int4 rows = num->rows;
             int4 columns = num->columns;
             int4 *perm;
-            if (denom->rows != rows || denom->columns != rows) {
-                completion(ERR_DIMENSION_ERROR, NULL);
-                return ERR_DIMENSION_ERROR;
-            }
+            if (denom->rows != rows || denom->columns != rows)
+                return completion(ERR_DIMENSION_ERROR, NULL);
             perm = (int4 *) malloc(rows * sizeof(int4));
-            if (perm == NULL) {
-                completion(ERR_INSUFFICIENT_MEMORY, NULL);
-                return ERR_INSUFFICIENT_MEMORY;
-            }
+            if (perm == NULL)
+                return completion(ERR_INSUFFICIENT_MEMORY, NULL);
             lu = new_complexmatrix(rows, rows);
             if (lu == NULL) {
                 free(perm);
-                completion(ERR_INSUFFICIENT_MEMORY, NULL);
-                return ERR_INSUFFICIENT_MEMORY;
+                return completion(ERR_INSUFFICIENT_MEMORY, NULL);
             }
             res = new_complexmatrix(rows, columns);
             if (res == NULL) {
                 free(perm);
                 free_vartype(lu);
-                completion(ERR_INSUFFICIENT_MEMORY, NULL);
-                return ERR_INSUFFICIENT_MEMORY;
+                return completion(ERR_INSUFFICIENT_MEMORY, NULL);
             }
             matrix_copy(lu, right);
             linalg_div_completion = completion;
@@ -213,13 +189,13 @@ static int div_rr_completion1(int error, vartype_realmatrix *a, int4 *perm,
     }
 }
 
-static void div_rr_completion2(int error, vartype_realmatrix *a, int4 *perm,
+static int div_rr_completion2(int error, vartype_realmatrix *a, int4 *perm,
                                           vartype_realmatrix *b) {
     if (error != ERR_NONE)
         free_vartype(linalg_div_result); /* Note: linalg_div_result == b */
     free_vartype((vartype *) a);
     free(perm);
-    linalg_div_completion(error, linalg_div_result);
+    return linalg_div_completion(error, linalg_div_result);
 }
 
 static int div_rc_completion1(int error, vartype_complexmatrix *a, int4 *perm,
@@ -237,13 +213,13 @@ static int div_rc_completion1(int error, vartype_complexmatrix *a, int4 *perm,
     }
 }
 
-static void div_rc_completion2(int error, vartype_complexmatrix *a, int4 *perm,
+static int div_rc_completion2(int error, vartype_complexmatrix *a, int4 *perm,
                                           vartype_complexmatrix *b) {
     if (error != ERR_NONE)
         free_vartype(linalg_div_result); /* Note: linalg_div_result == b */
     free_vartype((vartype *) a);
     free(perm);
-    linalg_div_completion(error, linalg_div_result);
+    return linalg_div_completion(error, linalg_div_result);
 }
 
 static int div_cr_completion1(int error, vartype_realmatrix *a, int4 *perm,
@@ -261,13 +237,13 @@ static int div_cr_completion1(int error, vartype_realmatrix *a, int4 *perm,
     }
 }
 
-static void div_cr_completion2(int error, vartype_realmatrix *a, int4 *perm,
+static int div_cr_completion2(int error, vartype_realmatrix *a, int4 *perm,
                                     vartype_complexmatrix *b) {
     if (error != ERR_NONE)
         free_vartype(linalg_div_result); /* Note: linalg_div_result == b */
     free_vartype((vartype *) a);
     free(perm);
-    linalg_div_completion(error, linalg_div_result);
+    return linalg_div_completion(error, linalg_div_result);
 }
 
 static int div_cc_completion1(int error, vartype_complexmatrix *a, int4 *perm,
@@ -285,13 +261,13 @@ static int div_cc_completion1(int error, vartype_complexmatrix *a, int4 *perm,
     }
 }
 
-static void div_cc_completion2(int error, vartype_complexmatrix *a, int4 *perm,
+static int div_cc_completion2(int error, vartype_complexmatrix *a, int4 *perm,
                                     vartype_complexmatrix *b) {
     if (error != ERR_NONE)
         free_vartype(linalg_div_result); /* Note: linalg_div_result == b */
     free_vartype((vartype *) a);
     free(perm);
-    linalg_div_completion(error, linalg_div_result);
+    return linalg_div_completion(error, linalg_div_result);
 }
 
 
@@ -305,7 +281,7 @@ struct mul_rr_data_struct {
     vartype *result;
     int4 i, j, k;
     phloat sum;
-    void (*completion)(int error, vartype *result);
+    int (*completion)(int error, vartype *result);
 };
 
 static mul_rr_data_struct *mul_rr_data;
@@ -313,7 +289,7 @@ static mul_rr_data_struct *mul_rr_data;
 static int matrix_mul_rr_worker(int interrupted);
 
 static int matrix_mul_rr(vartype_realmatrix *left, vartype_realmatrix *right,
-                         void (*completion)(int, vartype *)) {
+                         int (*completion)(int, vartype *)) {
 
     mul_rr_data_struct *dat;
     int error;
@@ -355,8 +331,7 @@ static int matrix_mul_rr(vartype_realmatrix *left, vartype_realmatrix *right,
     return ERR_INTERRUPTIBLE;
 
     finished:
-    completion(error, NULL);
-    return error;
+    return completion(error, NULL);
 }
 
 static int matrix_mul_rr_worker(int interrupted) {
@@ -375,10 +350,10 @@ static int matrix_mul_rr_worker(int interrupted) {
     phloat sum = dat->sum;
 
     if (interrupted) {
-        dat->completion(ERR_INTERRUPTED, NULL);
+        int err = dat->completion(ERR_INTERRUPTED, NULL);
         free_vartype(dat->result);
         free(dat);
-        return ERR_INTERRUPTED;
+        return err;
     }
 
     while (count++ < 1000) {
@@ -388,10 +363,10 @@ static int matrix_mul_rr_worker(int interrupted) {
         k = 0;
         if ((inf = p_isinf(sum)) != 0) {
             if (core_settings.matrix_outofrange && !flags.f.range_error_ignore){
-                dat->completion(ERR_OUT_OF_RANGE, NULL);
+                int err = dat->completion(ERR_OUT_OF_RANGE, NULL);
                 free_vartype(dat->result);
                 free(dat);
-                return ERR_OUT_OF_RANGE;
+                return err;
             } else
                 sum = inf < 0 ? NEG_HUGE_PHLOAT : POS_HUGE_PHLOAT;
         }
@@ -403,9 +378,9 @@ static int matrix_mul_rr_worker(int interrupted) {
         if (++i < m)
             continue;
         else {
-            dat->completion(ERR_NONE, dat->result);
+            int err = dat->completion(ERR_NONE, dat->result);
             free(dat);
-            return ERR_NONE;
+            return err;
         }
     }
 
@@ -559,7 +534,7 @@ struct mul_rc_data_struct {
     vartype *result;
     int4 i, j, k;
     phloat sum_re, sum_im;
-    void (*completion)(int error, vartype *result);
+    int (*completion)(int error, vartype *result);
 };
 
 static mul_rc_data_struct *mul_rc_data;
@@ -567,7 +542,7 @@ static mul_rc_data_struct *mul_rc_data;
 static int matrix_mul_rc_worker(int interrupted);
 
 static int matrix_mul_rc(vartype_realmatrix *left, vartype_complexmatrix *right,
-                         void (*completion)(int, vartype *)) {
+                         int (*completion)(int, vartype *)) {
 
     mul_rc_data_struct *dat;
     int error;
@@ -610,8 +585,7 @@ static int matrix_mul_rc(vartype_realmatrix *left, vartype_complexmatrix *right,
     return ERR_INTERRUPTIBLE;
 
     finished:
-    completion(error, NULL);
-    return error;
+    return completion(error, NULL);
 }
 
 static int matrix_mul_rc_worker(int interrupted) {
@@ -631,10 +605,10 @@ static int matrix_mul_rc_worker(int interrupted) {
     phloat sum_im = dat->sum_im;
 
     if (interrupted) {
-        dat->completion(ERR_INTERRUPTED, NULL);
+        int err = dat->completion(ERR_INTERRUPTED, NULL);
         free_vartype(dat->result);
         free(dat);
-        return ERR_INTERRUPTED;
+        return err;
     }
 
     while (count++ < 1000) {
@@ -646,19 +620,19 @@ static int matrix_mul_rc_worker(int interrupted) {
         k = 0;
         if ((inf = p_isinf(sum_re)) != 0) {
             if (core_settings.matrix_outofrange && !flags.f.range_error_ignore){
-                dat->completion(ERR_OUT_OF_RANGE, NULL);
+                int err = dat->completion(ERR_OUT_OF_RANGE, NULL);
                 free_vartype(dat->result);
                 free(dat);
-                return ERR_OUT_OF_RANGE;
+                return err;
             } else
                 sum_re = inf < 0 ? NEG_HUGE_PHLOAT : POS_HUGE_PHLOAT;
         }
         if ((inf = p_isinf(sum_im)) != 0) {
             if (core_settings.matrix_outofrange && !flags.f.range_error_ignore){
-                dat->completion(ERR_OUT_OF_RANGE, NULL);
+                int err = dat->completion(ERR_OUT_OF_RANGE, NULL);
                 free_vartype(dat->result);
                 free(dat);
-                return ERR_OUT_OF_RANGE;
+                return err;
             } else
                 sum_im = inf < 0 ? NEG_HUGE_PHLOAT : POS_HUGE_PHLOAT;
         }
@@ -672,9 +646,9 @@ static int matrix_mul_rc_worker(int interrupted) {
         if (++i < m)
             continue;
         else {
-            dat->completion(ERR_NONE, dat->result);
+            int err = dat->completion(ERR_NONE, dat->result);
             free(dat);
-            return ERR_NONE;
+            return err;
         }
     }
 
@@ -692,7 +666,7 @@ struct mul_cr_data_struct {
     vartype *result;
     int4 i, j, k;
     phloat sum_re, sum_im;
-    void (*completion)(int error, vartype *result);
+    int (*completion)(int error, vartype *result);
 };
 
 static mul_cr_data_struct *mul_cr_data;
@@ -700,7 +674,7 @@ static mul_cr_data_struct *mul_cr_data;
 static int matrix_mul_cr_worker(int interrupted);
 
 static int matrix_mul_cr(vartype_complexmatrix *left, vartype_realmatrix *right,
-                         void (*completion)(int, vartype *)) {
+                         int (*completion)(int, vartype *)) {
 
     mul_cr_data_struct *dat;
     int error;
@@ -743,8 +717,7 @@ static int matrix_mul_cr(vartype_complexmatrix *left, vartype_realmatrix *right,
     return ERR_INTERRUPTIBLE;
 
     finished:
-    completion(error, NULL);
-    return error;
+    return completion(error, NULL);
 }
 
 static int matrix_mul_cr_worker(int interrupted) {
@@ -764,10 +737,10 @@ static int matrix_mul_cr_worker(int interrupted) {
     phloat sum_im = dat->sum_im;
 
     if (interrupted) {
-        dat->completion(ERR_INTERRUPTED, NULL);
+        int err = dat->completion(ERR_INTERRUPTED, NULL);
         free_vartype(dat->result);
         free(dat);
-        return ERR_INTERRUPTED;
+        return err;
     }
 
     while (count++ < 1000) {
@@ -779,19 +752,19 @@ static int matrix_mul_cr_worker(int interrupted) {
         k = 0;
         if ((inf = p_isinf(sum_re)) != 0) {
             if (core_settings.matrix_outofrange && !flags.f.range_error_ignore){
-                dat->completion(ERR_OUT_OF_RANGE, NULL);
+                int err = dat->completion(ERR_OUT_OF_RANGE, NULL);
                 free_vartype(dat->result);
                 free(dat);
-                return ERR_OUT_OF_RANGE;
+                return err;
             } else
                 sum_re = inf < 0 ? NEG_HUGE_PHLOAT : POS_HUGE_PHLOAT;
         }
         if ((inf = p_isinf(sum_im)) != 0) {
             if (core_settings.matrix_outofrange && !flags.f.range_error_ignore){
-                dat->completion(ERR_OUT_OF_RANGE, NULL);
+                int err = dat->completion(ERR_OUT_OF_RANGE, NULL);
                 free_vartype(dat->result);
                 free(dat);
-                return ERR_OUT_OF_RANGE;
+                return err;
             } else
                 sum_im = inf < 0 ? NEG_HUGE_PHLOAT : POS_HUGE_PHLOAT;
         }
@@ -805,9 +778,9 @@ static int matrix_mul_cr_worker(int interrupted) {
         if (++i < m)
             continue;
         else {
-            dat->completion(ERR_NONE, dat->result);
+            int err = dat->completion(ERR_NONE, dat->result);
             free(dat);
-            return ERR_NONE;
+            return err;
         }
     }
 
@@ -825,7 +798,7 @@ struct mul_cc_data_struct {
     vartype *result;
     int4 i, j, k;
     phloat sum_re, sum_im;
-    void (*completion)(int error, vartype *result);
+    int (*completion)(int error, vartype *result);
 };
 
 static mul_cc_data_struct *mul_cc_data;
@@ -833,7 +806,7 @@ static mul_cc_data_struct *mul_cc_data;
 static int matrix_mul_cc_worker(int interrupted);
 
 static int matrix_mul_cc(vartype_complexmatrix *left, vartype_complexmatrix *right,
-                         void (*completion)(int, vartype *)) {
+                         int (*completion)(int, vartype *)) {
 
     mul_cc_data_struct *dat;
     int error;
@@ -871,8 +844,7 @@ static int matrix_mul_cc(vartype_complexmatrix *left, vartype_complexmatrix *rig
     return ERR_INTERRUPTIBLE;
 
     finished:
-    completion(error, NULL);
-    return error;
+    return completion(error, NULL);
 }
 
 static int matrix_mul_cc_worker(int interrupted) {
@@ -892,10 +864,10 @@ static int matrix_mul_cc_worker(int interrupted) {
     phloat sum_im = dat->sum_im;
 
     if (interrupted) {
-        dat->completion(ERR_INTERRUPTED, NULL);
+        int err = dat->completion(ERR_INTERRUPTED, NULL);
         free_vartype(dat->result);
         free(dat);
-        return ERR_INTERRUPTED;
+        return err;
     }
 
     while (count++ < 1000) {
@@ -910,19 +882,19 @@ static int matrix_mul_cc_worker(int interrupted) {
         k = 0;
         if ((inf = p_isinf(sum_re)) != 0) {
             if (core_settings.matrix_outofrange && !flags.f.range_error_ignore){
-                dat->completion(ERR_OUT_OF_RANGE, NULL);
+                int err = dat->completion(ERR_OUT_OF_RANGE, NULL);
                 free_vartype(dat->result);
                 free(dat);
-                return ERR_OUT_OF_RANGE;
+                return err;
             } else
                 sum_re = inf < 0 ? NEG_HUGE_PHLOAT : POS_HUGE_PHLOAT;
         }
         if ((inf = p_isinf(sum_im)) != 0) {
             if (core_settings.matrix_outofrange && !flags.f.range_error_ignore){
-                dat->completion(ERR_OUT_OF_RANGE, NULL);
+                int err = dat->completion(ERR_OUT_OF_RANGE, NULL);
                 free_vartype(dat->result);
                 free(dat);
-                return ERR_OUT_OF_RANGE;
+                return err;
             } else
                 sum_im = inf < 0 ? NEG_HUGE_PHLOAT : POS_HUGE_PHLOAT;
         }
@@ -936,9 +908,9 @@ static int matrix_mul_cc_worker(int interrupted) {
         if (++i < m)
             continue;
         else {
-            dat->completion(ERR_NONE, dat->result);
+            int err = dat->completion(ERR_NONE, dat->result);
             free(dat);
-            return ERR_NONE;
+            return err;
         }
     }
 
@@ -951,7 +923,7 @@ static int matrix_mul_cc_worker(int interrupted) {
 }
 
 int linalg_mul(const vartype *left, const vartype *right,
-                                    void (*completion)(int, vartype *)) {
+                                    int (*completion)(int, vartype *)) {
     if (left->type == TYPE_REALMATRIX) {
         if (right->type == TYPE_REALMATRIX)
             return matrix_mul_rr((vartype_realmatrix *) left,
@@ -983,11 +955,11 @@ static vartype *linalg_inv_result;
 
 static int inv_r_completion1(int error, vartype_realmatrix *a, int4 *perm,
                                 phloat det);
-static void inv_r_completion2(int error, vartype_realmatrix *a, int4 *perm,
+static int inv_r_completion2(int error, vartype_realmatrix *a, int4 *perm,
                                 vartype_realmatrix *b);
 static int inv_c_completion1(int error, vartype_complexmatrix *a, int4 *perm,
                                 phloat det_re, phloat det_im);
-static void inv_c_completion2(int error, vartype_complexmatrix *a, int4 *perm,
+static int inv_c_completion2(int error, vartype_complexmatrix *a, int4 *perm,
                                 vartype_complexmatrix *b);
 
 int linalg_inv(const vartype *src, void (*completion)(int, vartype *)) {
@@ -1064,13 +1036,14 @@ static int inv_r_completion1(int error, vartype_realmatrix *a, int4 *perm,
     }
 }
 
-static void inv_r_completion2(int error, vartype_realmatrix *a, int4 *perm,
+static int inv_r_completion2(int error, vartype_realmatrix *a, int4 *perm,
                                 vartype_realmatrix *b) {
     if (error != ERR_NONE)
         free_vartype(linalg_inv_result); /* Note: linalg_inv_result == b */
     free_vartype((vartype *) a);
     free(perm);
     linalg_inv_completion(error, linalg_inv_result);
+    return error;
 }
 
 static int inv_c_completion1(int error, vartype_complexmatrix *a, int4 *perm,
@@ -1091,13 +1064,14 @@ static int inv_c_completion1(int error, vartype_complexmatrix *a, int4 *perm,
     }
 }
 
-static void inv_c_completion2(int error, vartype_complexmatrix *a, int4 *perm,
+static int inv_c_completion2(int error, vartype_complexmatrix *a, int4 *perm,
                                 vartype_complexmatrix *b) {
     if (error != ERR_NONE)
         free_vartype(linalg_inv_result); /* Note: linalg_inv_result == b */
     free_vartype((vartype *) a);
     free(perm);
     linalg_inv_completion(error, linalg_inv_result);
+    return error;
 }
 
 

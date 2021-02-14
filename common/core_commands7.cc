@@ -549,8 +549,7 @@ int docmd_date_plus(arg_struct *arg) {
     vartype *new_x = new_real(date);
     if (new_x == NULL)
         return ERR_INSUFFICIENT_MEMORY;
-    binary_result(new_x);
-    return ERR_NONE;
+    return binary_result(new_x);
 }
 
 int docmd_ddays(arg_struct *arg) {
@@ -577,8 +576,7 @@ int docmd_ddays(arg_struct *arg) {
     vartype *new_x = new_real(jd2 - jd1);
     if (new_x == NULL)
         return ERR_INSUFFICIENT_MEMORY;
-    binary_result(new_x);
-    return ERR_NONE;
+    return binary_result(new_x);
 }
 
 int docmd_dmy(arg_struct *arg) {

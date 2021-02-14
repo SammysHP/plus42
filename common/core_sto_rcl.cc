@@ -26,7 +26,7 @@
 
 
 static int apply_sto_operation(char operation, vartype *oldval, bool trace_stk);
-static void generic_sto_completion(int error, vartype *res);
+static int generic_sto_completion(int error, vartype *res);
 
 static bool preserve_ij;
 static bool trace_stack;
@@ -50,13 +50,11 @@ static int apply_sto_operation(char operation, vartype *oldval, bool trace_stk) 
         case '-':
             preserve_ij = true;
             error = generic_sub(stack[sp], oldval, &newval);
-            generic_sto_completion(error, newval);
-            return error;
+            return generic_sto_completion(error, newval);
         case '+':
             preserve_ij = true;
             error = generic_add(stack[sp], oldval, &newval);
-            generic_sto_completion(error, newval);
-            return error;
+            return generic_sto_completion(error, newval);
         default:
             return ERR_INTERNAL_ERROR;
     }
@@ -72,27 +70,25 @@ int assert_numeric(vartype *v) {
         return ERR_INVALID_DATA;
 }
 
-int generic_div(const vartype *px, const vartype *py, void (*completion)(int, vartype *)) {
+int generic_div(const vartype *px, const vartype *py, int (*completion)(int, vartype *)) {
     if ((px->type == TYPE_REALMATRIX || px->type == TYPE_COMPLEXMATRIX)
             && (py->type == TYPE_REALMATRIX || py->type == TYPE_COMPLEXMATRIX)){
         return linalg_div(py, px, completion);
     } else {
         vartype *dst;
         int error = map_binary(px, py, &dst, div_rr, div_rc, div_cr, div_cc);
-        completion(error, dst);
-        return error;
+        return completion(error, dst);
     }
 }
 
-int generic_mul(const vartype *px, const vartype *py, void (*completion)(int, vartype *)) {
+int generic_mul(const vartype *px, const vartype *py, int (*completion)(int, vartype *)) {
     if ((px->type == TYPE_REALMATRIX || px->type == TYPE_COMPLEXMATRIX)
             && (py->type == TYPE_REALMATRIX || py->type == TYPE_COMPLEXMATRIX)){
         return linalg_mul(py, px, completion);
     } else {
         vartype *dst;
         int error = map_binary(px, py, &dst, mul_rr, mul_rc, mul_cr, mul_cc);
-        completion(error, dst);
-        return error;
+        return completion(error, dst);
     }
 }
 
@@ -340,9 +336,9 @@ int generic_rcl(arg_struct *arg, vartype **dst) {
 
 static arg_struct temp_arg;
 
-static void generic_sto_completion(int error, vartype *res) {
+static int generic_sto_completion(int error, vartype *res) {
     if (error != ERR_NONE)
-        return;
+        return error;
     if (temp_arg.type == ARGTYPE_STK) {
         // Note: at this point, it has already been verified
         // that the destination stack level exists.
@@ -376,6 +372,7 @@ static void generic_sto_completion(int error, vartype *res) {
     }
     if (trace_stack)
         docmd_prstk(NULL);
+    return ERR_NONE;
 }
 
 int generic_sto(arg_struct *arg, char operation) {

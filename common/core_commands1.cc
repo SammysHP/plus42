@@ -1335,6 +1335,5 @@ int docmd_mod(arg_struct *arg) {
     v = new_real(res);
     if (v == NULL)
         return ERR_INSUFFICIENT_MEMORY;
-    binary_result(v);
-    return ERR_NONE;
+    return binary_result(v);
 }

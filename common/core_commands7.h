@@ -73,7 +73,7 @@ int docmd_unpick(arg_struct *arg);
 int docmd_rdnn(arg_struct *arg);
 int docmd_rupn(arg_struct *arg);
 
-int docmd_mvarcat(arg_struct *arg);
+int docmd_pgmmenu(arg_struct *arg);
 
 int docmd_append(arg_struct *arg);
 int docmd_extend(arg_struct *arg);

@@ -346,10 +346,10 @@ const command_spec cmd_array[] =
     { /* YINT */       docmd_yint,        "YINT",                0x00, 0x00, 0xa0, 0xa6,  4, ARG_NONE,   0, NA_T },
     { /* TO_DEC */     docmd_to_dec,      "\017DEC",             0x00, 0x00, 0x00, 0x5f,  4, ARG_NONE,   1, 0x01 },
     { /* TO_OCT */     docmd_to_oct,      "\017OCT",             0x00, 0x00, 0x00, 0x6f,  4, ARG_NONE,   1, 0x01 },
-    { /* LEFT */       docmd_left,        "\020",                0x00, 0x00, 0xa6, 0xdc,  1, ARG_NONE,   1, FUNC },
-    { /* UP */         docmd_up,          "^",                   0x00, 0x00, 0xa6, 0xde,  1, ARG_NONE,   1, FUNC },
-    { /* DOWN */       docmd_down,        "\016",                0x00, 0x00, 0xa6, 0xdf,  1, ARG_NONE,   1, FUNC },
-    { /* RIGHT */      docmd_right,       "\017",                0x00, 0x00, 0xa6, 0xdd,  1, ARG_NONE,   1, FUNC },
+    { /* LEFT */       docmd_left,        "\020",                0x00, 0x00, 0xa6, 0xdc,  1, ARG_NONE,   0, FUNC },
+    { /* UP */         docmd_up,          "^",                   0x00, 0x00, 0xa6, 0xde,  1, ARG_NONE,   0, FUNC },
+    { /* DOWN */       docmd_down,        "\016",                0x00, 0x00, 0xa6, 0xdf,  1, ARG_NONE,   0, FUNC },
+    { /* RIGHT */      docmd_right,       "\017",                0x00, 0x00, 0xa6, 0xdd,  1, ARG_NONE,   0, FUNC },
     { /* PERCENT_CH */ docmd_percent_ch,  "%CH",                 0x00, 0x00, 0x00, 0x4d,  3, ARG_NONE,   2, 0x01 },
     { /* SIMQ */       docmd_simq,        "SIMQ",                0x4c, 0x00, 0x00, 0x00,  4, ARG_COUNT,  0, NA_T },
     { /* MATA */       docmd_mata,        "MATA",                0x4c, 0x00, 0x00, 0x00,  4, ARG_NONE,   0, NA_T },
@@ -483,11 +483,11 @@ const command_spec cmd_array[] =
     { /* RDNN */       docmd_rdnn,        "R\016N",              0x00, 0xf6, 0xf2, 0xa5,  3, ARG_NUM9,   0, NA_T },
     { /* RUPN */       docmd_rupn,        "R^N",                 0x00, 0xf7, 0xf2, 0xa6,  3, ARG_NUM9,   0, NA_T },
 
-    /* Get list of LBLs with MVARs */
-    { /* MVARCAT */    docmd_mvarcat,     "M\326\301\322CAT",    0x00, 0x00, 0xa7, 0xe8,  7, ARG_NONE,   0, NA_T },
-
+    /* Present a menu of LBLs with MVARs */
+    { /* PGMMENU */    docmd_pgmmenu,     "P\307\315M\305NU",    0x00, 0x00, 0xa7, 0xe8,  7, ARG_NONE,   0, NA_T },
     /* Skipping 403 because of single-byte equality checks with CMD_END */
     { /* DUMMY */      NULL,              "",                    0x44, 0x00, 0x00, 0x00,  0, ARG_OTHER,  0, UNIM },
+    { /* PMEXEC */     NULL,              "",                    0x44, 0x00, 0x00, 0x00,  0, ARG_OTHER,  0, NA_T },
 
     /* String & List Functions */
     { /* XASTO */      docmd_xasto,       "XASTO",               0x00, 0x01, 0xf2, 0x11,  5, ARG_VAR,    0, NA_T },

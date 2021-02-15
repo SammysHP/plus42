@@ -1274,6 +1274,7 @@ void display_command(int row) {
     int *the_menu;
     int catsect;
     int hide = pending_command == CMD_VMEXEC
+            || pending_command == CMD_PMEXEC
             || (pending_command == CMD_XEQ
                 && xeq_invisible
                 && (the_menu = get_front_menu()) != NULL
@@ -1525,26 +1526,26 @@ static int ext_stk_cat[] = {
 #if defined(ANDROID) || defined(IPHONE)
 #ifdef FREE42_FPTEST
 static int ext_misc_cat[] = {
-    CMD_FMA,   CMD_GETKEY1, CMD_MVARCAT, CMD_NOP,  CMD_STRACE, CMD_ACCEL,
-    CMD_LOCAT, CMD_HEADING, CMD_FPTEST,  CMD_NULL, CMD_NULL,   CMD_NULL
+    CMD_FMA,   CMD_GETKEY1, CMD_NOP,    CMD_PGMMENU, CMD_STRACE, CMD_ACCEL,
+    CMD_LOCAT, CMD_HEADING, CMD_FPTEST, CMD_NULL,    CMD_NULL,   CMD_NULL
 };
 #define MISC_CAT_ROWS 2
 #else
 static int ext_misc_cat[] = {
-    CMD_FMA,   CMD_GETKEY1, CMD_MVARCAT, CMD_NOP,  CMD_STRACE, CMD_ACCEL,
-    CMD_LOCAT, CMD_HEADING, CMD_NULL,    CMD_NULL, CMD_NULL,   CMD_NULL
+    CMD_FMA,   CMD_GETKEY1, CMD_NOP,  CMD_PGMMENU, CMD_STRACE, CMD_ACCEL,
+    CMD_LOCAT, CMD_HEADING, CMD_NULL, CMD_NULL,    CMD_NULL,   CMD_NULL
 };
 #define MISC_CAT_ROWS 2
 #endif
 #else
 #ifdef FREE42_FPTEST
 static int ext_misc_cat[] = {
-    CMD_FMA, CMD_GETKEY1, CMD_MVARCAT, CMD_NOP, CMD_STRACE, CMD_FPTEST
+    CMD_FMA, CMD_GETKEY1, CMD_NOP, CMD_PGMMENU, CMD_STRACE, CMD_FPTEST
 };
 #define MISC_CAT_ROWS 1
 #else
 static int ext_misc_cat[] = {
-    CMD_FMA, CMD_GETKEY1, CMD_MVARCAT, CMD_NOP, CMD_STRACE, CMD_NULL
+    CMD_FMA, CMD_GETKEY1, CMD_NOP, CMD_PGMMENU, CMD_STRACE, CMD_NULL
 };
 #define MISC_CAT_ROWS 1
 #endif
@@ -1590,7 +1591,8 @@ static void draw_catalog() {
     } else if (catsect == CATSECT_PGM
             || catsect == CATSECT_PGM_ONLY
             || catsect == CATSECT_PGM_SOLVE
-            || catsect == CATSECT_PGM_INTEG) {
+            || catsect == CATSECT_PGM_INTEG
+            || catsect == CATSECT_PGM_MENU) {
         /* Show menu of alpha labels */
         int lcount = 0;
         int i, j, k = -1;
@@ -1601,7 +1603,7 @@ static void draw_catalog() {
                     lcount++;
                 lastprgm = labels[i].prgm;
             }
-        } else /* CATSECT_PGM_SOLVE, CATSECT_PGM_INTEG */ {
+        } else /* CATSECT_PGM_SOLVE, CATSECT_PGM_INTEG, CATSECT_PGM_MENU */ {
             for (i = 0; i < labels_count; i++)
                 if (label_has_mvar(i))
                     lcount++;
@@ -2707,6 +2709,7 @@ void set_catalog_menu(int section) {
             return;
         case CATSECT_PGM_SOLVE:
         case CATSECT_PGM_INTEG:
+        case CATSECT_PGM_MENU:
         default:
             mode_commandmenu = MENU_NONE;
             return;
@@ -2849,6 +2852,7 @@ void update_catalog() {
             break;
         case CATSECT_PGM_SOLVE:
         case CATSECT_PGM_INTEG:
+        case CATSECT_PGM_MENU:
             if (!mvar_prgms_exist()) {
                 *the_menu = MENU_NONE;
                 display_error(ERR_NO_MENU_VARIABLES, 0);

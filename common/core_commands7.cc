@@ -783,10 +783,7 @@ int docmd_lasto(arg_struct *arg) {
 
 int docmd_lxasto(arg_struct *arg) {
     /* This relates to LSTO the same way ASTO relates to STO. */
-    int len = reg_alpha_length;
-    if (len > 6)
-        len = 6;
-    vartype *s = new_string(reg_alpha, len);
+    vartype *s = new_string(reg_alpha, reg_alpha_length);
     if (s == NULL)
         return ERR_INSUFFICIENT_MEMORY;
     int err;

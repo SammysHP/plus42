@@ -4264,7 +4264,12 @@ int find_builtin(const char *name, int namelen, bool strict) {
     }
 
     for (i = 0; true; i++) {
-        if (i == CMD_OPENF) i += 14; // Skip COPAN
+        // Skip COPAN
+        if (i == CMD_OPENF)
+            i += 14;
+        // Skip String & List functions. These are only implemented in Plus42.
+        if (i == CMD_XASTO)
+            i += 16;
         if (i == CMD_SENTINEL)
             break;
         if ((cmd_array[i].flags & FLAG_HIDDEN) != 0)

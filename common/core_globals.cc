@@ -772,7 +772,7 @@ bool no_keystrokes_yet;
  * Version 34: 3.0    Long strings
  * Version 35: 3.0    Changing 'int' to 'bool' where appropriate
  */
-#define FREE42_VERSION 35
+#define PLUS42_VERSION 35
 
 
 /*******************/

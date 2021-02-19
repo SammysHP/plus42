@@ -84,7 +84,7 @@ static int print_text_top;
 static int print_text_bottom;
 static int print_text_pixel_height;
 static bool quit_flag = false;
-static int enqueued;
+static bool enqueued;
 
 
 /* Private globals */
@@ -2451,14 +2451,15 @@ static gboolean print_key_cb(GtkWidget *w, GdkEventKey *event, gpointer cd) {
 static void shell_keydown() {
     GdkWindow *win = gtk_widget_get_window(calc_widget);
 
-    int repeat, keep_running;
+    int repeat;
+    bool keep_running;
     if (skey == -1)
         skey = skin_find_skey(ckey);
     skin_invalidate_key(win, skey);
     if (timeout3_id != 0 && (macro != NULL || ckey != 28 /* KEY_SHIFT */)) {
         g_source_remove(timeout3_id);
         timeout3_id = 0;
-        core_timeout3(0);
+        core_timeout3(false);
     }
 
     if (macro != NULL) {
@@ -2519,7 +2520,7 @@ static void shell_keyup() {
         timeout_id = 0;
     }
     if (!enqueued) {
-        int keep_running = core_keyup();
+        bool keep_running = core_keyup();
         if (quit_flag)
             quit();
         if (keep_running)
@@ -2737,7 +2738,7 @@ static gboolean timeout2(gpointer cd) {
 }
 
 static gboolean timeout3(gpointer cd) {
-    bool keep_running = core_timeout3(1);
+    bool keep_running = core_timeout3(true);
     timeout3_id = 0;
     if (keep_running)
         enable_reminder();
@@ -2791,8 +2792,9 @@ static void repaint_printout(cairo_t *cr) {
 }
 
 static gboolean reminder(gpointer cd) {
-    int dummy1, dummy2;
-    int keep_running = core_keydown(0, &dummy1, &dummy2);
+    bool dummy1;
+    int dummy2;
+    bool keep_running = core_keydown(0, &dummy1, &dummy2);
     if (quit_flag)
         quit();
     if (keep_running)

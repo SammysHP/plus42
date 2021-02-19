@@ -687,7 +687,7 @@ void keydown_command_entry(int shift, int key) {
         if (!shift && ((menukey >= 0 && menukey <= 4)
                 || (menukey == 5 && mode_commandmenu == MENU_IND_ST))) {
             if (mode_commandmenu == MENU_IND_ST && menukey == 0) {
-                incomplete_ind = 1;
+                incomplete_ind = true;
                 incomplete_maxdigits = 2;
                 set_catalog_menu(CATSECT_REAL_ONLY);
                 redisplay();
@@ -747,7 +747,7 @@ void keydown_command_entry(int shift, int key) {
             if (mode_commandmenu == MENU_CATALOG)
                 squeak();
             else {
-                incomplete_alpha = 1;
+                incomplete_alpha = true;
                 set_catalog_menu(CATSECT_TOP);
                 redisplay();
             }
@@ -769,7 +769,7 @@ void keydown_command_entry(int shift, int key) {
         /* More LBL weirdness: you can switch to ALPHA mode while entering
          * a numeric LBL
          */
-        incomplete_alpha = 1;
+        incomplete_alpha = true;
         incomplete_str[0] = '0' + incomplete_num;
         incomplete_num = 0;
         mode_commandmenu = MENU_ALPHA1;
@@ -1126,14 +1126,14 @@ void keydown_command_entry(int shift, int key) {
             if (!shift && key == KEY_SIGMA) {
                 incomplete_command = CMD_GTO;
                 incomplete_argtype = ARG_LBL;
-                incomplete_ind = 1;
+                incomplete_ind = true;
                 incomplete_maxdigits = 2;
                 set_catalog_menu(CATSECT_REAL_ONLY);
                 redisplay();
                 return;
             } else if (key == KEY_ENTER) {
                 incomplete_argtype = ARG_LBL;
-                incomplete_alpha = 1;
+                incomplete_alpha = true;
                 set_menu(MENULEVEL_COMMAND, MENU_ALPHA1);
                 redisplay();
                 return;
@@ -1199,7 +1199,7 @@ void keydown_command_entry(int shift, int key) {
                         || incomplete_argtype == ARG_NAMED
                         || incomplete_argtype == ARG_LBL
                         || incomplete_argtype == ARG_PRGM) {
-                    incomplete_alpha = 1;
+                    incomplete_alpha = true;
                     set_menu(MENULEVEL_COMMAND, MENU_ALPHA1);
                     redisplay();
                 } else
@@ -1250,7 +1250,7 @@ void keydown_command_entry(int shift, int key) {
                         || incomplete_argtype == ARG_NUM11
                         || incomplete_argtype == ARG_NUM99
                         || incomplete_argtype == ARG_LBL) {
-                    incomplete_ind = 1;
+                    incomplete_ind = true;
                     incomplete_maxdigits = 2;
                     set_catalog_menu(CATSECT_REAL_ONLY);
                     redisplay();
@@ -1396,7 +1396,7 @@ void keydown_command_entry(int shift, int key) {
                 set_menu(MENULEVEL_COMMAND, m->parent);
             /* incomplete_alpha can be 0 at this point if
              * the command is CMD_LBL. */
-            incomplete_alpha = 1;
+            incomplete_alpha = true;
             redisplay();
             return;
         }
@@ -1414,8 +1414,8 @@ void keydown_command_entry(int shift, int key) {
                 && (mode_commandmenu < MENU_ALPHA1
                     || mode_commandmenu > MENU_ALPHA_MISC2)
                 && !shift && key == KEY_DOT) {
-            incomplete_ind = 1;
-            incomplete_alpha = 0;
+            incomplete_ind = true;
+            incomplete_alpha = false;
             set_catalog_menu(CATSECT_REAL_ONLY);
             redisplay();
             return;
@@ -1465,7 +1465,7 @@ void keydown_command_entry(int shift, int key) {
             incomplete_str[incomplete_length++] = c;
         /* incomplete_alpha can be 0 at this point if
          * the command is CMD_LBL. */
-        incomplete_alpha = 1;
+        incomplete_alpha = true;
         redisplay();
         return;
         nocharkey1:
@@ -1535,7 +1535,7 @@ void keydown_command_entry(int shift, int key) {
                     if (incomplete_command == CMD_GTODOT) {
                         incomplete_argtype = ARG_OTHER;
                         incomplete_maxdigits = 4;
-                        incomplete_alpha = 0;
+                        incomplete_alpha = false;
                         set_menu(MENULEVEL_COMMAND, MENU_IND);
                         redisplay();
                         return;
@@ -1595,7 +1595,7 @@ void keydown_command_entry(int shift, int key) {
                 if (incomplete_command == CMD_GTODOT) {
                     incomplete_argtype = ARG_OTHER;
                     incomplete_maxdigits = 4;
-                    incomplete_alpha = 0;
+                    incomplete_alpha = false;
                     set_menu(MENULEVEL_COMMAND, MENU_IND);
                     redisplay();
                     return;
@@ -1618,7 +1618,7 @@ void keydown_command_entry(int shift, int key) {
                     out_of_alpha:
                     if (incomplete_ind
                             || incomplete_argtype != ARG_RVAR)
-                        incomplete_alpha = 0;
+                        incomplete_alpha = false;
                     if (incomplete_ind)
                         set_catalog_menu(CATSECT_REAL_ONLY);
                     else if (incomplete_argtype == ARG_VAR)

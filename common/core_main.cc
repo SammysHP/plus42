@@ -198,7 +198,7 @@ static int ascii2hp(char *dst, const char *src, int maxchars);
 bool core_keydown_command(const char *name, bool *enqueued, int *repeat) {
     char hpname[70];
     int len = ascii2hp(hpname, name, 63);
-    int cmd = find_builtin(hpname, len, false);
+    int cmd = find_builtin(hpname, len);
     if (cmd == CMD_NONE) {
         set_shift(false);
         squeak();
@@ -3346,7 +3346,7 @@ static void paste_programs(const char *buf) {
                 cmd_end++;
             if (cmd_end == hppos)
                 goto line_done;
-            cmd = find_builtin(hpbuf + hppos, cmd_end - hppos, false);
+            cmd = find_builtin(hpbuf + hppos, cmd_end - hppos);
             int tok_start, tok_end;
             int argtype;
             bool stk_allowed = true;
@@ -4252,21 +4252,20 @@ static synonym_spec hp41_synonyms[] =
     { "X<>Y?",  false, 5, CMD_X_NE_Y  },
     { "v",      false, 1, CMD_DOWN    },
     { "SST\016",true,  4, CMD_SST     },
-    { "X>=0?",  true,  5, CMD_X_GE_0  }, // added
-    { "X>=Y?",  true,  5, CMD_X_GE_Y  }, // added
-    { "S-N",    true,  3, CMD_S_TO_N  }, // added
-    { "N-S",    true,  3, CMD_N_TO_S  }, // added
-    { "C-N",    true,  3, CMD_C_TO_N  }, // added
-    { "N-C",    true,  3, CMD_N_TO_C  }, // added
+    { "X>=0?",  false, 5, CMD_X_GE_0  },
+    { "X>=Y?",  false, 5, CMD_X_GE_Y  },
+    { "S-N",    false, 3, CMD_S_TO_N  },
+    { "N-S",    false, 3, CMD_N_TO_S  },
+    { "C-N",    false, 3, CMD_C_TO_N  },
+    { "N-C",    false, 3, CMD_N_TO_C  },
     { "",       true,  0, CMD_NONE    }
 };
 
-int find_builtin(const char *name, int namelen, bool strict) {
+int find_builtin(const char *name, int namelen) {
     int i, j;
 
     for (i = 0; hp41_synonyms[i].cmd_id != CMD_NONE; i++) {
-        if (strict && !hp41_synonyms[i].is_orig
-                || namelen != hp41_synonyms[i].namelen)
+        if (namelen != hp41_synonyms[i].namelen)
             continue;
         for (j = 0; j < namelen; j++)
             if (name[j] != hp41_synonyms[i].name[j])
@@ -4539,7 +4538,7 @@ void finish_xeq() {
         cmd = CMD_NONE;
     else
         cmd = find_builtin(pending_command_arg.val.text,
-                           pending_command_arg.length, true);
+                           pending_command_arg.length);
 
     if (cmd == CMD_CLALLa) {
         mode_clall = true;

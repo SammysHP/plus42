@@ -103,6 +103,7 @@
     <ClCompile Include="core_commands6.cpp" />
     <ClCompile Include="core_commands7.cpp" />
     <ClCompile Include="core_display.cpp" />
+    <ClCompile Include="core_equations.cpp" />
     <ClCompile Include="core_globals.cpp" />
     <ClCompile Include="core_helpers.cpp" />
     <ClCompile Include="core_keydown.cpp" />
@@ -143,6 +144,7 @@
     <ClInclude Include="core_commands6.h" />
     <ClInclude Include="core_commands7.h" />
     <ClInclude Include="core_display.h" />
+    <ClInclude Include="core_equations.h" />
     <ClInclude Include="core_globals.h" />
     <ClInclude Include="core_helpers.h" />
     <ClInclude Include="core_keydown.h" />

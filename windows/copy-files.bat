@@ -15,6 +15,8 @@ copy ..\common\core_commands7.cc core_commands7.cpp
 copy ..\common\core_commands7.h .
 copy ..\common\core_display.cc core_display.cpp
 copy ..\common\core_display.h .
+copy ..\common\core_equations.cc core_equations.cpp
+copy ..\common\core_equations.h .
 copy ..\common\core_globals.cc core_globals.cpp
 copy ..\common\core_globals.h .
 copy ..\common\core_helpers.cc core_helpers.cpp

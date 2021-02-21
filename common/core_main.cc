@@ -27,6 +27,7 @@
 #include "core_commands7.h"
 #include "core_display.h"
 #include "core_display.h"
+#include "core_equations.h"
 #include "core_helpers.h"
 #include "core_keydown.h"
 #include "core_math1.h"
@@ -213,6 +214,10 @@ bool core_keydown(int key, bool *enqueued, int *repeat) {
 
     if (key != 0)
         no_keystrokes_yet = false;
+
+    int eqr = eqn_keydown(key);
+    if (eqr != 0)
+        return eqr == 2;
 
     if (key == KEY_SHIFT) {
         set_shift(!mode_shift);

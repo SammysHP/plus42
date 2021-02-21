@@ -36,6 +36,7 @@
 		E91005E10F893F8900B68C27 /* core_sto_rcl.cc in Sources */ = {isa = PBXBuildFile; fileRef = E91005C80F893F8900B68C27 /* core_sto_rcl.cc */; };
 		E91005E20F893F8900B68C27 /* core_tables.cc in Sources */ = {isa = PBXBuildFile; fileRef = E91005CA0F893F8900B68C27 /* core_tables.cc */; };
 		E91005E30F893F8900B68C27 /* core_variables.cc in Sources */ = {isa = PBXBuildFile; fileRef = E91005CC0F893F8900B68C27 /* core_variables.cc */; };
+		E918AC4825E31DDC00528231 /* core_equations.cc in Sources */ = {isa = PBXBuildFile; fileRef = E918AC4625E31DDB00528231 /* core_equations.cc */; };
 		E91B5368233C569F00E30DE8 /* click6.wav in Resources */ = {isa = PBXBuildFile; fileRef = E91B5364233C569F00E30DE8 /* click6.wav */; };
 		E91B5369233C569F00E30DE8 /* click8.wav in Resources */ = {isa = PBXBuildFile; fileRef = E91B5365233C569F00E30DE8 /* click8.wav */; };
 		E91B536A233C569F00E30DE8 /* click7.wav in Resources */ = {isa = PBXBuildFile; fileRef = E91B5366233C569F00E30DE8 /* click7.wav */; };
@@ -156,6 +157,8 @@
 		E91005CB0F893F8900B68C27 /* core_tables.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = core_tables.h; path = ../common/core_tables.h; sourceTree = SOURCE_ROOT; };
 		E91005CC0F893F8900B68C27 /* core_variables.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = core_variables.cc; path = ../common/core_variables.cc; sourceTree = SOURCE_ROOT; };
 		E91005CD0F893F8900B68C27 /* core_variables.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = core_variables.h; path = ../common/core_variables.h; sourceTree = SOURCE_ROOT; };
+		E918AC4625E31DDB00528231 /* core_equations.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = core_equations.cc; path = ../common/core_equations.cc; sourceTree = "<group>"; };
+		E918AC4725E31DDC00528231 /* core_equations.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = core_equations.h; path = ../common/core_equations.h; sourceTree = "<group>"; };
 		E91B5364233C569F00E30DE8 /* click6.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = click6.wav; sourceTree = "<group>"; };
 		E91B5365233C569F00E30DE8 /* click8.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = click8.wav; sourceTree = "<group>"; };
 		E91B5366233C569F00E30DE8 /* click7.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = click7.wav; sourceTree = "<group>"; };
@@ -431,6 +434,8 @@
 				E99FDE5D1162508C004DB479 /* core_commands7.h */,
 				E91005B40F893F8900B68C27 /* core_display.cc */,
 				E91005B50F893F8900B68C27 /* core_display.h */,
+				E918AC4625E31DDB00528231 /* core_equations.cc */,
+				E918AC4725E31DDC00528231 /* core_equations.h */,
 				E91005B60F893F8900B68C27 /* core_globals.cc */,
 				E91005B70F893F8900B68C27 /* core_globals.h */,
 				E91005B80F893F8900B68C27 /* core_helpers.cc */,
@@ -621,6 +626,7 @@
 				E91005E00F893F8900B68C27 /* core_phloat.cc in Sources */,
 				E91005E10F893F8900B68C27 /* core_sto_rcl.cc in Sources */,
 				E91005E20F893F8900B68C27 /* core_tables.cc in Sources */,
+				E918AC4825E31DDC00528231 /* core_equations.cc in Sources */,
 				E91005E30F893F8900B68C27 /* core_variables.cc in Sources */,
 				E93F2B560F894D9000CE8542 /* shell_spool.cc in Sources */,
 				E91CC1D40F8C1FE900EE702C /* simpleserver.c in Sources */,

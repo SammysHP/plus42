@@ -15,6 +15,8 @@ del core_commands7.cpp
 del core_commands7.h
 del core_display.cpp
 del core_display.h
+del core_equations.cpp
+del core_equations.h
 del core_globals.cpp
 del core_globals.h
 del core_helpers.cpp

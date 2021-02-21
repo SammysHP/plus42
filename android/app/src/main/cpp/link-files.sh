@@ -17,6 +17,8 @@ ln -fs ../../../../../common/core_commands7.cc
 ln -fs ../../../../../common/core_commands7.h
 ln -fs ../../../../../common/core_display.cc
 ln -fs ../../../../../common/core_display.h
+ln -fs ../../../../../common/core_equations.cc
+ln -fs ../../../../../common/core_equations.h
 ln -fs ../../../../../common/core_globals.cc
 ln -fs ../../../../../common/core_globals.h
 ln -fs ../../../../../common/core_helpers.cc

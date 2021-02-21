@@ -22,6 +22,7 @@
 #include "core_commands2.h"
 #include "core_commands3.h"
 #include "core_display.h"
+#include "core_equations.h"
 #include "core_helpers.h"
 #include "core_main.h"
 #include "core_math1.h"
@@ -49,10 +50,10 @@ static int basekeys() {
 }
 
 static void set_solve_integ(int solve) {
-    if (flags.f.prgm_mode || !mvar_prgms_exist()) {
+    if (flags.f.prgm_mode /*|| !mvar_prgms_exist()*/) {
         set_menu(MENULEVEL_APP, solve ? MENU_SOLVE : MENU_INTEG);
-        if (!flags.f.prgm_mode)
-            display_error(ERR_NO_MENU_VARIABLES, false);
+        /*if (!flags.f.prgm_mode)
+            display_error(ERR_NO_MENU_VARIABLES, false);*/
     } else {
         int err = set_menu_return_err(MENULEVEL_APP, MENU_CATALOG, false);
         if (err == ERR_NONE) {
@@ -2409,6 +2410,14 @@ void keydown_normal_mode(int shift, int key) {
                         || catsect == CATSECT_PGM_MENU) {
                     int labelindex = get_cat_item(menukey);
                     int i;
+                    if (labelindex == -2) {
+                        int err = eqn_start(catsect);
+                        if (err != ERR_NONE) {
+                            display_error(err, false);
+                            flush_display();
+                        }
+                        return;
+                    }
                     if (labelindex == -1) {
                         pending_command = CMD_NULL;
                         return;

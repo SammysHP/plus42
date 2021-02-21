@@ -23,6 +23,7 @@
 #include "core_commands4.h"
 #include "core_commands7.h"
 #include "core_display.h"
+#include "core_equations.h"
 #include "core_helpers.h"
 #include "core_main.h"
 #include "core_math1.h"
@@ -4203,6 +4204,8 @@ static bool load_state2(bool *clear, bool *too_new) {
         return false;
     if (!unpersist_globals())
         return false;
+    if (!unpersist_eqn())
+        return false;
 
     if (ver < 4) {
         /* Before state file version 4, I used to save the BCD table in the
@@ -4353,6 +4356,8 @@ void save_state() {
     if (!persist_display())
         return;
     if (!persist_globals())
+        return;
+    if (!unpersist_eqn())
         return;
     if (!persist_math())
         return;

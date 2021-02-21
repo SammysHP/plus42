@@ -20,6 +20,7 @@
 
 #include "core_display.h"
 #include "core_commands2.h"
+#include "core_equations.h"
 #include "core_globals.h"
 #include "core_helpers.h"
 #include "core_main.h"
@@ -908,7 +909,7 @@ static void fill_rect(int x, int y, int width, int height, int color) {
 }
 
 static void draw_key(int n, int highlight, int hide_meta,
-                            const char *s, int length) {
+                            const char *s, int length, bool reverse = false) {
     int swidth = 0;
     int len = 0;
     int len2;
@@ -944,6 +945,8 @@ static void draw_key(int n, int highlight, int hide_meta,
     }
 
     fill_rect(n * 22, 9, 21, 7, 1);
+    if (reverse)
+        fill_rect(n * 22 + 1, 10, 19, 5, 0);
     x = n * 22 + 10 - swidth / 2;
     len2 = highlight ? len + 1 : len;
     for (i = 0; i < len2; i++) {
@@ -963,7 +966,10 @@ static void draw_key(int n, int highlight, int hide_meta,
             b = smallchars[o + j];
             for (k = 0; k < 8; k++)
                 if ((b >> k) & 1)
-                    display[(k + 8) * 17 + (x >> 3)] &= ~(1 << (x & 7));
+                    if (reverse)
+                        display[(k + 8) * 17 + (x >> 3)] |= (1 << (x & 7));
+                    else
+                        display[(k + 8) * 17 + (x >> 3)] &= ~(1 << (x & 7));
             x++;
         }
         x++;
@@ -1616,11 +1622,18 @@ static void draw_catalog() {
             for (i = 0; i < labels_count; i++)
                 if (label_has_mvar(i))
                     lcount++;
+            /* One extra for EQNS */
+            lcount++;
         }
         catalogmenu_rows[catindex] = (lcount + 5) / 6;
         if (catalogmenu_row[catindex] >= catalogmenu_rows[catindex])
             catalogmenu_row[catindex] = catalogmenu_rows[catindex] - 1;
         j = -1;
+        if (catsect != CATSECT_PGM && catsect != CATSECT_PGM_ONLY) {
+            j = k = 0;
+            draw_key(0, 0, 0, "=", 1, true);
+            catalogmenu_item[catindex][0] = -2;
+        }
         for (i = labels_count - 1; i >= 0; i--) {
             int show_this_label;
             if (catsect == CATSECT_PGM || catsect == CATSECT_PGM_ONLY) {
@@ -1976,6 +1989,9 @@ void redisplay() {
     int avail_rows = 2;
     int i;
 
+    if (eqn_draw())
+        return;
+    
     if (mode_clall) {
         clear_display();
         draw_string(0, 0, "Clear All Memory?", 17);

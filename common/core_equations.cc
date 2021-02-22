@@ -220,22 +220,6 @@ int eqn_keydown(int key, int *repeat) {
                     r2 = selected_row + 1;
                     selected_row++;
                 }
-#if 0
-                /* This doesn't work. We'll have to return in order to allow
-                 * the repaint to take effect, and use a timeout to come back
-                 * here and finish the swap and move.
-                 * While we're at it, how are we going to handle auto-repeat?
-                 * It may not be necessary or even particularly desirable on
-                 * Move Up and Move Down, but we should have it on Up and Down,
-                 * and during text entry.
-                 * Also, we should handle Shift-EXIT for OFF.
-                 */
-                /* Briefly show next row before swap & move.
-                 * Without this, there's no visual feedback at all during a
-                 * move on a one-line screen.
-                 */
-                shell_delay(250);
-#endif
 
                 eqn_draw();
                 shell_request_timeout3(500);

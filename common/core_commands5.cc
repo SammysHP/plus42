@@ -20,6 +20,7 @@
 #include "core_commands2.h"
 #include "core_commands5.h"
 #include "core_display.h"
+#include "core_equations.h"
 #include "core_helpers.h"
 #include "core_main.h"
 #include "core_math1.h"
@@ -930,6 +931,7 @@ int appmenu_exitcallback_3(int menuid, bool exitall) {
 
 int docmd_pgmslvi(arg_struct *arg) {
     if (arg->type == ARGTYPE_STR) {
+        eqn_end();
         int idx;
         if (!find_global_label_index(arg, &idx))
             return ERR_LABEL_NOT_FOUND;
@@ -969,6 +971,7 @@ int appmenu_exitcallback_5(int menuid, bool exitall) {
 
 int docmd_pgminti(arg_struct *arg) {
     if (arg->type == ARGTYPE_STR) {
+        eqn_end();
         int idx;
         if (!find_global_label_index(arg, &idx))
             return ERR_LABEL_NOT_FOUND;

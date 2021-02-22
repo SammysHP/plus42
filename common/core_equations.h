@@ -25,6 +25,7 @@ bool unpersist_eqn();
 bool persist_eqn();
 
 int eqn_start(int whence);
+void eqn_end();
 bool eqn_draw();
 int eqn_keydown(int key, int *repeat);
 int eqn_repeat();

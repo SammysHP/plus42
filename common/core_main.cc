@@ -546,6 +546,7 @@ bool core_keyup() {
     }
 
     if (pending_command == CMD_VMEXEC || pending_command == CMD_PMEXEC) {
+        eqn_end();
         string_copy(reg_alpha, &reg_alpha_length,
                     pending_command_arg.val.text, pending_command_arg.length);
         goto do_run;

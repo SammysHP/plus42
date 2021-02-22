@@ -77,6 +77,10 @@ int eqn_start(int whence) {
     return ERR_NONE;
 }
 
+void eqn_end() {
+    active = false;
+}
+
 bool eqn_draw() {
     if (!active)
         return false;
@@ -173,15 +177,19 @@ int eqn_keydown(int key, int *repeat) {
                 pending_command_arg.type = ARGTYPE_STR;
                 pending_command_arg.length = len;
                 if (menu_whence == CATSECT_PGM_SOLVE)
-                    pending_command = flags.f.prgm_mode ? CMD_PGMSLV
-                                                        : CMD_PGMSLVi;
+                    pending_command = CMD_PGMSLVi;
                 else if (menu_whence == CATSECT_PGM_INTEG)
-                    pending_command = flags.f.prgm_mode ? CMD_PGMINT
-                                                        : CMD_PGMINTi;
+                    pending_command = CMD_PGMINTi;
                 else
                     /* PGMMENU */
                     pending_command = CMD_PMEXEC;
-                goto done;
+                /* Note that we don't do active = false here, since at this point
+                 * it is still possible that the command will go do NULL, and in
+                 * that case, we should stay here. Thus, setting active = false
+                 * is accomplished by PGMSLV, PGMINT, and PMEXEC.
+                 */
+                redisplay();
+                return 2;
             }
             case KEY_INV: {
                 /* EDIT */

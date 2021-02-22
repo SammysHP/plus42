@@ -1965,7 +1965,7 @@ public class Free42Activity extends Activity {
             return;
         int repeat = core_repeat();
         if (repeat != 0)
-            mainHandler.postDelayed(repeaterCaller, repeat == 1 ? 200 : 100);
+            mainHandler.postDelayed(repeaterCaller, repeat == 1 ? 200 : repeat == 2 ? 100 : 500);
         else
             mainHandler.postDelayed(timeout1Caller, 250);
     }

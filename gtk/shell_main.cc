@@ -2715,7 +2715,7 @@ static void disable_reminder() {
 static gboolean repeater(gpointer cd) {
     int repeat = core_repeat();
     if (repeat != 0)
-        timeout_id = g_timeout_add(repeat == 1 ? 200 : 100, repeater, NULL);
+        timeout_id = g_timeout_add(repeat == 1 ? 200 : repeat == 2 ? 100 : 500, repeater, NULL);
     else
         timeout_id = g_timeout_add(250, timeout1, NULL);
     return FALSE;

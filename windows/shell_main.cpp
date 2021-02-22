@@ -1635,7 +1635,7 @@ static VOID CALLBACK repeater(HWND hwnd, UINT uMsg, UINT idEvent, DWORD dwTime) 
     KillTimer(NULL, timer);
     int repeat = core_repeat();
     if (repeat != 0)
-        timer = SetTimer(NULL, 0, repeat == 1 ? 200 : 100, repeater);
+        timer = SetTimer(NULL, 0, repeat == 1 ? 200 : repeat == 2 ? 100 : 500, repeater);
     else
         timer = SetTimer(NULL, 0, 250, timeout1);
 }

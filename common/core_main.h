@@ -127,7 +127,9 @@ bool core_hex_menu();
  * ask the shell to auto-repeat the current key. If this is set to 1 or 2, the
  * shell will not call timeout1() and timeout2(), but will repeatedly call
  * core_repeat() until the key is released. (1 requests a slow repeat rate, for
- * SST/BST; 2 requests a fast repeat rate, for number/alpha entry.)
+ * SST/BST; 2 requests a fast repeat rate, for number/alpha entry, and 3
+ * requests an extra-slow repeat rate, for up/down in the equation editor's
+ * list view.)
  */
 bool core_keydown(int key, bool *enqueued, int *repeat);
 
@@ -150,7 +152,8 @@ bool core_keydown_command(const char *name, bool *enqueued, int *repeat);
  * It is the core's responsibility to keep track of *which* key is repeating.
  * The function can return 0, to request repeating to stop; 1, which requests
  * a slow repeat rate, for SST/BST; or 2, which requests a fast repeat rate,
- * for number/alpha entry.
+ * for number/alpha entry; or 3, for an extra-slow repeat rate, for the
+ * equation editor's list view.
  */
 int core_repeat();
 
@@ -330,6 +333,7 @@ extern int repeating_key;
 /* Other functions */
 /*******************/
 
+void set_shift(bool shift);
 void set_alpha_entry(bool state);
 void set_running(bool state);
 bool program_running();

@@ -1067,7 +1067,7 @@ static char version[32] = "";
 - (void) repeater_callback {
     int repeat = core_repeat();
     if (repeat != 0)
-        [self setRepeater:(repeat == 1 ? 200 : 100)];
+        [self setRepeater:(repeat == 1 ? 200 : repeat == 2 ? 100 : 500)];
     else
         [self setTimeout:1];
 }

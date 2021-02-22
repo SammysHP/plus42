@@ -20,6 +20,7 @@
 #include "core_equations.h"
 #include "core_display.h"
 #include "core_helpers.h"
+#include "core_main.h"
 #include "shell.h"
 
 static bool active = false;
@@ -58,6 +59,7 @@ static bool is_name_char(char c) {
 int eqn_start(int whence) {
     active = true;
     menu_whence = whence;
+    set_shift(false);
     
     vartype *v = recall_var("EQNS", 4);
     if (v == NULL) {
@@ -119,25 +121,39 @@ bool eqn_draw() {
 int eqn_keydown(int key, int *repeat) {
     if (!active)
         return 0;
+
+    if (key == KEY_SHIFT) {
+        set_shift(!mode_shift);
+        return 1;
+    }
+    
+    bool shift = mode_shift;
+    set_shift(false);
     
     if (edit_pos == -1) {
         switch (key) {
             case KEY_UP: {
-                if (selected_row >= 0) {
+                if (shift) {
+                    selected_row = -1;
+                } else if (selected_row >= 0) {
                     selected_row--;
                     dir = -1;
-                    *repeat = 1;
-                } else
+                    *repeat = 3;
+                } else {
                     squeak();
+                }
                 break;
             }
             case KEY_DOWN: {
-                if (selected_row < num_eqns) {
+                if (shift) {
+                    selected_row = num_eqns;
+                } else if (selected_row < num_eqns) {
                     selected_row++;
                     dir = 1;
-                    *repeat = 1;
-                } else
+                    *repeat = 3;
+                } else {
                     squeak();
+                }
                 break;
             }
             case KEY_SIGMA: {
@@ -209,23 +225,27 @@ int eqn_keydown(int key, int *repeat) {
             case KEY_LN:
             case KEY_XEQ: {
                 /* MOVE up, MOVE down */
+                if (selected_row == -1 || selected_row == num_eqns) {
+                    squeak();
+                    return 1;
+                }
                 if (key == KEY_LN) {
                     /* up */
-                    if (selected_row < 1 || selected_row == num_eqns) {
-                        squeak();
-                        return 1;
+                    if (selected_row == 0) {
+                        r1 = -1;
+                    } else {
+                        r1 = selected_row;
+                        r2 = selected_row - 1;
                     }
-                    r1 = selected_row;
-                    r2 = selected_row - 1;
                     selected_row--;
                 } else {
                     /* down */
-                    if (selected_row > num_eqns - 2 || selected_row == -1) {
-                        squeak();
-                        return 1;
+                    if (selected_row == num_eqns - 1) {
+                        r1 = -2;
+                    } else {
+                        r1 = selected_row;
+                        r2 = selected_row + 1;
                     }
-                    r1 = selected_row;
-                    r2 = selected_row + 1;
                     selected_row++;
                 }
 
@@ -262,12 +282,13 @@ int eqn_repeat() {
     if (!active)
         return -1;
     // Like core_repeat(): 0 means stop repeating; 1 means slow repeat,
-    // for Up/Down; 2 means fast repeat, for text entry
+    // for Up/Down; 2 means fast repeat, for text entry; 3 means extra
+    // slow repeat, for the equation editor's list view.
     if (dir == -1) {
         if (selected_row >= 0) {
             selected_row--;
             eqn_draw();
-            return 1;
+            return 3;
         } else {
             squeak();
             dir = 0;
@@ -276,7 +297,7 @@ int eqn_repeat() {
         if (selected_row < num_eqns) {
             selected_row++;
             eqn_draw();
-            return 1;
+            return 3;
         } else {
             squeak();
             dir = 0;
@@ -290,12 +311,20 @@ bool eqn_timeout() {
         return false;
 
     /* Finish delayed Move Up/Down operation */
-    bool t1 = eqns->array->is_string[r1];
-    eqns->array->is_string[r1] = eqns->array->is_string[r2];
-    eqns->array->is_string[r2] = t1;
-    phloat t2 = eqns->array->data[r1];
-    eqns->array->data[r1] = eqns->array->data[r2];
-    eqns->array->data[r2] = t2;
+    if (r1 == -1) {
+        selected_row++;
+        squeak();
+    } else if (r1 == -2) {
+        selected_row--;
+        squeak();
+    } else {
+        bool t1 = eqns->array->is_string[r1];
+        eqns->array->is_string[r1] = eqns->array->is_string[r2];
+        eqns->array->is_string[r2] = t1;
+        phloat t2 = eqns->array->data[r1];
+        eqns->array->data[r1] = eqns->array->data[r2];
+        eqns->array->data[r2] = t2;
+    }
     eqn_draw();
     return true;
 }

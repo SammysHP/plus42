@@ -52,7 +52,7 @@ int my_rename(const char *oldname, const char *newname);
 #endif
 
 
-static void set_shift(bool state) {
+void set_shift(bool state) {
     if (mode_shift != state) {
         mode_shift = state;
         shell_annunciators(-1, state, -1, -1, -1, -1);

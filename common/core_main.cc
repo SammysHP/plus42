@@ -216,9 +216,13 @@ bool core_keydown(int key, bool *enqueued, int *repeat) {
         no_keystrokes_yet = false;
 
     int eqr = eqn_keydown(key, repeat);
-    if (eqr != 0) {
+    if (eqr == 1) {
+        // Still in equation editor
         *enqueued = 1; // prevent key timeouts
-        return eqr == 2;
+        return false;
+    } else if (eqr == 2) {
+        // Equation editor exiting
+        return true;
     }
 
     if (key == KEY_SHIFT) {

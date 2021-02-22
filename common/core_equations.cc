@@ -41,6 +41,20 @@ bool persist_eqn() {
     return true;
 }
 
+static bool is_name_char(char c) {
+    /* The non-name characters are the same as on the 17B,
+     * plus not-equal, less-equal, greater-equal, and
+     * square brackets.
+     */
+    return c != '+' && c != '-' && c != 1 /* mul */
+        && c != 0 /* div */     && c != '('
+        && c != ')' && c != '<' && c != '>'
+        && c != '^' && c != ':' && c != '=' && c != ' '
+        && c != 12 /* NE */ && c != 9 /* LE */
+        && c != 11 /* GE */ && c != '['
+        && c != ']';
+}
+
 int eqn_start(int whence) {
     active = true;
     menu_whence = whence;
@@ -124,8 +138,50 @@ int eqn_keydown(int key, int *repeat) {
             }
             case KEY_SIGMA: {
                 /* CALC */
-                squeak();
-                return 1;
+                if (selected_row == -1 || selected_row == num_eqns) {
+                    squeak();
+                    return 1;
+                }
+                const char *name;
+                int4 len = 0;
+                if (eqns->array->is_string[selected_row]) {
+                    get_matrix_string(eqns, selected_row, &name, &len);
+                    int4 i = 0;
+                    while (i < len && is_name_char(name[i]))
+                        i++;
+                    if (i > 0 && i < len && name[i] == ':')
+                        len = i;
+                }
+                if (len != 0 && len <= 7) {
+                    pending_command_arg.length = len;
+                    memcpy(pending_command_arg.val.text, name, len);
+                } else {
+                    /* For equations with no name, or with a name longer
+                     * than 7 characters, we generate a pseudo-name
+                     * "eq{NNN}", but only if NNN <= 999. If the number
+                     * is >= 1000, we punt.
+                     */
+                    if (selected_row >= 1000) {
+                        squeak();
+                        return 1;
+                    }
+                    len = 0;
+                    string2buf(pending_command_arg.val.text, 7, &len, "eq{", 3);
+                    len += int2string(selected_row, pending_command_arg.val.text + len, 7 - len);
+                    string2buf(pending_command_arg.val.text, 7, &len, "}", 1);
+                }
+                pending_command_arg.type = ARGTYPE_STR;
+                pending_command_arg.length = len;
+                if (menu_whence == CATSECT_PGM_SOLVE)
+                    pending_command = flags.f.prgm_mode ? CMD_PGMSLV
+                                                        : CMD_PGMSLVi;
+                else if (menu_whence == CATSECT_PGM_INTEG)
+                    pending_command = flags.f.prgm_mode ? CMD_PGMINT
+                                                        : CMD_PGMINTi;
+                else
+                    /* PGMMENU */
+                    pending_command = CMD_PMEXEC;
+                goto done;
             }
             case KEY_INV: {
                 /* EDIT */
@@ -196,35 +252,6 @@ int eqn_keydown(int key, int *repeat) {
         }
     }
 
-#if 0
-    char name[10];
-    int len = 0;
-    if (key == KEY_SIN) {
-        memcpy(name, "PLOT", 4);
-        len = 4;
-    } else if (key == KEY_COS) {
-        memcpy(name, "SUN", 3);
-        len = 3;
-    } else if (key == KEY_TAN) {
-        memcpy(name, "FOO", 3);
-        len = 3;
-    }
-    if (len != 0) {
-        if (menu_whence == CATSECT_PGM_SOLVE)
-            pending_command = flags.f.prgm_mode ? CMD_PGMSLV
-                                                : CMD_PGMSLVi;
-        else if (menu_whence == CATSECT_PGM_INTEG)
-            pending_command = flags.f.prgm_mode ? CMD_PGMINT
-                                                : CMD_PGMINTi;
-        else
-            /* PGMMENU */
-            pending_command = CMD_PMEXEC;
-        pending_command_arg.type = ARGTYPE_STR;
-        pending_command_arg.length = len;
-        memcpy(pending_command_arg.val.text, name, len);
-        goto done;
-    }
-#endif
 
     if (key == KEY_EXIT) {
         done:

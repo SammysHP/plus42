@@ -26,7 +26,9 @@ bool persist_eqn();
 
 int eqn_start(int whence);
 bool eqn_draw();
-int eqn_keydown(int key);
+int eqn_keydown(int key, int *repeat);
+int eqn_repeat();
+bool eqn_timeout();
 
 
 #endif

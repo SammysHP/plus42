@@ -30,6 +30,9 @@ static int4 num_eqns;
 static int selected_row = -1; // -1: top of list; num_eqns: bottom of list
 static int edit_pos; // -1: in list
 
+static int dir = 0;
+static int r1, r2;
+
 bool unpersist_eqn() {
     return true;
 }
@@ -95,20 +98,28 @@ bool eqn_draw() {
     return true;
 }
 
-int eqn_keydown(int key) {
+int eqn_keydown(int key, int *repeat) {
     if (!active)
         return 0;
     
     if (edit_pos == -1) {
         switch (key) {
             case KEY_UP: {
-                if (selected_row >= 0)
+                if (selected_row >= 0) {
                     selected_row--;
+                    dir = -1;
+                    *repeat = 1;
+                } else
+                    squeak();
                 break;
             }
             case KEY_DOWN: {
-                if (selected_row < num_eqns)
+                if (selected_row < num_eqns) {
                     selected_row++;
+                    dir = 1;
+                    *repeat = 1;
+                } else
+                    squeak();
                 break;
             }
             case KEY_SIGMA: {
@@ -134,7 +145,6 @@ int eqn_keydown(int key) {
             case KEY_LN:
             case KEY_XEQ: {
                 /* MOVE up, MOVE down */
-                int r1, r2;
                 if (key == KEY_LN) {
                     /* up */
                     if (selected_row < 1 || selected_row == num_eqns) {
@@ -168,16 +178,12 @@ int eqn_keydown(int key) {
                  * Without this, there's no visual feedback at all during a
                  * move on a one-line screen.
                  */
-                eqn_draw();
                 shell_delay(250);
 #endif
-                bool t1 = eqns->array->is_string[r1];
-                eqns->array->is_string[r1] = eqns->array->is_string[r2];
-                eqns->array->is_string[r2] = t1;
-                phloat t2 = eqns->array->data[r1];
-                eqns->array->data[r1] = eqns->array->data[r2];
-                eqns->array->data[r2] = t2;
-                break;
+
+                eqn_draw();
+                shell_request_timeout3(500);
+                return 1;
             }
             case KEY_EXIT: {
                 /* handled further down */
@@ -231,4 +237,46 @@ int eqn_keydown(int key) {
         redisplay();
         return 1;
     }
+}
+
+int eqn_repeat() {
+    if (!active)
+        return -1;
+    // Like core_repeat(): 0 means stop repeating; 1 means slow repeat,
+    // for Up/Down; 2 means fast repeat, for text entry
+    if (dir == -1) {
+        if (selected_row >= 0) {
+            selected_row--;
+            eqn_draw();
+            return 1;
+        } else {
+            squeak();
+            dir = 0;
+        }
+    } else if (dir == 1) {
+        if (selected_row < num_eqns) {
+            selected_row++;
+            eqn_draw();
+            return 1;
+        } else {
+            squeak();
+            dir = 0;
+        }
+    }
+    return 0;
+}
+
+bool eqn_timeout() {
+    if (!active)
+        return false;
+
+    /* Finish delayed Move Up/Down operation */
+    bool t1 = eqns->array->is_string[r1];
+    eqns->array->is_string[r1] = eqns->array->is_string[r2];
+    eqns->array->is_string[r2] = t1;
+    phloat t2 = eqns->array->data[r1];
+    eqns->array->data[r1] = eqns->array->data[r2];
+    eqns->array->data[r2] = t2;
+    eqn_draw();
+    return true;
 }

@@ -215,9 +215,11 @@ bool core_keydown(int key, bool *enqueued, int *repeat) {
     if (key != 0)
         no_keystrokes_yet = false;
 
-    int eqr = eqn_keydown(key);
-    if (eqr != 0)
+    int eqr = eqn_keydown(key, repeat);
+    if (eqr != 0) {
+        *enqueued = 1; // prevent key timeouts
         return eqr == 2;
+    }
 
     if (key == KEY_SHIFT) {
         set_shift(!mode_shift);
@@ -384,6 +386,9 @@ bool core_keydown(int key, bool *enqueued, int *repeat) {
 }
 
 int core_repeat() {
+    int eqr = eqn_repeat();
+    if (eqr != -1)
+        return eqr;
     keydown(repeating_shift, repeating_key);
     int rpt = repeating;
     repeating = 0;
@@ -431,6 +436,8 @@ void core_keytimeout2() {
 }
 
 bool core_timeout3(bool repaint) {
+    if (eqn_timeout())
+        return false;
     if (mode_pause) {
         if (repaint) {
             /* The PSE ended normally */

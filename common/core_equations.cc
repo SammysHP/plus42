@@ -92,8 +92,8 @@ bool eqn_draw() {
     draw_key(1, 0, 0, "EDIT", 4);
     draw_key(2, 0, 0, "DELET", 5);
     draw_key(3, 0, 0, "NEW", 3);
-    draw_key(4, 0, 0, "MOV^", 4);
-    draw_key(5, 0, 0, "MOV\016", 4);
+    draw_key(4, 0, 0, "^", 1, true);
+    draw_key(5, 0, 0, "\016", 1, true);
     flush_display();
     return true;
 }

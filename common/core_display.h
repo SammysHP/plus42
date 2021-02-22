@@ -36,6 +36,8 @@ void tone(int n);
 void draw_char(int x, int y, char c);
 const char *get_char(char c);
 void draw_string(int x, int y, const char *s, int length);
+void draw_key(int n, int highlight, int hide_meta,
+                            const char *s, int length, bool reverse = false);
 void clear_row(int row);
 
 void display_prgm_line(int row, int line_offset);

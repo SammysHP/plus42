@@ -908,8 +908,8 @@ static void fill_rect(int x, int y, int width, int height, int color) {
     mark_dirty(y, x, y + height, x + width);
 }
 
-static void draw_key(int n, int highlight, int hide_meta,
-                            const char *s, int length, bool reverse = false) {
+void draw_key(int n, int highlight, int hide_meta,
+                            const char *s, int length, bool reverse) {
     int swidth = 0;
     int len = 0;
     int len2;

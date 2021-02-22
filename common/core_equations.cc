@@ -20,6 +20,7 @@
 #include "core_equations.h"
 #include "core_display.h"
 #include "core_helpers.h"
+#include "shell.h"
 
 static bool active = false;
 static int menu_whence;
@@ -84,6 +85,12 @@ bool eqn_draw() {
     } else {
         draw_string(0, 0, "Welcome to EQN", 14);
     }
+    draw_key(0, 0, 0, "CALC", 4);
+    draw_key(1, 0, 0, "EDIT", 4);
+    draw_key(2, 0, 0, "DELET", 5);
+    draw_key(3, 0, 0, "NEW", 3);
+    draw_key(4, 0, 0, "MOV^", 4);
+    draw_key(5, 0, 0, "MOV\016", 4);
     flush_display();
     return true;
 }
@@ -93,15 +100,92 @@ int eqn_keydown(int key) {
         return 0;
     
     if (edit_pos == -1) {
-        if (key == KEY_UP) {
-            if (selected_row >= 0) {
-                selected_row--;
-                redisplay();
+        switch (key) {
+            case KEY_UP: {
+                if (selected_row >= 0)
+                    selected_row--;
+                break;
             }
-        } else if (key == KEY_DOWN) {
-            if (selected_row < num_eqns) {
-                selected_row++;
-                redisplay();
+            case KEY_DOWN: {
+                if (selected_row < num_eqns)
+                    selected_row++;
+                break;
+            }
+            case KEY_SIGMA: {
+                /* CALC */
+                squeak();
+                return 1;
+            }
+            case KEY_INV: {
+                /* EDIT */
+                squeak();
+                return 1;
+            }
+            case KEY_SQRT: {
+                /* DELET */
+                squeak();
+                return 1;
+            }
+            case KEY_LOG: {
+                /* NEW */
+                squeak();
+                return 1;
+            }
+            case KEY_LN:
+            case KEY_XEQ: {
+                /* MOVE up, MOVE down */
+                int r1, r2;
+                if (key == KEY_LN) {
+                    /* up */
+                    if (selected_row < 1 || selected_row == num_eqns) {
+                        squeak();
+                        return 1;
+                    }
+                    r1 = selected_row;
+                    r2 = selected_row - 1;
+                    selected_row--;
+                } else {
+                    /* down */
+                    if (selected_row > num_eqns - 2 || selected_row == -1) {
+                        squeak();
+                        return 1;
+                    }
+                    r1 = selected_row;
+                    r2 = selected_row + 1;
+                    selected_row++;
+                }
+#if 0
+                /* This doesn't work. We'll have to return in order to allow
+                 * the repaint to take effect, and use a timeout to come back
+                 * here and finish the swap and move.
+                 * While we're at it, how are we going to handle auto-repeat?
+                 * It may not be necessary or even particularly desirable on
+                 * Move Up and Move Down, but we should have it on Up and Down,
+                 * and during text entry.
+                 * Also, we should handle Shift-EXIT for OFF.
+                 */
+                /* Briefly show next row before swap & move.
+                 * Without this, there's no visual feedback at all during a
+                 * move on a one-line screen.
+                 */
+                eqn_draw();
+                shell_delay(250);
+#endif
+                bool t1 = eqns->array->is_string[r1];
+                eqns->array->is_string[r1] = eqns->array->is_string[r2];
+                eqns->array->is_string[r2] = t1;
+                phloat t2 = eqns->array->data[r1];
+                eqns->array->data[r1] = eqns->array->data[r2];
+                eqns->array->data[r2] = t2;
+                break;
+            }
+            case KEY_EXIT: {
+                /* handled further down */
+                break;
+            }
+            default: {
+                squeak();
+                break;
             }
         }
     }
@@ -139,12 +223,12 @@ int eqn_keydown(int key) {
     if (key == KEY_EXIT) {
         done:
         active = false;
+        // return 2 indicates the caller should request the CPU and retake control
         redisplay();
         return 2;
     } else {
+        // return 1 indicates the caller should do nothing further
+        redisplay();
         return 1;
     }
-
-    // Return 1 when eqn continues (no need to request the CPU because we'll continue to be keyboard-driven);
-    // Return 2 when eqn is done (so core_keydown should request the CPU)
 }

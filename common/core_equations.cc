@@ -350,18 +350,43 @@ static int keydown_list(int key, bool shift, int *repeat) {
 
 static int keydown_edit_move(int key, bool shift, int *repeat) {
     switch (key) {
+        case KEY_INV: {
+            /* <<- */
+            if (shift)
+                goto left;
+            int dpos = edit_pos - display_pos;
+            int off = display_pos > 0 ? 1 : 0;
+            if (dpos > off) {
+                edit_pos = display_pos + off;
+            } else {
+                edit_pos -= 20;
+                if (edit_pos < 0)
+                    edit_pos = 0;
+                display_pos = edit_pos - 1;
+                if (display_pos < 0)
+                    display_pos = 0;
+            }
+            cursor_on = true;
+            eqn_draw();
+            return 1;
+        }
         case KEY_SQRT: {
             /* <- */
+            left:
             if (edit_pos > 0) {
-                edit_pos--;
+                if (shift) {
+                    edit_pos = 0;
+                } else {
+                    edit_pos--;
+                    dir = -1;
+                    *repeat = 2;
+                }
                 while (true) {
                     int dpos = edit_pos - display_pos;
                     if (dpos > 0 || display_pos == 0 && dpos == 0)
                         break;
                     display_pos--;
                 }
-                dir = -1;
-                *repeat = 2;
                 cursor_on = true;
                 eqn_draw();
             }
@@ -369,19 +394,42 @@ static int keydown_edit_move(int key, bool shift, int *repeat) {
         }
         case KEY_LOG: {
             /* -> */
+            right:
             if (edit_pos < edit_len) {
-                edit_pos++;
+                if (shift) {
+                    edit_pos = edit_len;
+                } else {
+                    edit_pos++;
+                    dir = 1;
+                    *repeat = 2;
+                }
                 while (true) {
                     int dpos = edit_pos - display_pos;
                     if (dpos < 21 || display_pos + 22 >= edit_len && dpos == 21)
                         break;
                     display_pos++;
                 }
-                dir = 1;
-                *repeat = 2;
                 cursor_on = true;
                 eqn_draw();
             }
+            return 1;
+        }
+        case KEY_LN: {
+            /* ->> */
+            if (shift)
+                goto right;
+            int dpos = edit_pos - display_pos;
+            if (dpos < 20)
+                edit_pos = display_pos + 20;
+            else
+                edit_pos += 20;
+            if (edit_pos > edit_len)
+                edit_pos = edit_len;
+            display_pos = edit_pos - 20;
+            if (display_pos < 0)
+                display_pos = 0;
+            cursor_on = true;
+            eqn_draw();
             return 1;
         }
     }

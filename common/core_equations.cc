@@ -350,6 +350,19 @@ static int keydown_list(int key, bool shift, int *repeat) {
 
 static int keydown_edit_move(int key, bool shift, int *repeat) {
     switch (key) {
+        case KEY_SIGMA: {
+            if (edit_len > 0 && edit_pos < edit_len) {
+                memmove(edit_buf + edit_pos, edit_buf + edit_pos + 1, edit_len - edit_pos - 1);
+                edit_len--;
+                if (display_pos + 21 > edit_len && display_pos > 0)
+                    display_pos--;
+                dir = 2;
+                *repeat = 2;
+                cursor_on = true;
+                eqn_draw();
+            }
+            return 1;
+        }
         case KEY_INV: {
             /* <<- */
             if (shift)
@@ -419,15 +432,24 @@ static int keydown_edit_move(int key, bool shift, int *repeat) {
             if (shift)
                 goto right;
             int dpos = edit_pos - display_pos;
-            if (dpos < 20)
-                edit_pos = display_pos + 20;
-            else
-                edit_pos += 20;
-            if (edit_pos > edit_len)
+            if (edit_len - display_pos > 22) {
+                /* There's an ellipsis in the right margin */
+                if (dpos < 20) {
+                    edit_pos = display_pos + 20;
+                } else {
+                    edit_pos += 20;
+                    display_pos += 20;
+                    if (edit_pos > edit_len) {
+                        edit_pos = edit_len;
+                        display_pos = edit_pos - 21;
+                    }
+                }
+            } else {
                 edit_pos = edit_len;
-            display_pos = edit_pos - 20;
-            if (display_pos < 0)
-                display_pos = 0;
+                display_pos = edit_pos - 21;
+                if (display_pos < 0)
+                    display_pos = 0;
+            }
             cursor_on = true;
             eqn_draw();
             return 1;
@@ -476,7 +498,7 @@ int eqn_repeat() {
         }
     } else {
         int repeat = 0;
-        keydown_edit_move(dir == -1 ? KEY_SQRT : KEY_LOG, false, &repeat);
+        keydown_edit_move(dir == 2 ? KEY_SIGMA : dir == -1 ? KEY_SQRT : KEY_LOG, false, &repeat);
         if (repeat == 0)
             dir = 0;
         else

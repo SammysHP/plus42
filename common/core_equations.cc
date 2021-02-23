@@ -38,7 +38,7 @@ static int4 edit_len, edit_capacity;
 static bool cursor_on;
 
 static int timeout_action = 0;
-static int dir = 0;
+static int rep_key = -1;
 static int r1, r2;
 
 bool unpersist_eqn() {
@@ -96,6 +96,8 @@ static void insert_text(const char *text, int len) {
         display_pos++;
     if (edit_pos == 21 && edit_pos < edit_len - 1)
         display_pos++;
+    restart_cursor();
+    eqn_draw();
 }
 
 static void update_menu(int menuid) {
@@ -129,6 +131,23 @@ int eqn_start(int whence) {
 
 void eqn_end() {
     active = false;
+}
+
+bool eqn_active() {
+    return active;
+}
+
+bool eqn_editing() {
+    return active && edit_pos != -1;
+}
+
+char *eqn_copy() {
+    // TODO
+    return NULL;
+}
+
+void eqn_paste(const char *buf) {
+    // TODO
 }
 
 bool eqn_draw() {
@@ -227,7 +246,7 @@ static int keydown_list(int key, bool shift, int *repeat) {
                 eqn_draw();
             } else if (selected_row >= 0) {
                 selected_row--;
-                dir = -1;
+                rep_key = key;
                 *repeat = 3;
                 eqn_draw();
             }
@@ -239,7 +258,7 @@ static int keydown_list(int key, bool shift, int *repeat) {
                 eqn_draw();
             } else if (selected_row < num_eqns) {
                 selected_row++;
-                dir = 1;
+                rep_key = key;
                 *repeat = 3;
                 eqn_draw();
             }
@@ -384,6 +403,12 @@ static int keydown_list(int key, bool shift, int *repeat) {
 }
 
 static int keydown_edit(int key, bool shift, int *repeat) {
+    if (key >= 1024 && key < 2048) {
+        char c = key - 1024;
+        insert_text(&c, 1);
+        return 1;
+    }
+
     if (key >= KEY_SIGMA && key <= KEY_XEQ) {
         /* Menu keys */
         if (edit_menu == MENU_NONE) {
@@ -395,7 +420,7 @@ static int keydown_edit(int key, bool shift, int *repeat) {
                         edit_len--;
                         if (display_pos + 21 > edit_len && display_pos > 0)
                             display_pos--;
-                        dir = 2;
+                        rep_key = KEY_SIGMA;
                         *repeat = 2;
                         restart_cursor();
                         eqn_draw();
@@ -430,7 +455,7 @@ static int keydown_edit(int key, bool shift, int *repeat) {
                             edit_pos = 0;
                         } else {
                             edit_pos--;
-                            dir = -1;
+                            rep_key = KEY_SQRT;
                             *repeat = 2;
                         }
                         while (true) {
@@ -452,7 +477,7 @@ static int keydown_edit(int key, bool shift, int *repeat) {
                             edit_pos = edit_len;
                         } else {
                             edit_pos++;
-                            dir = 1;
+                            rep_key = KEY_LOG;
                             *repeat = 2;
                         }
                         while (true) {
@@ -512,13 +537,188 @@ static int keydown_edit(int key, bool shift, int *repeat) {
                     c += 32;
                 update_menu(menus[edit_menu].parent);
                 insert_text(&c, 1);
-                eqn_draw();
                 return 1;
             }
         }
     } else {
         /* Rest of keyboard */
         switch (key) {
+            case KEY_RCL: {
+                if (shift)
+                    insert_text("%", 1);
+                else
+                    squeak();
+                break;
+            }
+            case KEY_SIN: {
+                if (shift)
+                    insert_text("ASIN(", 5);
+                else
+                    insert_text("SIN(", 4);
+                break;
+            }
+            case KEY_COS: {
+                if (shift)
+                    insert_text("ACOS(", 5);
+                else
+                    insert_text("COS(", 4);
+                break;
+            }
+            case KEY_TAN: {
+                if (shift)
+                    insert_text("ATAN(", 5);
+                else
+                    insert_text("TAN(", 4);
+                break;
+            }
+            case KEY_ENTER: {
+                if (shift || edit_len == 0) {
+                    squeak();
+                } else {
+                    // TODO Error handling
+                    put_matrix_string(eqns, selected_row, edit_buf, edit_len);
+                    free(edit_buf);
+                    edit_pos = -1;
+                    eqn_draw();
+                }
+                break;
+            }
+            case KEY_E: {
+                if (shift)
+                    squeak();
+                else
+                    insert_text("E", 1); // Or use small E instead?
+                break;
+            }
+            case KEY_BSP: {
+                if (shift) {
+                    edit_len = 0;
+                    edit_pos = 0;
+                    display_pos = 0;
+                    eqn_draw();
+                } else if (edit_len > 0 && edit_pos > 0) {
+                    edit_pos--;
+                    memmove(edit_buf + edit_pos, edit_buf + edit_pos + 1, edit_len - edit_pos - 1);
+                    edit_len--;
+                    // TODO
+                    // The 17B prevents empty space at the end of the
+                    // screen, sliding diplay_pos to the left to keep it
+                    // filled. But when there are ellipses at both ends,
+                    // it pulls text in from the left.
+                    if (edit_pos - display_pos <= 0 && display_pos > 0)
+                        display_pos--;
+                    rep_key = KEY_BSP;
+                    *repeat = 2;
+                    restart_cursor();
+                    eqn_draw();
+                }
+                return 1;
+            }
+            case KEY_0: {
+                if (shift)
+                    squeak();
+                else
+                    insert_text("0", 1);
+                break;
+            }
+            case KEY_1: {
+                if (shift)
+                    squeak();
+                else
+                    insert_text("1", 1);
+                break;
+            }
+            case KEY_2: {
+                if (shift)
+                    squeak();
+                else
+                    insert_text("2", 1);
+                break;
+            }
+            case KEY_3: {
+                if (shift)
+                    squeak();
+                else
+                    insert_text("3", 1);
+                break;
+            }
+            case KEY_4: {
+                if (shift)
+                    squeak();
+                else
+                    insert_text("4", 1);
+                break;
+            }
+            case KEY_5: {
+                if (shift)
+                    squeak();
+                else
+                    insert_text("5", 1);
+                break;
+            }
+            case KEY_6: {
+                if (shift)
+                    squeak();
+                else
+                    insert_text("6", 1);
+                break;
+            }
+            case KEY_7: {
+                if (shift)
+                    squeak();
+                else
+                    insert_text("7", 1);
+                break;
+            }
+            case KEY_8: {
+                if (shift)
+                    squeak();
+                else
+                    insert_text("8", 1);
+                break;
+            }
+            case KEY_9: {
+                if (shift)
+                    squeak();
+                else
+                    insert_text("9", 1);
+                break;
+            }
+            case KEY_DOT: {
+                if (shift)
+                    squeak();
+                else
+                    insert_text(".", 1);
+                break;
+            }
+            case KEY_DIV: {
+                if (shift)
+                    squeak();
+                else
+                    insert_text("\000", 1);
+                break;
+            }
+            case KEY_MUL: {
+                if (shift)
+                    squeak();
+                else
+                    insert_text("\001", 1);
+                break;
+            }
+            case KEY_SUB: {
+                if (shift)
+                    squeak();
+                else
+                    insert_text("-", 1);
+                break;
+            }
+            case KEY_ADD: {
+                if (shift)
+                    squeak();
+                else
+                    insert_text("+", 1);
+                break;
+            }
             case KEY_UP:
             case KEY_DOWN: {
                 /* No need to handle Up and Down separately, since none of the
@@ -532,6 +732,7 @@ static int keydown_edit(int key, bool shift, int *repeat) {
                 break;
             }
             case KEY_EXIT: {
+                // TODO: Yes/No/Cancel Menu; OFF
                 if (edit_menu == MENU_NONE) {
                     edit_pos = -1;
                     free(edit_buf);
@@ -557,29 +758,31 @@ int eqn_repeat() {
     // Like core_repeat(): 0 means stop repeating; 1 means slow repeat,
     // for Up/Down; 2 means fast repeat, for text entry; 3 means extra
     // slow repeat, for the equation editor's list view.
+    if (rep_key == -1)
+        return 0;
     if (edit_pos == -1) {
-        if (dir == -1) {
+        if (rep_key == KEY_UP) {
             if (selected_row >= 0) {
                 selected_row--;
                 eqn_draw();
                 return 3;
             } else {
-                dir = 0;
+                rep_key = -1;
             }
-        } else if (dir == 1) {
+        } else if (rep_key == KEY_DOWN) {
             if (selected_row < num_eqns) {
                 selected_row++;
                 eqn_draw();
                 return 3;
             } else {
-                dir = 0;
+                rep_key = -1;
             }
         }
     } else {
         int repeat = 0;
-        keydown_edit(dir == 2 ? KEY_SIGMA : dir == -1 ? KEY_SQRT : KEY_LOG, false, &repeat);
+        keydown_edit(rep_key, false, &repeat);
         if (repeat == 0)
-            dir = 0;
+            rep_key = -1;
         else
             return 2;
     }

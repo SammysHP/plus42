@@ -26,6 +26,12 @@ bool persist_eqn();
 
 int eqn_start(int whence);
 void eqn_end();
+
+bool eqn_active();
+bool eqn_editing();
+char *eqn_copy();
+void eqn_paste(const char *buf);
+
 bool eqn_draw();
 int eqn_keydown(int key, int *repeat);
 int eqn_repeat();

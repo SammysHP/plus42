@@ -187,7 +187,7 @@ bool alpha_active() {
 }
 
 bool core_alpha_menu() {
-    return !mode_getkey && alpha_active();
+    return !mode_getkey && alpha_active() || eqn_editing();
 }
 
 bool core_hex_menu() {
@@ -2416,6 +2416,9 @@ static int complex2buf(char *buf, phloat re, phloat im, bool always_rect) {
 }
 
 char *core_copy() {
+    if (eqn_active())
+        return eqn_copy();
+
     if (mode_interruptible != NULL)
         stop_interruptible();
     set_running(false);
@@ -3748,6 +3751,11 @@ static void paste_programs(const char *buf) {
 }
 
 void core_paste(const char *buf) {
+    if (eqn_active()) {
+        eqn_paste(buf);
+        return;
+    }
+
     if (mode_interruptible != NULL)
         stop_interruptible();
     set_running(false);

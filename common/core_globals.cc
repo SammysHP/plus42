@@ -4357,7 +4357,7 @@ void save_state() {
         return;
     if (!persist_globals())
         return;
-    if (!unpersist_eqn())
+    if (!persist_eqn())
         return;
     if (!persist_math())
         return;

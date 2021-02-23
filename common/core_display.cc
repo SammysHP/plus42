@@ -43,7 +43,7 @@
 #endif
 
 
-static const char bigchars[130][5] =
+static const char bigchars[131][5] =
     {
         { 0x08, 0x08, 0x2a, 0x08, 0x08 },
         { 0x22, 0x14, 0x08, 0x14, 0x22 },
@@ -174,7 +174,8 @@ static const char bigchars[130][5] =
         { 0x08, 0x04, 0x08, 0x10, 0x08 },
         { 0x7f, 0x08, 0x08, 0x08, 0x08 },
         { 0x28, 0x00, 0x00, 0x00, 0x00 },
-        { 0x04, 0x08, 0x70, 0x08, 0x04 }
+        { 0x04, 0x08, 0x70, 0x08, 0x04 },
+        { 0x7f, 0x7f, 0x7f, 0x7f, 0x7f }
     };
 
 static const char smallchars[329] =
@@ -865,7 +866,9 @@ void draw_char(int x, int y, char c) {
     unsigned char uc = (unsigned char) c;
     if (x < 0 || x >= 22 || y < 0 || y >= 2)
         return;
-    if (uc >= 130)
+    if (uc == 255)
+        uc = 130;
+    else if (uc >= 130)
         uc -= 128;
     X = x * 6;
     Y = y * 8;
@@ -885,7 +888,9 @@ void draw_char(int x, int y, char c) {
 
 const char *get_char(char c) {
     unsigned char uc = (unsigned char) c;
-    if (uc >= 130)
+    if (uc == 255)
+        uc = 130;
+    else if (uc >= 130)
         uc -= 128;
     return bigchars[uc];
 }

@@ -914,7 +914,7 @@ static void fill_rect(int x, int y, int width, int height, int color) {
 }
 
 void draw_key(int n, int highlight, int hide_meta,
-                            const char *s, int length, bool reverse) {
+                        const char *s, int length, bool reverse /* = false */) {
     int swidth = 0;
     int len = 0;
     int len2;

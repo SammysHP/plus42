@@ -50,10 +50,8 @@ static int basekeys() {
 }
 
 static void set_solve_integ(int solve) {
-    if (flags.f.prgm_mode /*|| !mvar_prgms_exist()*/) {
+    if (flags.f.prgm_mode) {
         set_menu(MENULEVEL_APP, solve ? MENU_SOLVE : MENU_INTEG);
-        /*if (!flags.f.prgm_mode)
-            display_error(ERR_NO_MENU_VARIABLES, false);*/
     } else {
         int err = set_menu_return_err(MENULEVEL_APP, MENU_CATALOG, false);
         if (err == ERR_NONE) {

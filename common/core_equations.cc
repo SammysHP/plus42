@@ -37,8 +37,9 @@ static char *edit_buf;
 static int4 edit_len, edit_capacity;
 static bool cursor_on;
 
+static int timeout_action = 0;
 static int dir = 0;
-static int r1 = -3, r2;
+static int r1, r2;
 
 bool unpersist_eqn() {
     return true;
@@ -60,6 +61,47 @@ static bool is_name_char(char c) {
         && c != 12 /* NE */ && c != 9 /* LE */
         && c != 11 /* GE */ && c != '['
         && c != ']';
+}
+
+static void restart_cursor() {
+    timeout_action = 2;
+    cursor_on = true;
+    shell_request_timeout3(500);
+}
+
+static void erase_cursor() {
+    if (cursor_on) {
+        cursor_on = false;
+        char c = edit_pos == edit_len ? ' ' : edit_buf[edit_pos];
+        draw_char(edit_pos - display_pos, 0, c);
+    }
+}
+
+static void insert_text(const char *text, int len) {
+    if (edit_len + len > edit_capacity) {
+        int newcap = edit_capacity + 32;
+        char *newbuf = (char *) realloc(edit_buf, newcap);
+        if (newbuf == NULL) {
+            squeak();
+            return;
+        }
+        edit_buf = newbuf;
+        edit_capacity = newcap;
+    }
+    memmove(edit_buf + edit_pos + len, edit_buf + edit_pos, edit_len - edit_pos);
+    memcpy(edit_buf + edit_pos, text, len);
+    edit_len += len;
+    edit_pos += len;
+    while (edit_pos - display_pos > 21)
+        display_pos++;
+    if (edit_pos == 21 && edit_pos < edit_len - 1)
+        display_pos++;
+}
+
+static void update_menu(int menuid) {
+    edit_menu = menuid;
+    int multirow = edit_menu != MENU_NONE && menus[edit_menu].next != MENU_NONE;
+    shell_annunciators(multirow, -1, -1, -1, -1, -1);
 }
 
 int eqn_start(int whence) {
@@ -151,15 +193,13 @@ bool eqn_draw() {
                 draw_key(i, 0, 0, mi[i].title, mi[i].title_length);
             }
         }
-        shell_request_timeout3(500);
     }
     flush_display();
     return true;
 }
 
 static int keydown_list(int key, bool shift, int *repeat);
-static int keydown_edit_move(int key, bool shift, int *repeat);
-static int keydown_edit_type(int key, bool shift, int *repeat);
+static int keydown_edit(int key, bool shift, int *repeat);
 
 int eqn_keydown(int key, int *repeat) {
     if (!active)
@@ -175,10 +215,8 @@ int eqn_keydown(int key, int *repeat) {
     
     if (edit_pos == -1)
         return keydown_list(key, shift, repeat);
-    else if (edit_menu == MENU_NONE)
-        return keydown_edit_move(key, shift, repeat);
     else
-        return keydown_edit_type(key, shift, repeat);
+        return keydown_edit(key, shift, repeat);
 }
 
 static int keydown_list(int key, bool shift, int *repeat) {
@@ -192,8 +230,6 @@ static int keydown_list(int key, bool shift, int *repeat) {
                 dir = -1;
                 *repeat = 3;
                 eqn_draw();
-//            } else {
-//                squeak();
             }
             return 1;
         }
@@ -206,8 +242,6 @@ static int keydown_list(int key, bool shift, int *repeat) {
                 dir = 1;
                 *repeat = 3;
                 eqn_draw();
-//            } else {
-//                squeak();
             }
             return 1;
         }
@@ -287,8 +321,8 @@ static int keydown_list(int key, bool shift, int *repeat) {
             }
             edit_pos = 0;
             display_pos = 0;
-            edit_menu = MENU_NONE;
-            cursor_on = true;
+            update_menu(MENU_NONE);
+            restart_cursor();
             eqn_draw();
             return 1;
         }
@@ -330,6 +364,7 @@ static int keydown_list(int key, bool shift, int *repeat) {
             }
 
             eqn_draw();
+            timeout_action = 1;
             shell_request_timeout3(500);
             return 1;
         }
@@ -348,125 +383,171 @@ static int keydown_list(int key, bool shift, int *repeat) {
     }
 }
 
-static int keydown_edit_move(int key, bool shift, int *repeat) {
-    switch (key) {
-        case KEY_SIGMA: {
-            if (edit_len > 0 && edit_pos < edit_len) {
-                memmove(edit_buf + edit_pos, edit_buf + edit_pos + 1, edit_len - edit_pos - 1);
-                edit_len--;
-                if (display_pos + 21 > edit_len && display_pos > 0)
-                    display_pos--;
-                dir = 2;
-                *repeat = 2;
-                cursor_on = true;
-                eqn_draw();
-            }
-            return 1;
-        }
-        case KEY_INV: {
-            /* <<- */
-            if (shift)
-                goto left;
-            int dpos = edit_pos - display_pos;
-            int off = display_pos > 0 ? 1 : 0;
-            if (dpos > off) {
-                edit_pos = display_pos + off;
-            } else {
-                edit_pos -= 20;
-                if (edit_pos < 0)
-                    edit_pos = 0;
-                display_pos = edit_pos - 1;
-                if (display_pos < 0)
-                    display_pos = 0;
-            }
-            cursor_on = true;
-            eqn_draw();
-            return 1;
-        }
-        case KEY_SQRT: {
-            /* <- */
-            left:
-            if (edit_pos > 0) {
-                if (shift) {
-                    edit_pos = 0;
-                } else {
-                    edit_pos--;
-                    dir = -1;
-                    *repeat = 2;
+static int keydown_edit(int key, bool shift, int *repeat) {
+    if (key >= KEY_SIGMA && key <= KEY_XEQ) {
+        /* Menu keys */
+        if (edit_menu == MENU_NONE) {
+            /* Navigation menu */
+            switch (key) {
+                case KEY_SIGMA: {
+                    if (edit_len > 0 && edit_pos < edit_len) {
+                        memmove(edit_buf + edit_pos, edit_buf + edit_pos + 1, edit_len - edit_pos - 1);
+                        edit_len--;
+                        if (display_pos + 21 > edit_len && display_pos > 0)
+                            display_pos--;
+                        dir = 2;
+                        *repeat = 2;
+                        restart_cursor();
+                        eqn_draw();
+                    }
+                    return 1;
                 }
-                while (true) {
+                case KEY_INV: {
+                    /* <<- */
+                    if (shift)
+                        goto left;
                     int dpos = edit_pos - display_pos;
-                    if (dpos > 0 || display_pos == 0 && dpos == 0)
-                        break;
-                    display_pos--;
+                    int off = display_pos > 0 ? 1 : 0;
+                    if (dpos > off) {
+                        edit_pos = display_pos + off;
+                    } else {
+                        edit_pos -= 20;
+                        if (edit_pos < 0)
+                            edit_pos = 0;
+                        display_pos = edit_pos - 1;
+                        if (display_pos < 0)
+                            display_pos = 0;
+                    }
+                    restart_cursor();
+                    eqn_draw();
+                    return 1;
                 }
-                cursor_on = true;
-                eqn_draw();
-            }
-            return 1;
-        }
-        case KEY_LOG: {
-            /* -> */
-            right:
-            if (edit_pos < edit_len) {
-                if (shift) {
-                    edit_pos = edit_len;
-                } else {
-                    edit_pos++;
-                    dir = 1;
-                    *repeat = 2;
+                case KEY_SQRT: {
+                    /* <- */
+                    left:
+                    if (edit_pos > 0) {
+                        if (shift) {
+                            edit_pos = 0;
+                        } else {
+                            edit_pos--;
+                            dir = -1;
+                            *repeat = 2;
+                        }
+                        while (true) {
+                            int dpos = edit_pos - display_pos;
+                            if (dpos > 0 || display_pos == 0 && dpos == 0)
+                                break;
+                            display_pos--;
+                        }
+                        restart_cursor();
+                        eqn_draw();
+                    }
+                    return 1;
                 }
-                while (true) {
+                case KEY_LOG: {
+                    /* -> */
+                    right:
+                    if (edit_pos < edit_len) {
+                        if (shift) {
+                            edit_pos = edit_len;
+                        } else {
+                            edit_pos++;
+                            dir = 1;
+                            *repeat = 2;
+                        }
+                        while (true) {
+                            int dpos = edit_pos - display_pos;
+                            if (dpos < 21 || display_pos + 22 >= edit_len && dpos == 21)
+                                break;
+                            display_pos++;
+                        }
+                        restart_cursor();
+                        eqn_draw();
+                    }
+                    return 1;
+                }
+                case KEY_LN: {
+                    /* ->> */
+                    if (shift)
+                        goto right;
                     int dpos = edit_pos - display_pos;
-                    if (dpos < 21 || display_pos + 22 >= edit_len && dpos == 21)
-                        break;
-                    display_pos++;
-                }
-                cursor_on = true;
-                eqn_draw();
-            }
-            return 1;
-        }
-        case KEY_LN: {
-            /* ->> */
-            if (shift)
-                goto right;
-            int dpos = edit_pos - display_pos;
-            if (edit_len - display_pos > 22) {
-                /* There's an ellipsis in the right margin */
-                if (dpos < 20) {
-                    edit_pos = display_pos + 20;
-                } else {
-                    edit_pos += 20;
-                    display_pos += 20;
-                    if (edit_pos > edit_len) {
+                    if (edit_len - display_pos > 22) {
+                        /* There's an ellipsis in the right margin */
+                        if (dpos < 20) {
+                            edit_pos = display_pos + 20;
+                        } else {
+                            edit_pos += 20;
+                            display_pos += 20;
+                            if (edit_pos > edit_len) {
+                                edit_pos = edit_len;
+                                display_pos = edit_pos - 21;
+                            }
+                        }
+                    } else {
                         edit_pos = edit_len;
                         display_pos = edit_pos - 21;
+                        if (display_pos < 0)
+                            display_pos = 0;
                     }
+                    restart_cursor();
+                    eqn_draw();
+                    return 1;
                 }
-            } else {
-                edit_pos = edit_len;
-                display_pos = edit_pos - 21;
-                if (display_pos < 0)
-                    display_pos = 0;
+                case KEY_XEQ: {
+                    /* ALPHA */
+                    update_menu(MENU_ALPHA1);
+                    eqn_draw();
+                    return 1;
+                }
             }
-            cursor_on = true;
-            eqn_draw();
-            return 1;
+        } else {
+            /* ALPHA menu */
+            if (edit_menu == MENU_ALPHA1 || edit_menu == MENU_ALPHA2) {
+                update_menu(menus[edit_menu].child[key - 1].menuid);
+                eqn_draw();
+                return 1;
+            } else {
+                char c = menus[edit_menu].child[key - 1].title[0];
+                if (shift && c >= 'A' && c <= 'Z')
+                    c += 32;
+                update_menu(menus[edit_menu].parent);
+                insert_text(&c, 1);
+                eqn_draw();
+                return 1;
+            }
+        }
+    } else {
+        /* Rest of keyboard */
+        switch (key) {
+            case KEY_UP:
+            case KEY_DOWN: {
+                /* No need to handle Up and Down separately, since none of the
+                 * menus we're using here have more than two rows.
+                 */
+                if (edit_menu != MENU_NONE && menus[edit_menu].next != MENU_NONE) {
+                    update_menu(menus[edit_menu].next);
+                    eqn_draw();
+                } else
+                    squeak();
+                break;
+            }
+            case KEY_EXIT: {
+                if (edit_menu == MENU_NONE) {
+                    edit_pos = -1;
+                    free(edit_buf);
+                } else {
+                    update_menu(menus[edit_menu].parent);
+                    eqn_draw();
+                }
+                eqn_draw();
+                break;
+            }
+            default: {
+                squeak();
+                break;
+            }
         }
     }
-    if (key == KEY_EXIT) {
-        edit_pos = -1;
-        free(edit_buf);
-        eqn_draw();
-    } else {
-        squeak();
-    }
-    return 1;
-}
-
-static int keydown_edit_type(int key, bool shift, int *repeat) {
-    squeak();
     return 1;
 }
 
@@ -483,7 +564,6 @@ int eqn_repeat() {
                 eqn_draw();
                 return 3;
             } else {
-                //squeak();
                 dir = 0;
             }
         } else if (dir == 1) {
@@ -492,13 +572,12 @@ int eqn_repeat() {
                 eqn_draw();
                 return 3;
             } else {
-                //squeak();
                 dir = 0;
             }
         }
     } else {
         int repeat = 0;
-        keydown_edit_move(dir == 2 ? KEY_SIGMA : dir == -1 ? KEY_SQRT : KEY_LOG, false, &repeat);
+        keydown_edit(dir == 2 ? KEY_SIGMA : dir == -1 ? KEY_SQRT : KEY_LOG, false, &repeat);
         if (repeat == 0)
             dir = 0;
         else
@@ -511,17 +590,17 @@ bool eqn_timeout() {
     if (!active)
         return false;
 
-    if (edit_pos == -1) {
+    int action = timeout_action;
+    timeout_action = 0;
+
+    if (action == 1) {
         /* Finish delayed Move Up/Down operation */
-        if (r1 == -3) {
-            // Do nothing, we're probably here because of a cursor timeout
-            // that was generated for the edit view
-        } else if (r1 == -1) {
+        if (edit_pos != -1)
+            return true;
+        if (r1 == -1) {
             selected_row++;
-            //squeak();
         } else if (r1 == -2) {
             selected_row--;
-            //squeak();
         } else {
             bool t1 = eqns->array->is_string[r1];
             eqns->array->is_string[r1] = eqns->array->is_string[r2];
@@ -531,14 +610,16 @@ bool eqn_timeout() {
             eqns->array->data[r2] = t2;
         }
         eqn_draw();
-    } else {
+    } else if (action == 2) {
         /* Cursor blinking */
+        if (edit_pos == -1)
+            return true;
         cursor_on = !cursor_on;
         char c = cursor_on ? 255 : edit_pos == edit_len ? ' ' : edit_buf[edit_pos];
         draw_char(edit_pos - display_pos, 0, c);
         flush_display();
+        timeout_action = 2;
         shell_request_timeout3(500);
     }
-    r1 = -3;
     return true;
 }

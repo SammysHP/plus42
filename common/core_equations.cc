@@ -32,7 +32,9 @@ static int4 num_eqns;
 static int selected_row = -1; // -1: top of list; num_eqns: bottom of list
 static int edit_pos; // -1: in list; >= 0: in editor
 static int display_pos;
+static bool in_confirmation_menu = false;
 static int edit_menu; // MENU_NONE = the navigation menu
+static int prev_edit_menu;
 static char *edit_buf;
 static int4 edit_len, edit_capacity;
 static bool cursor_on;
@@ -154,7 +156,12 @@ bool eqn_draw() {
     if (!active)
         return false;
     clear_display();
-    if (edit_pos == -1) {
+    if (in_confirmation_menu) {
+        draw_string(0, 0, "Save this equation?", 19);
+        draw_key(0, 0, 0, "YES", 3);
+        draw_key(2, 0, 0, "NO", 2);
+        draw_key(4, 0, 0, "EDIT", 4);
+    } else if (edit_pos == -1) {
         if (selected_row == -1) {
             draw_string(0, 0, "<Top of List>", 13);
         } else if (selected_row == num_eqns) {
@@ -209,7 +216,13 @@ bool eqn_draw() {
         } else {
             const menu_item_spec *mi = menus[edit_menu].child;
             for (int i = 0; i < 6; i++) {
-                draw_key(i, 0, 0, mi[i].title, mi[i].title_length);
+                int id = mi[i].menuid;
+                if ((id & 0xf000) == 0) {
+                    draw_key(i, 0, 0, mi[i].title, mi[i].title_length);
+                } else {
+                    id &= 0x0fff;
+                    draw_key(i, 0, 1, cmd_array[id].name, cmd_array[id].name_length);
+                }
             }
         }
     }
@@ -219,6 +232,7 @@ bool eqn_draw() {
 
 static int keydown_list(int key, bool shift, int *repeat);
 static int keydown_edit(int key, bool shift, int *repeat);
+static int keydown_confirmation_menu(int key, bool shift, int *repeat);
 
 int eqn_keydown(int key, int *repeat) {
     if (!active)
@@ -232,10 +246,48 @@ int eqn_keydown(int key, int *repeat) {
     bool shift = mode_shift;
     set_shift(false);
     
+    if (in_confirmation_menu)
+        return keydown_confirmation_menu(key, shift, repeat);
     if (edit_pos == -1)
         return keydown_list(key, shift, repeat);
     else
         return keydown_edit(key, shift, repeat);
+}
+
+static int keydown_confirmation_menu(int key, bool shift, int *repeat) {
+    switch (key) {
+        case KEY_SIGMA: {
+            /* Yes */
+            put_matrix_string(eqns, selected_row, edit_buf, edit_len);
+            goto finish;
+        }
+        case KEY_EXIT: {
+            if (shift)
+                /* TODO: OFF */;
+            /* Fall through */
+        }
+        case KEY_SQRT: {
+            /* No */
+            finish:
+            free(edit_buf);
+            edit_pos = -1;
+            in_confirmation_menu = false;
+            eqn_draw();
+            break;
+        }
+        case KEY_LN: {
+            /* Cancel */
+            in_confirmation_menu = false;
+            restart_cursor();
+            eqn_draw();
+            break;
+        }
+        default: {
+            squeak();
+            break;
+        }
+    }
+    return 1;
 }
 
 static int keydown_list(int key, bool shift, int *repeat) {
@@ -525,6 +577,48 @@ static int keydown_edit(int key, bool shift, int *repeat) {
                     return 1;
                 }
             }
+        } else if (edit_menu == MENU_TOP_FCN) {
+            /* TOP.FCN menu */
+            edit_menu = prev_edit_menu;
+            switch (key) {
+                case KEY_SIGMA: {
+                    insert_text("\005", 1);
+                    break;
+                }
+                case KEY_INV: {
+                    if (shift)
+                        insert_text("^", 1);
+                    else
+                        insert_text("INV(", 4);
+                    break;
+                }
+                case KEY_SQRT: {
+                    if (shift)
+                        insert_text("SQ(", 3);
+                    else
+                        insert_text("SQRT(", 5);
+                    break;
+                }
+                case KEY_LOG: {
+                    if (shift)
+                        insert_text("ALOG(", 5);
+                    else
+                        insert_text("LOG(", 4);
+                    break;
+                }
+                case KEY_LN: {
+                    if (shift)
+                        insert_text("EXP(", 4);
+                    else
+                        insert_text("LN(", 3);
+                    break;
+                }
+                case KEY_XEQ: {
+                    squeak();
+                    edit_menu = MENU_TOP_FCN;
+                    break;
+                }
+            }
         } else {
             /* ALPHA menu */
             if (edit_menu == MENU_ALPHA1 || edit_menu == MENU_ALPHA2) {
@@ -546,6 +640,13 @@ static int keydown_edit(int key, bool shift, int *repeat) {
             case KEY_RCL: {
                 if (shift)
                     insert_text("%", 1);
+                else
+                    squeak();
+                break;
+            }
+            case KEY_RDN: {
+                if (shift)
+                    insert_text("PI", 2);
                 else
                     squeak();
                 break;
@@ -615,9 +716,13 @@ static int keydown_edit(int key, bool shift, int *repeat) {
                 return 1;
             }
             case KEY_0: {
-                if (shift)
-                    squeak();
-                else
+                if (shift) {
+                    if (edit_menu != MENU_TOP_FCN) {
+                        prev_edit_menu = edit_menu;
+                        edit_menu = MENU_TOP_FCN;
+                        eqn_draw();
+                    }
+                } else
                     insert_text("0", 1);
                 break;
             }
@@ -732,13 +837,24 @@ static int keydown_edit(int key, bool shift, int *repeat) {
                 break;
             }
             case KEY_EXIT: {
-                // TODO: Yes/No/Cancel Menu; OFF
+                // TODO: OFF
                 if (edit_menu == MENU_NONE) {
-                    edit_pos = -1;
-                    free(edit_buf);
+                    if (eqns->array->is_string[selected_row] != 0) {
+                        const char *orig_text;
+                        int4 orig_len;
+                        get_matrix_string(eqns, selected_row, &orig_text, &orig_len);
+                        if (string_equals(edit_buf, edit_len, orig_text, orig_len)) {
+                            edit_pos = -1;
+                            free(edit_buf);
+                            eqn_draw();
+                            break;
+                        }
+                    }
+                    in_confirmation_menu = true;
+                } else if (edit_menu == MENU_TOP_FCN) {
+                    edit_menu = prev_edit_menu;
                 } else {
                     update_menu(menus[edit_menu].parent);
-                    eqn_draw();
                 }
                 eqn_draw();
                 break;
@@ -815,7 +931,7 @@ bool eqn_timeout() {
         eqn_draw();
     } else if (action == 2) {
         /* Cursor blinking */
-        if (edit_pos == -1)
+        if (edit_pos == -1 || in_confirmation_menu)
             return true;
         cursor_on = !cursor_on;
         char c = cursor_on ? 255 : edit_pos == edit_len ? ' ' : edit_buf[edit_pos];

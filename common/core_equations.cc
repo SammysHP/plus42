@@ -32,7 +32,8 @@ static int4 num_eqns;
 static int selected_row = -1; // -1: top of list; num_eqns: bottom of list
 static int edit_pos; // -1: in list; >= 0: in editor
 static int display_pos;
-static bool in_confirmation_menu = false;
+static bool in_save_confirmation = false;
+static bool in_delete_confirmation = false;
 static int edit_menu; // MENU_NONE = the navigation menu
 static int prev_edit_menu;
 static char *edit_buf;
@@ -156,11 +157,15 @@ bool eqn_draw() {
     if (!active)
         return false;
     clear_display();
-    if (in_confirmation_menu) {
+    if (in_save_confirmation) {
         draw_string(0, 0, "Save this equation?", 19);
         draw_key(0, 0, 0, "YES", 3);
         draw_key(2, 0, 0, "NO", 2);
         draw_key(4, 0, 0, "EDIT", 4);
+    } else if (in_delete_confirmation) {
+        draw_string(0, 0, "Delete the equation?", 20);
+        draw_key(1, 0, 0, "YES", 3);
+        draw_key(5, 0, 0, "NO", 2);
     } else if (edit_pos == -1) {
         if (selected_row == -1) {
             draw_string(0, 0, "<Top of List>", 13);
@@ -232,7 +237,8 @@ bool eqn_draw() {
 
 static int keydown_list(int key, bool shift, int *repeat);
 static int keydown_edit(int key, bool shift, int *repeat);
-static int keydown_confirmation_menu(int key, bool shift, int *repeat);
+static int keydown_save_confirmation(int key, bool shift, int *repeat);
+static int keydown_delete_confirmation(int key, bool shift, int *repeat);
 
 int eqn_keydown(int key, int *repeat) {
     if (!active)
@@ -246,15 +252,17 @@ int eqn_keydown(int key, int *repeat) {
     bool shift = mode_shift;
     set_shift(false);
     
-    if (in_confirmation_menu)
-        return keydown_confirmation_menu(key, shift, repeat);
-    if (edit_pos == -1)
+    if (in_save_confirmation)
+        return keydown_save_confirmation(key, shift, repeat);
+    else if (in_delete_confirmation)
+        return keydown_delete_confirmation(key, shift, repeat);
+    else if (edit_pos == -1)
         return keydown_list(key, shift, repeat);
     else
         return keydown_edit(key, shift, repeat);
 }
 
-static int keydown_confirmation_menu(int key, bool shift, int *repeat) {
+static int keydown_save_confirmation(int key, bool shift, int *repeat) {
     switch (key) {
         case KEY_SIGMA: {
             /* Yes */
@@ -271,14 +279,41 @@ static int keydown_confirmation_menu(int key, bool shift, int *repeat) {
             finish:
             free(edit_buf);
             edit_pos = -1;
-            in_confirmation_menu = false;
+            in_save_confirmation = false;
             eqn_draw();
             break;
         }
         case KEY_LN: {
             /* Cancel */
-            in_confirmation_menu = false;
+            in_save_confirmation = false;
             restart_cursor();
+            eqn_draw();
+            break;
+        }
+        default: {
+            squeak();
+            break;
+        }
+    }
+    return 1;
+}
+
+static int keydown_delete_confirmation(int key, bool shift, int *repeat) {
+    switch (key) {
+        case KEY_INV: {
+            /* Yes */
+            /* TODO: Delete equation */
+            squeak();
+            break;
+        }
+        case KEY_EXIT: {
+            if (shift)
+                /* TODO: OFF */;
+            /* Fall through */
+        }
+        case KEY_XEQ: {
+            /* No */
+            in_delete_confirmation = false;
             eqn_draw();
             break;
         }
@@ -399,11 +434,13 @@ static int keydown_list(int key, bool shift, int *repeat) {
         }
         case KEY_SQRT: {
             /* DELET */
-            squeak();
+            in_delete_confirmation = true;
+            eqn_draw();
             return 1;
         }
         case KEY_LOG: {
             /* NEW */
+            /* TODO: New equation */
             squeak();
             return 1;
         }
@@ -850,7 +887,7 @@ static int keydown_edit(int key, bool shift, int *repeat) {
                             break;
                         }
                     }
-                    in_confirmation_menu = true;
+                    in_save_confirmation = true;
                 } else if (edit_menu == MENU_TOP_FCN) {
                     edit_menu = prev_edit_menu;
                 } else {
@@ -931,7 +968,7 @@ bool eqn_timeout() {
         eqn_draw();
     } else if (action == 2) {
         /* Cursor blinking */
-        if (edit_pos == -1 || in_confirmation_menu)
+        if (edit_pos == -1 || in_save_confirmation || in_delete_confirmation)
             return true;
         cursor_on = !cursor_on;
         char c = cursor_on ? 255 : edit_pos == edit_len ? ' ' : edit_buf[edit_pos];

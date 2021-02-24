@@ -266,6 +266,11 @@ static int keydown_save_confirmation(int key, bool shift, int *repeat) {
     switch (key) {
         case KEY_SIGMA: {
             /* Yes */
+            if (edit_len == 0) {
+                squeak();
+                break;
+            }
+            disentangle((vartype *) eqns);
             put_matrix_string(eqns, selected_row, edit_buf, edit_len);
             goto finish;
         }
@@ -302,9 +307,26 @@ static int keydown_delete_confirmation(int key, bool shift, int *repeat) {
     switch (key) {
         case KEY_INV: {
             /* Yes */
-            /* TODO: Delete equation */
-            squeak();
-            break;
+            if (num_eqns == 1) {
+                purge_var("EQNS", 4);
+                eqns = NULL;
+                num_eqns = 0;
+            } else {
+                /* TODO: Error handling */
+                disentangle((vartype *) eqns);
+                if (eqns->array->is_string[selected_row] == 2)
+                    free(*(void **) &eqns->array->data[selected_row]);
+                memmove(eqns->array->is_string + selected_row,
+                        eqns->array->is_string + selected_row + 1,
+                        num_eqns - selected_row - 1);
+                memmove(eqns->array->data + selected_row,
+                        eqns->array->data + selected_row + 1,
+                        (num_eqns - selected_row - 1) * sizeof(phloat));
+                num_eqns--;
+                eqns->rows = num_eqns;
+                eqns->columns = 1;
+            }
+            goto finish;
         }
         case KEY_EXIT: {
             if (shift)
@@ -313,6 +335,7 @@ static int keydown_delete_confirmation(int key, bool shift, int *repeat) {
         }
         case KEY_XEQ: {
             /* No */
+            finish:
             in_delete_confirmation = false;
             eqn_draw();
             break;
@@ -441,6 +464,10 @@ static int keydown_list(int key, bool shift, int *repeat) {
         case KEY_LOG: {
             /* NEW */
             /* TODO: New equation */
+            /* Note: We should allocate an edit buffer here, but not create
+             * a new entry in "EQNS" just yet. Creating a new entry should
+             * be deferred until the user actually saves the new equation.
+             */
             squeak();
             return 1;
         }
@@ -714,6 +741,7 @@ static int keydown_edit(int key, bool shift, int *repeat) {
                     squeak();
                 } else {
                     // TODO Error handling
+                    disentangle((vartype *) eqns);
                     put_matrix_string(eqns, selected_row, edit_buf, edit_len);
                     free(edit_buf);
                     edit_pos = -1;

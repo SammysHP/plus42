@@ -19,6 +19,7 @@
 #include <string.h>
 
 #include "core_equations.h"
+#include "core_commands2.h"
 #include "core_display.h"
 #include "core_helpers.h"
 #include "core_main.h"
@@ -37,7 +38,7 @@ static bool in_delete_confirmation = false;
 static int edit_menu; // MENU_NONE = the navigation menu
 static int prev_edit_menu;
 static bool new_eq;
-static char *edit_buf;
+static char *edit_buf = NULL;
 static int4 edit_len, edit_capacity;
 static bool cursor_on;
 
@@ -45,11 +46,66 @@ static int timeout_action = 0;
 static int rep_key = -1;
 static int r1, r2;
 
-bool unpersist_eqn() {
+static void restart_cursor();
+
+bool unpersist_eqn(int4 ver) {
+    if (ver < 36)
+        return true;
+    if (!read_bool(&active)) return false;
+    if (!read_int(&menu_whence)) return false;
+    bool have_eqns;
+    if (!read_bool(&have_eqns)) return false;
+    if (have_eqns)
+        eqns = (vartype_realmatrix *) recall_var("EQNS", 4);
+    else
+        eqns = NULL;
+    if (eqns != NULL)
+        num_eqns = eqns->rows * eqns->columns;
+    else
+        num_eqns = 0;
+    if (!read_int(&selected_row)) return false;
+    if (!read_int(&edit_pos)) return false;
+    if (!read_int(&display_pos)) return false;
+    if (!read_bool(&in_save_confirmation)) return false;
+    if (!read_bool(&in_delete_confirmation)) return false;
+    if (!read_int(&edit_menu)) return false;
+    if (!read_int(&prev_edit_menu)) return false;
+    if (!read_bool(&new_eq)) return false;
+    if (!read_int4(&edit_len)) return false;
+    edit_capacity = edit_len;
+    if (edit_buf != NULL)
+        free(edit_buf);
+    edit_buf = (char *) malloc(edit_len);
+    if (edit_buf == NULL)
+        return false;
+    if (fread(edit_buf, 1, edit_len, gfile) != edit_len) goto fail;
+    if (!read_bool(&cursor_on)) goto fail;
+
+    if (active && edit_pos != -1 && !in_save_confirmation && !in_delete_confirmation)
+        restart_cursor();
     return true;
+    
+    fail:
+    free(edit_buf);
+    edit_buf = NULL;
+    return false;
 }
 
 bool persist_eqn() {
+    if (!write_bool(active)) return false;
+    if (!write_int(menu_whence)) return false;
+    if (!write_bool(eqns != NULL)) return false;
+    if (!write_int(selected_row)) return false;
+    if (!write_int(edit_pos)) return false;
+    if (!write_int(display_pos)) return false;
+    if (!write_bool(in_save_confirmation)) return false;
+    if (!write_bool(in_delete_confirmation)) return false;
+    if (!write_int(edit_menu)) return false;
+    if (!write_int(prev_edit_menu)) return false;
+    if (!write_bool(new_eq)) return false;
+    if (!write_int(edit_len)) return false;
+    if (fwrite(edit_buf, 1, edit_len, gfile) != edit_len) return false;
+    if (!write_bool(cursor_on)) return false;
     return true;
 }
 
@@ -73,6 +129,7 @@ static void restart_cursor() {
     shell_request_timeout3(500);
 }
 
+/*
 static void erase_cursor() {
     if (cursor_on) {
         cursor_on = false;
@@ -80,6 +137,7 @@ static void erase_cursor() {
         draw_char(edit_pos - display_pos, 0, c);
     }
 }
+*/
 
 static void insert_text(const char *text, int len) {
     if (edit_len + len > edit_capacity) {
@@ -311,8 +369,10 @@ static int keydown_save_confirmation(int key, bool shift, int *repeat) {
             break;
         }
         case KEY_EXIT: {
-            if (shift)
-                /* TODO: OFF */;
+            if (shift) {
+                docmd_off(NULL);
+                break;
+            }
             /* Fall through */
         }
         case KEY_SQRT: {
@@ -364,8 +424,10 @@ static int keydown_delete_confirmation(int key, bool shift, int *repeat) {
             goto finish;
         }
         case KEY_EXIT: {
-            if (shift)
-                /* TODO: OFF */;
+            if (shift) {
+                docmd_off(NULL);
+                break;
+            }
             /* Fall through */
         }
         case KEY_XEQ: {
@@ -542,9 +604,10 @@ static int keydown_list(int key, bool shift, int *repeat) {
             return 1;
         }
         case KEY_EXIT: {
-            if (shift)
-                /* Power off -- TODO */;
-
+            if (shift) {
+                docmd_off(NULL);
+                return 1;
+            }
             active = false;
             redisplay();
             return 2;
@@ -936,7 +999,10 @@ static int keydown_edit(int key, bool shift, int *repeat) {
                 break;
             }
             case KEY_EXIT: {
-                // TODO: OFF
+                if (shift) {
+                    docmd_off(NULL);
+                    break;
+                }
                 if (edit_menu == MENU_NONE) {
                     if (!new_eq && eqns->array->is_string[selected_row] != 0) {
                         const char *orig_text;

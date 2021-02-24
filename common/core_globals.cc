@@ -772,8 +772,9 @@ bool no_keystrokes_yet;
  * Version 33: 3.0    Big stack; parameterized RTNERR
  * Version 34: 3.0    Long strings
  * Version 35: 3.0    Changing 'int' to 'bool' where appropriate
+ * Version 36: 3.0.1  Equation Editor
  */
-#define PLUS42_VERSION 35
+#define PLUS42_VERSION 36
 
 
 /*******************/
@@ -4204,7 +4205,7 @@ static bool load_state2(bool *clear, bool *too_new) {
         return false;
     if (!unpersist_globals())
         return false;
-    if (!unpersist_eqn())
+    if (!unpersist_eqn(ver))
         return false;
 
     if (ver < 4) {

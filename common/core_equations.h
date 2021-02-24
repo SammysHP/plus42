@@ -21,7 +21,7 @@
 #include "free42.h"
 
 
-bool unpersist_eqn();
+bool unpersist_eqn(int4 ver);
 bool persist_eqn();
 
 int eqn_start(int whence);

@@ -641,7 +641,8 @@ static int keydown_edit(int key, bool shift, int *repeat) {
                         *repeat = 2;
                         restart_cursor();
                         eqn_draw();
-                    }
+                    } else
+                        squeak();
                     return 1;
                 }
                 case KEY_INV: {
@@ -863,18 +864,14 @@ static int keydown_edit(int key, bool shift, int *repeat) {
                     edit_pos--;
                     memmove(edit_buf + edit_pos, edit_buf + edit_pos + 1, edit_len - edit_pos - 1);
                     edit_len--;
-                    // TODO
-                    // The 17B prevents empty space at the end of the
-                    // screen, sliding diplay_pos to the left to keep it
-                    // filled. But when there are ellipses at both ends,
-                    // it pulls text in from the left.
-                    if (edit_pos - display_pos <= 0 && display_pos > 0)
+                    if (display_pos > 0)
                         display_pos--;
                     rep_key = KEY_BSP;
                     *repeat = 2;
                     restart_cursor();
                     eqn_draw();
-                }
+                } else
+                    squeak();
                 return 1;
             }
             case KEY_0: {

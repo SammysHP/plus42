@@ -36,6 +36,7 @@ static bool in_save_confirmation = false;
 static bool in_delete_confirmation = false;
 static int edit_menu; // MENU_NONE = the navigation menu
 static int prev_edit_menu;
+static bool new_eq;
 static char *edit_buf;
 static int4 edit_len, edit_capacity;
 static bool cursor_on;
@@ -101,6 +102,41 @@ static void insert_text(const char *text, int len) {
         display_pos++;
     restart_cursor();
     eqn_draw();
+}
+
+static bool save() {
+    // TODO: Error handling
+    if (eqns != NULL)
+        disentangle((vartype *) eqns);
+    if (new_eq) {
+        if (num_eqns == 0) {
+            eqns = (vartype_realmatrix *) new_realmatrix(1, 1);
+            store_var("EQNS", 4, (vartype *) eqns);
+            selected_row = 0;
+            num_eqns = 1;
+        } else {
+            num_eqns++;
+            dimension_array_ref((vartype *) eqns, num_eqns, 1);
+            selected_row++;
+            if (selected_row == num_eqns)
+                selected_row--;
+            int n = num_eqns - selected_row - 1;
+            if (n > 0) {
+                memmove(eqns->array->is_string + selected_row + 1,
+                        eqns->array->is_string + selected_row,
+                        n);
+                memmove(eqns->array->data + selected_row + 1,
+                        eqns->array->data + selected_row,
+                        n * sizeof(phloat));
+            }
+            eqns->array->is_string[selected_row] = 0;
+        }
+    }
+    put_matrix_string(eqns, selected_row, edit_buf, edit_len);
+    free(edit_buf);
+    edit_pos = -1;
+    eqn_draw();
+    return true;
 }
 
 static void update_menu(int menuid) {
@@ -270,9 +306,9 @@ static int keydown_save_confirmation(int key, bool shift, int *repeat) {
                 squeak();
                 break;
             }
-            disentangle((vartype *) eqns);
-            put_matrix_string(eqns, selected_row, edit_buf, edit_len);
-            goto finish;
+            in_save_confirmation = false;
+            save();
+            break;
         }
         case KEY_EXIT: {
             if (shift)
@@ -281,7 +317,6 @@ static int keydown_save_confirmation(int key, bool shift, int *repeat) {
         }
         case KEY_SQRT: {
             /* No */
-            finish:
             free(edit_buf);
             edit_pos = -1;
             in_save_confirmation = false;
@@ -448,6 +483,7 @@ static int keydown_list(int key, bool shift, int *repeat) {
                 edit_len = edit_capacity = len;
                 memcpy(edit_buf, buf, len);
             }
+            new_eq = false;
             edit_pos = 0;
             display_pos = 0;
             update_menu(MENU_NONE);
@@ -463,12 +499,14 @@ static int keydown_list(int key, bool shift, int *repeat) {
         }
         case KEY_LOG: {
             /* NEW */
-            /* TODO: New equation */
-            /* Note: We should allocate an edit buffer here, but not create
-             * a new entry in "EQNS" just yet. Creating a new entry should
-             * be deferred until the user actually saves the new equation.
-             */
-            squeak();
+            edit_buf = NULL;
+            edit_len = edit_capacity = 0;
+            new_eq = true;
+            edit_pos = 0;
+            display_pos = 0;
+            update_menu(MENU_ALPHA1);
+            restart_cursor();
+            eqn_draw();
             return 1;
         }
         case KEY_LN:
@@ -741,11 +779,7 @@ static int keydown_edit(int key, bool shift, int *repeat) {
                     squeak();
                 } else {
                     // TODO Error handling
-                    disentangle((vartype *) eqns);
-                    put_matrix_string(eqns, selected_row, edit_buf, edit_len);
-                    free(edit_buf);
-                    edit_pos = -1;
-                    eqn_draw();
+                    save();
                 }
                 break;
             }
@@ -904,7 +938,7 @@ static int keydown_edit(int key, bool shift, int *repeat) {
             case KEY_EXIT: {
                 // TODO: OFF
                 if (edit_menu == MENU_NONE) {
-                    if (eqns->array->is_string[selected_row] != 0) {
+                    if (!new_eq && eqns->array->is_string[selected_row] != 0) {
                         const char *orig_text;
                         int4 orig_len;
                         get_matrix_string(eqns, selected_row, &orig_text, &orig_len);

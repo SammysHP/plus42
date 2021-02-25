@@ -1658,8 +1658,8 @@ static VOID CALLBACK timeout2(HWND hwnd, UINT uMsg, UINT idEvent, DWORD dwTime) 
 
 static VOID CALLBACK timeout3(HWND hwnd, UINT uMsg, UINT idEvent, DWORD dwTime) {
     KillTimer(NULL, timer3);
-    bool keep_running = core_timeout3(true);
     timer3 = 0;
+    bool keep_running = core_timeout3(true);
     if (keep_running) {
         running = true;
         // Post dummy message to get the message loop moving again

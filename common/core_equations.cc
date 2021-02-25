@@ -316,7 +316,7 @@ bool eqn_draw() {
             const menu_item_spec *mi = menus[edit_menu].child;
             for (int i = 0; i < 6; i++) {
                 int id = mi[i].menuid;
-                if ((id & 0xf000) == 0) {
+                if (id == MENU_NONE || (id & 0x3000) == 0) {
                     draw_key(i, 0, 0, mi[i].title, mi[i].title_length);
                 } else {
                     id &= 0x0fff;

@@ -636,11 +636,14 @@ static int keydown_edit(int key, bool shift, int *repeat) {
             /* Navigation menu */
             switch (key) {
                 case KEY_SIGMA: {
+                    /* DEL */
                     if (edit_len > 0 && edit_pos < edit_len) {
                         memmove(edit_buf + edit_pos, edit_buf + edit_pos + 1, edit_len - edit_pos - 1);
                         edit_len--;
+                        /*
                         if (display_pos + 21 > edit_len && display_pos > 0)
                             display_pos--;
+                        */
                         rep_key = KEY_SIGMA;
                         *repeat = 2;
                         restart_cursor();

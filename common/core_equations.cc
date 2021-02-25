@@ -44,7 +44,6 @@ static bool cursor_on;
 
 static int timeout_action = 0;
 static int rep_key = -1;
-static int r1, r2;
 
 static void restart_cursor();
 
@@ -582,27 +581,34 @@ static int keydown_list(int key, bool shift, int *repeat) {
                 squeak();
                 return 1;
             }
+            /* First, show a glimpse of the current contents of the target row,
+             * then, perform the actual swap (unless the target row is one of
+             * the end-of-list markers), and finally, schedule a redraw after
+             * 0.5 to make the screen reflect the state of affairs with the
+             * completed swap.
+             */
+            int dir;
             if (key == KEY_LN) {
                 /* up */
-                if (selected_row == 0) {
-                    r1 = -1;
-                } else {
-                    r1 = selected_row;
-                    r2 = selected_row - 1;
-                }
-                selected_row--;
+                dir = -1;
+                goto move;
             } else {
                 /* down */
-                if (selected_row == num_eqns - 1) {
-                    r1 = -2;
+                dir = 1;
+                move:
+                selected_row += dir;
+                eqn_draw();
+                if (selected_row == -1 || selected_row == num_eqns) {
+                    selected_row -= dir;
                 } else {
-                    r1 = selected_row;
-                    r2 = selected_row + 1;
+                    char t1 = eqns->array->is_string[selected_row];
+                    eqns->array->is_string[selected_row] = eqns->array->is_string[selected_row - dir];
+                    eqns->array->is_string[selected_row - dir] = t1;
+                    phloat t2 = eqns->array->data[selected_row];
+                    eqns->array->data[selected_row] = eqns->array->data[selected_row - dir];
+                    eqns->array->data[selected_row - dir] = t2;
                 }
-                selected_row++;
             }
-
-            eqn_draw();
             timeout_action = 1;
             shell_request_timeout3(500);
             return 1;
@@ -640,10 +646,6 @@ static int keydown_edit(int key, bool shift, int *repeat) {
                     if (edit_len > 0 && edit_pos < edit_len) {
                         memmove(edit_buf + edit_pos, edit_buf + edit_pos + 1, edit_len - edit_pos - 1);
                         edit_len--;
-                        /*
-                        if (display_pos + 21 > edit_len && display_pos > 0)
-                            display_pos--;
-                        */
                         rep_key = KEY_SIGMA;
                         *repeat = 2;
                         restart_cursor();
@@ -1083,20 +1085,6 @@ bool eqn_timeout() {
 
     if (action == 1) {
         /* Finish delayed Move Up/Down operation */
-        if (edit_pos != -1)
-            return true;
-        if (r1 == -1) {
-            selected_row++;
-        } else if (r1 == -2) {
-            selected_row--;
-        } else {
-            bool t1 = eqns->array->is_string[r1];
-            eqns->array->is_string[r1] = eqns->array->is_string[r2];
-            eqns->array->is_string[r2] = t1;
-            phloat t2 = eqns->array->data[r1];
-            eqns->array->data[r1] = eqns->array->data[r2];
-            eqns->array->data[r2] = t2;
-        }
         eqn_draw();
     } else if (action == 2) {
         /* Cursor blinking */

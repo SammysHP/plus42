@@ -335,7 +335,7 @@ static int keydown_save_confirmation(int key, bool shift, int *repeat);
 static int keydown_delete_confirmation(int key, bool shift, int *repeat);
 
 int eqn_keydown(int key, int *repeat) {
-    if (!active)
+    if (!active || key == 0)
         return 0;
 
     if (key == KEY_SHIFT) {

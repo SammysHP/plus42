@@ -178,7 +178,7 @@ void core_repaint_display() {
 }
 
 bool core_menu() {
-    return mode_clall || get_front_menu() != MENU_NONE;
+    return mode_clall || get_front_menu() != MENU_NONE || eqn_active();
 }
 
 bool alpha_active() {

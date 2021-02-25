@@ -2880,12 +2880,16 @@ void update_catalog() {
         case CATSECT_PGM_SOLVE:
         case CATSECT_PGM_INTEG:
         case CATSECT_PGM_MENU:
+            /* No longer applicable now that these menus
+             * are never empty, thanks to the equation
+             * editor's [=] key.
             if (!mvar_prgms_exist()) {
                 *the_menu = MENU_NONE;
                 display_error(ERR_NO_MENU_VARIABLES, false);
                 redisplay();
                 return;
             }
+            */
             break;
     }
     draw_catalog();

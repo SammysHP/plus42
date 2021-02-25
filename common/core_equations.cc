@@ -555,8 +555,12 @@ static int keydown_list(int key, bool shift, int *repeat) {
         }
         case KEY_SQRT: {
             /* DELET */
-            in_delete_confirmation = true;
-            eqn_draw();
+            if (selected_row == -1 || selected_row == num_eqns) {
+                squeak();
+            } else {
+                in_delete_confirmation = true;
+                eqn_draw();
+            }
             return 1;
         }
         case KEY_LOG: {

@@ -663,7 +663,7 @@ struct key_text {
 static key_text key_text_map[] = {
     { MENU_TOP_FCN, { "\005", "INV(", "SQRT(", "LOG(", "LN(", NULL },
                     { "\005", "^", "SQ(", "ALOG(", "EXP(", NULL } },
-    { MENU_CONVERT1, { "DEG(", "RAD(", "HRS(", "HMS(", "XCOORD(", "RADIUS(" },
+    { MENU_CONVERT1, { "DEG(", "RAD(", "HR(", "HMS(", "XCOORD(", "RADIUS(" },
                      { NULL, NULL, NULL, NULL, "YCOORD(", "ANGLE(" } },
     { MENU_CONVERT2, { "IP(", "FP(", "RND(", "ABS(", "SIGN(", "MOD(" },
                      { NULL, NULL, NULL, NULL, NULL, NULL } },
@@ -684,12 +684,27 @@ static int keydown_edit(int key, bool shift, int *repeat) {
         if (cs->argcount == 0) {
             squeak();
         } else {
-            /* TODO: Override functions containing up-arrow
-             * in their names, and anything else for which we have
-             * different names in expressions than in the RPN
-             * environment.
-             */
-            insert_text(cs->name, cs->name_length);
+            switch (cmd) {
+                case CMD_E_POW_X: insert_text("EXP", 3); break;
+                case CMD_10_POW_X: insert_text("ALOG", 4); break;
+                case CMD_E_POW_X_1: insert_text("EXPM1", 5); break;
+                case CMD_LN_1_X: insert_text("LN1P", 4); break;
+                case CMD_AND: insert_text("BAND", 4); break;
+                case CMD_OR: insert_text("BOR", 3); break;
+                case CMD_XOR: insert_text("BXOR", 4); break;
+                case CMD_NOT: insert_text("BNOT", 4); break;
+                case CMD_TO_DEG: insert_text("DEG", 3); break;
+                case CMD_TO_RAD: insert_text("RAD", 3); break;
+                case CMD_TO_HR: insert_text("HR", 2); break;
+                case CMD_TO_HMS: insert_text("HMS", 3); break;
+                case CMD_TO_DEC: insert_text("DEC", 3); break;
+                case CMD_TO_OCT: insert_text("OCT", 3); break;
+                case CMD_TO_REC: insert_text("XCOORD", 6); break;
+                case CMD_TO_POL: insert_text("RADIUS", 6); break;
+                default:
+                    insert_text(cs->name, cs->name_length);
+                    break;
+            }
             insert_text("(", 1);
         }
         return 1;

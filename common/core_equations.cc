@@ -138,7 +138,16 @@ static void erase_cursor() {
 }
 */
 
+static int t_rep_key;
+static int t_rep_count;
+
 static void insert_text(const char *text, int len) {
+    if (len == 1) {
+        t_rep_count++;
+        if (t_rep_count == 1)
+            t_rep_key = 1024 + *text;
+    }
+
     if (edit_len + len > edit_capacity) {
         int newcap = edit_capacity + 32;
         char *newbuf = (char *) realloc(edit_buf, newcap);
@@ -661,8 +670,8 @@ struct key_text {
 };
 
 static key_text key_text_map[] = {
-    { MENU_TOP_FCN, { "\005", "INV(", "SQRT(", "LOG(", "LN(", NULL },
-                    { "\005", "^", "SQ(", "ALOG(", "EXP(", NULL } },
+    { MENU_TOP_FCN, { "\005(", "INV(", "SQRT(", "LOG(", "LN(", NULL },
+                    { "\005(", "^", "SQ(", "ALOG(", "EXP(", NULL } },
     { MENU_CONVERT1, { "DEG(", "RAD(", "HR(", "HMS(", "XCOORD(", "RADIUS(" },
                      { NULL, NULL, NULL, NULL, "YCOORD(", "ANGLE(" } },
     { MENU_CONVERT2, { "IP(", "FP(", "RND(", "ABS(", "SIGN(", "MOD(" },
@@ -671,7 +680,7 @@ static key_text key_text_map[] = {
                  { NULL, NULL, NULL, NULL, NULL, NULL } }
 };
 
-static int keydown_edit(int key, bool shift, int *repeat) {
+static int keydown_edit_2(int key, bool shift, int *repeat) {
     if (key >= 1024 && key < 2048) {
         char c = key - 1024;
         insert_text(&c, 1);
@@ -1122,6 +1131,16 @@ static int keydown_edit(int key, bool shift, int *repeat) {
         }
     }
     return 1;
+}
+
+static int keydown_edit(int key, bool shift, int *repeat) {
+    t_rep_count = 0;
+    int ret = keydown_edit_2(key, shift, repeat);
+    if (core_settings.auto_repeat && t_rep_count == 1) {
+        *repeat = 2;
+        rep_key = t_rep_key;
+    }
+    return ret;
 }
 
 int eqn_repeat() {

@@ -311,6 +311,14 @@ bool eqn_draw() {
             draw_key(3, 0, 0, "\017", 1);
             draw_key(4, 0, 0, "\017>", 2);
             draw_key(5, 0, 0, "ALPHA", 5);
+        } else if (edit_menu >= MENU_CUSTOM1 && edit_menu <= MENU_CUSTOM3) {
+            int row = edit_menu - MENU_CUSTOM1;
+            for (int k = 0; k < 6; k++) {
+                char label[7];
+                int len;
+                get_custom_key(row * 6 + k + 1, label, &len);
+                draw_key(k, 0, 1, label, len);
+            }
         } else {
             const menu_item_spec *mi = menus[edit_menu].child;
             for (int i = 0; i < 6; i++) {
@@ -629,6 +637,33 @@ static int keydown_list(int key, bool shift, int *repeat) {
     }
 }
 
+static void select_function_menu(int menu) {
+    if (edit_menu != MENU_TOP_FCN
+            && edit_menu != MENU_CONVERT1
+            && edit_menu != MENU_CONVERT2
+            && edit_menu != MENU_PROB)
+        prev_edit_menu = edit_menu;
+    edit_menu = menu;
+    eqn_draw();
+}
+
+struct key_text {
+    int menuid;
+    const char *main_text[6];
+    const char *shifted_text[6];
+};
+
+static key_text key_text_map[] = {
+    { MENU_TOP_FCN, { "\005", "INV(", "SQRT(", "LOG(", "LN(", NULL },
+                    { "\005", "^", "SQ(", "ALOG(", "EXP(", NULL } },
+    { MENU_CONVERT1, { "DEG(", "RAD(", "HRS(", "HMS(", "XCOORD(", "RADIUS(" },
+                     { NULL, NULL, NULL, NULL, "YCOORD(", "ANGLE(" } },
+    { MENU_CONVERT2, { "IP(", "FP(", "RND(", "ABS(", "SIGN(", "MOD(" },
+                     { NULL, NULL, NULL, NULL, NULL, NULL } },
+    { MENU_PROB, { "COMB(", "PERM(", "FACT(", "GAMMA(", "RAN#", NULL },
+                 { NULL, NULL, NULL, NULL, NULL, NULL } }
+};
+
 static int keydown_edit(int key, bool shift, int *repeat) {
     if (key >= 1024 && key < 2048) {
         char c = key - 1024;
@@ -752,62 +787,50 @@ static int keydown_edit(int key, bool shift, int *repeat) {
                     return 1;
                 }
             }
-        } else if (edit_menu == MENU_TOP_FCN) {
-            /* TOP.FCN menu */
-            edit_menu = prev_edit_menu;
-            switch (key) {
-                case KEY_SIGMA: {
-                    insert_text("\005", 1);
-                    break;
-                }
-                case KEY_INV: {
-                    if (shift)
-                        insert_text("^", 1);
-                    else
-                        insert_text("INV(", 4);
-                    break;
-                }
-                case KEY_SQRT: {
-                    if (shift)
-                        insert_text("SQ(", 3);
-                    else
-                        insert_text("SQRT(", 5);
-                    break;
-                }
-                case KEY_LOG: {
-                    if (shift)
-                        insert_text("ALOG(", 5);
-                    else
-                        insert_text("LOG(", 4);
-                    break;
-                }
-                case KEY_LN: {
-                    if (shift)
-                        insert_text("EXP(", 4);
-                    else
-                        insert_text("LN(", 3);
-                    break;
-                }
-                case KEY_XEQ: {
-                    squeak();
-                    edit_menu = MENU_TOP_FCN;
-                    break;
-                }
+        } else if (edit_menu == MENU_ALPHA1 || edit_menu == MENU_ALPHA2) {
+            /* ALPHA menu */
+            update_menu(menus[edit_menu].child[key - 1].menuid);
+            eqn_draw();
+            return 1;
+        } else if (edit_menu >= MENU_ALPHA_ABCDE1 && edit_menu <= MENU_ALPHA_MISC2) {
+            /* ALPHA sub-menus */
+            char c = menus[edit_menu].child[key - 1].title[0];
+            if (shift && c >= 'A' && c <= 'Z')
+                c += 32;
+            update_menu(menus[edit_menu].parent);
+            insert_text(&c, 1);
+            return 1;
+        } else if (edit_menu >= MENU_CUSTOM1 && edit_menu <= MENU_CUSTOM3) {
+            int row = edit_menu - MENU_CUSTOM1;
+            char label[7];
+            int len;
+            get_custom_key(row * 6 + key, label, &len);
+            if (len == 0) {
+                squeak();
+            } else {
+                edit_menu = prev_edit_menu;
+                insert_text(label, len);
+                insert_text("(", 1);
+                eqn_draw();
             }
         } else {
-            /* ALPHA menu */
-            if (edit_menu == MENU_ALPHA1 || edit_menu == MENU_ALPHA2) {
-                update_menu(menus[edit_menu].child[key - 1].menuid);
-                eqn_draw();
-                return 1;
-            } else {
-                char c = menus[edit_menu].child[key - 1].title[0];
-                if (shift && c >= 'A' && c <= 'Z')
-                    c += 32;
-                update_menu(menus[edit_menu].parent);
-                insert_text(&c, 1);
-                return 1;
+            /* Various function menus */
+            for (int i = 0; i < 4; i++) {
+                key_text *kt = key_text_map + i;
+                if (kt->menuid == edit_menu) {
+                    const char *text = shift ? kt->shifted_text[key - 1] : kt->main_text[key - 1];
+                    if (text == NULL)
+                        squeak();
+                    else {
+                        edit_menu = prev_edit_menu;
+                        insert_text(text, (int) strlen(text));
+                        eqn_draw();
+                    }
+                    return 1;
+                }
             }
+            squeak();
+            return 1;
         }
     } else {
         /* Rest of keyboard */
@@ -860,7 +883,7 @@ static int keydown_edit(int key, bool shift, int *repeat) {
                 if (shift)
                     squeak();
                 else
-                    insert_text("E", 1); // Or use small E instead?
+                    insert_text("\030", 1);
                 break;
             }
             case KEY_BSP: {
@@ -885,11 +908,7 @@ static int keydown_edit(int key, bool shift, int *repeat) {
             }
             case KEY_0: {
                 if (shift) {
-                    if (edit_menu != MENU_TOP_FCN) {
-                        prev_edit_menu = edit_menu;
-                        edit_menu = MENU_TOP_FCN;
-                        eqn_draw();
-                    }
+                    select_function_menu(MENU_TOP_FCN);
                 } else
                     insert_text("0", 1);
                 break;
@@ -903,7 +922,7 @@ static int keydown_edit(int key, bool shift, int *repeat) {
             }
             case KEY_2: {
                 if (shift)
-                    squeak();
+                    select_function_menu(MENU_CUSTOM1);
                 else
                     insert_text("2", 1);
                 break;
@@ -924,7 +943,7 @@ static int keydown_edit(int key, bool shift, int *repeat) {
             }
             case KEY_5: {
                 if (shift)
-                    squeak();
+                    select_function_menu(MENU_CONVERT1);
                 else
                     insert_text("5", 1);
                 break;
@@ -973,7 +992,7 @@ static int keydown_edit(int key, bool shift, int *repeat) {
             }
             case KEY_MUL: {
                 if (shift)
-                    squeak();
+                    select_function_menu(MENU_PROB);
                 else
                     insert_text("\001", 1);
                 break;

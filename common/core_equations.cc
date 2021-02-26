@@ -685,6 +685,9 @@ static int keydown_edit(int key, bool shift, int *repeat) {
             squeak();
         } else {
             switch (cmd) {
+                case CMD_INV: insert_text("INV", 3); break;
+                case CMD_Y_POW_X: insert_text("^", 1); return 1;
+                case CMD_SQUARE: insert_text("SQ", 2); break;
                 case CMD_E_POW_X: insert_text("EXP", 3); break;
                 case CMD_10_POW_X: insert_text("ALOG", 4); break;
                 case CMD_E_POW_X_1: insert_text("EXPM1", 5); break;

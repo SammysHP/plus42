@@ -36,7 +36,7 @@ static int display_pos;
 static bool in_save_confirmation = false;
 static bool in_delete_confirmation = false;
 static int edit_menu; // MENU_NONE = the navigation menu
-static int prev_edit_menu;
+static int prev_edit_menu = MENU_NONE;
 static bool new_eq;
 static char *edit_buf = NULL;
 static int4 edit_len, edit_capacity;
@@ -637,11 +637,18 @@ static int keydown_list(int key, bool shift, int *repeat) {
     }
 }
 
+static bool is_function_menu(int menu) {
+    return menu == MENU_TOP_FCN
+            || menu == MENU_CONVERT1
+            || menu == MENU_CONVERT2
+            || menu == MENU_PROB
+            || menu == MENU_CUSTOM1
+            || menu == MENU_CUSTOM1
+            || menu == MENU_CUSTOM1;
+}
+
 static void select_function_menu(int menu) {
-    if (edit_menu != MENU_TOP_FCN
-            && edit_menu != MENU_CONVERT1
-            && edit_menu != MENU_CONVERT2
-            && edit_menu != MENU_PROB)
+    if (!is_function_menu(edit_menu))
         prev_edit_menu = edit_menu;
     edit_menu = menu;
     eqn_draw();
@@ -809,6 +816,7 @@ static int keydown_edit(int key, bool shift, int *repeat) {
                 squeak();
             } else {
                 edit_menu = prev_edit_menu;
+                prev_edit_menu = MENU_NONE;
                 insert_text(label, len);
                 insert_text("(", 1);
                 eqn_draw();
@@ -823,6 +831,7 @@ static int keydown_edit(int key, bool shift, int *repeat) {
                         squeak();
                     else {
                         edit_menu = prev_edit_menu;
+                        prev_edit_menu = MENU_NONE;
                         insert_text(text, (int) strlen(text));
                         eqn_draw();
                     }
@@ -1041,8 +1050,9 @@ static int keydown_edit(int key, bool shift, int *repeat) {
                         }
                     }
                     in_save_confirmation = true;
-                } else if (edit_menu == MENU_TOP_FCN) {
+                } else if (is_function_menu(edit_menu)) {
                     edit_menu = prev_edit_menu;
+                    prev_edit_menu = MENU_NONE;
                 } else {
                     update_menu(menus[edit_menu].parent);
                 }

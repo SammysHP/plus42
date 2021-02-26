@@ -4328,6 +4328,14 @@ static synonym_spec hp41_synonyms[] =
     { "N-S",    false, 3, CMD_N_TO_S  },
     { "C-N",    false, 3, CMD_C_TO_N  },
     { "N-C",    false, 3, CMD_N_TO_C  },
+    { "X<>?",   false, 4, CMD_X_NE_NN },
+    { "X#?",    false, 3, CMD_X_NE_NN },
+    { "X<=?",   false, 4, CMD_X_LE_NN },
+    { "X>=?",   false, 4, CMD_X_GE_NN },
+    { "0<>?",   false, 4, CMD_0_NE_NN },
+    { "0#?",    false, 3, CMD_0_NE_NN },
+    { "0<=?",   false, 4, CMD_0_LE_NN },
+    { "0>=?",   false, 4, CMD_0_GE_NN },
     { "",       true,  0, CMD_NONE    }
 };
 

@@ -678,6 +678,23 @@ static int keydown_edit(int key, bool shift, int *repeat) {
         return 1;
     }
 
+    if (key >= 2048) {
+        int cmd = key - 2048;
+        const command_spec *cs = cmd_array + cmd;
+        if (cs->argcount == 0) {
+            squeak();
+        } else {
+            /* TODO: Override functions containing up-arrow
+             * in their names, and anything else for which we have
+             * different names in expressions than in the RPN
+             * environment.
+             */
+            insert_text(cs->name, cs->name_length);
+            insert_text("(", 1);
+        }
+        return 1;
+    }
+
     if (key >= KEY_SIGMA && key <= KEY_XEQ) {
         /* Menu keys */
         if (edit_menu == MENU_NONE) {

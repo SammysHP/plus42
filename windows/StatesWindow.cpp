@@ -394,7 +394,7 @@ LRESULT CALLBACK StatesDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
             // Make sure a file exists for the current state. This isn't necessarily
             // the case, specifically, right after starting up with a version <= 25
             // state file.
-            ci_string currentStateName = ci_string(free42dirname) + L"/" + state.coreName + L".f42";
+            ci_string currentStateName = ci_string(free42dirname) + L"/" + state.coreName + L".p42";
             const wchar_t *currentStateNameC = currentStateName.c_str();
             if (GetFileAttributesW(currentStateNameC) == INVALID_FILE_ATTRIBUTES) {
                 FILE *f = _wfopen(currentStateNameC, L"wb");

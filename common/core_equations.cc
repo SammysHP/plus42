@@ -1057,6 +1057,13 @@ static int keydown_edit_2(int key, bool shift, int *repeat) {
                     insert_text(".", 1);
                 break;
             }
+            case KEY_RUN: {
+                if (shift)
+                    squeak();
+                else
+                    insert_text("=", 1);
+                break;
+            }
             case KEY_DIV: {
                 if (shift)
                     insert_text(":", 1);

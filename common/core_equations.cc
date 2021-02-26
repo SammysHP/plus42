@@ -1050,7 +1050,7 @@ static int keydown_edit(int key, bool shift, int *repeat) {
             }
             case KEY_DIV: {
                 if (shift)
-                    squeak();
+                    insert_text(":", 1);
                 else
                     insert_text("\000", 1);
                 break;

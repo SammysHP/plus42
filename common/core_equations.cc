@@ -861,11 +861,18 @@ static int keydown_edit(int key, bool shift, int *repeat) {
     } else {
         /* Rest of keyboard */
         switch (key) {
+            case KEY_STO: {
+                if (shift)
+                    squeak();
+                else
+                    insert_text("L(", 2);
+                break;
+            }
             case KEY_RCL: {
                 if (shift)
                     insert_text("%", 1);
                 else
-                    squeak();
+                    insert_text("G(", 2);
                 break;
             }
             case KEY_RDN: {
@@ -905,6 +912,20 @@ static int keydown_edit(int key, bool shift, int *repeat) {
                 }
                 break;
             }
+            case KEY_SWAP: {
+                if (shift)
+                    insert_text("[", 1);
+                else
+                    insert_text("(", 1);
+                break;
+            }
+            case KEY_CHS: {
+                if (shift)
+                    insert_text("]", 1);
+                else
+                    insert_text(")", 1);
+                break;
+            }
             case KEY_E: {
                 if (shift)
                     squeak();
@@ -933,9 +954,9 @@ static int keydown_edit(int key, bool shift, int *repeat) {
                 return 1;
             }
             case KEY_0: {
-                if (shift) {
+                if (shift)
                     select_function_menu(MENU_TOP_FCN);
-                } else
+                else
                     insert_text("0", 1);
                 break;
             }

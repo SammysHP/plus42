@@ -931,7 +931,10 @@ static int keydown_edit_2(int key, bool shift, int *repeat) {
                 break;
             }
             case KEY_ENTER: {
-                if (shift || edit_len == 0) {
+                if (shift) {
+                    update_menu(MENU_ALPHA1);
+                    eqn_draw();
+                } else if (edit_len == 0) {
                     squeak();
                 } else {
                     // TODO Error handling

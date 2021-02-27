@@ -37,12 +37,13 @@ static bool in_save_confirmation = false;
 static bool in_delete_confirmation = false;
 static int edit_menu; // MENU_NONE = the navigation menu
 static int prev_edit_menu = MENU_NONE;
+static int catalog_row;
+static bool menu_sticky;
 static bool new_eq;
 static char *edit_buf = NULL;
 static int4 edit_len, edit_capacity;
 static bool cursor_on;
 
-static int catalog_row;
 static int timeout_action = 0;
 static int rep_key = -1;
 
@@ -285,6 +286,13 @@ static void update_menu(int menuid) {
     edit_menu = menuid;
     int multirow = edit_menu == MENU_CATALOG || edit_menu != MENU_NONE && menus[edit_menu].next != MENU_NONE;
     shell_annunciators(multirow, -1, -1, -1, -1, -1);
+}
+
+static void goto_prev_menu() {
+    if (!menu_sticky) {
+        update_menu(prev_edit_menu);
+        prev_edit_menu = MENU_NONE;
+    }
 }
 
 int eqn_start(int whence) {
@@ -741,8 +749,11 @@ static bool is_function_menu(int menu) {
 static void select_function_menu(int menu) {
     if (!is_function_menu(edit_menu))
         prev_edit_menu = edit_menu;
-    update_menu(menu);
-    eqn_draw();
+    menu_sticky = menu == edit_menu || edit_menu != MENU_NONE && menus[edit_menu].next == menu;
+    if (!menu_sticky) {
+        update_menu(menu);
+        eqn_draw();
+    }
 }
 
 struct key_text {
@@ -887,6 +898,7 @@ static int keydown_edit_2(int key, bool shift, int *repeat) {
                 case KEY_XEQ: {
                     /* ALPHA */
                     update_menu(MENU_ALPHA1);
+                    prev_edit_menu = MENU_NONE;
                     eqn_draw();
                     return 1;
                 }
@@ -912,8 +924,7 @@ static int keydown_edit_2(int key, bool shift, int *repeat) {
             if (len == 0) {
                 squeak();
             } else {
-                update_menu(prev_edit_menu);
-                prev_edit_menu = MENU_NONE;
+                goto_prev_menu();
                 insert_text(label, len);
                 insert_text("(", 1);
                 eqn_draw();
@@ -924,8 +935,7 @@ static int keydown_edit_2(int key, bool shift, int *repeat) {
             if (cmd == CMD_NULL) {
                 squeak();
             } else {
-                update_menu(prev_edit_menu);
-                prev_edit_menu = MENU_NONE;
+                goto_prev_menu();
                 insert_function(cmd);
                 eqn_draw();
             }
@@ -939,8 +949,7 @@ static int keydown_edit_2(int key, bool shift, int *repeat) {
                     if (text == NULL)
                         squeak();
                     else {
-                        update_menu(prev_edit_menu);
-                        prev_edit_menu = MENU_NONE;
+                        goto_prev_menu();
                         insert_text(text, (int) strlen(text));
                         eqn_draw();
                     }
@@ -1205,8 +1214,8 @@ static int keydown_edit_2(int key, bool shift, int *repeat) {
                     }
                     in_save_confirmation = true;
                 } else if (is_function_menu(edit_menu)) {
-                    update_menu(prev_edit_menu);
-                    prev_edit_menu = MENU_NONE;
+                    menu_sticky = false;
+                    goto_prev_menu();
                 } else {
                     update_menu(menus[edit_menu].parent);
                 }

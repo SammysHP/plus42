@@ -47,27 +47,24 @@ static int timeout_action = 0;
 static int rep_key = -1;
 
 static short catalog[] = {
-    CMD_ABS,     CMD_ACOS,      CMD_ACOSH,    CMD_AIP,     CMD_AND,        CMD_ASIN,
-    CMD_ASINH,   CMD_ATAN,      CMD_ATANH,    CMD_BASEADD, CMD_BASESUB,    CMD_BASEMUL,
-    CMD_BASEDIV, CMD_BASECHS,   CMD_COMB,     CMD_COMPLEX, CMD_COS,        CMD_COSH,
-    CMD_CPX_T,   CMD_CROSS,     CMD_DET,      CMD_DIM,     CMD_DIM_T,      CMD_DOT,
-    CMD_E_POW_X, CMD_E_POW_X_1, CMD_FNRM,     CMD_FP,      CMD_GAMMA,      CMD_HMSADD,
-    CMD_HMSSUB,  CMD_INVRT,     CMD_IP,       CMD_LN,      CMD_LN_1_X,     CMD_LOG,
-    CMD_MAT_T,   CMD_MOD,       CMD_FACT,     CMD_NEWMAT,  CMD_NORM,       CMD_NOT,
-    CMD_OR,      CMD_PERM,      CMD_PI,       CMD_POLAR,   CMD_PUTM,       CMD_PWRF,
-    CMD_RAN,     CMD_REAL_T,    CMD_RECT,     CMD_RND,     CMD_RNRM,       CMD_ROTXY,
-    CMD_RSUM,    CMD_SEED,      CMD_SIGN,     CMD_SIN,     CMD_SINH,       CMD_SQRT,
-    CMD_TANH,    CMD_TRANS,     CMD_UVEC,     CMD_XOR,     CMD_SQUARE,     CMD_Y_POW_X,
-    CMD_INV,     CMD_10_POW_X,  CMD_ADD,      CMD_SUB,     CMD_MUL,        CMD_DIV,
-    CMD_CHS,     CMD_TO_DEC,    CMD_TO_DEG,   CMD_TO_HMS,  CMD_TO_HR,      CMD_TO_OCT,
-    CMD_TO_POL,  CMD_TO_RAD,    CMD_TO_REC,   CMD_PERCENT, CMD_PERCENT_CH, CMD_ADATE,
-    CMD_DATE,    CMD_DATE_PLUS, CMD_DDAYS,    CMD_DOW,     CMD_TIME,       CMD_YMD,
-    CMD_RCLFLAG, CMD_STOFLAG,   CMD_X_SWAP_F, CMD_APPEND,  CMD_C_TO_N,     CMD_EXTEND,
-    CMD_HEAD,    CMD_LENGTH,    CMD_LIST_T,   CMD_NEWLIST, CMD_NEWSTR,     CMD_N_TO_C,
-    CMD_N_TO_S,  CMD_POS,       CMD_REV,      CMD_SUBSTR,  CMD_S_TO_N,     CMD_FMA
+    CMD_ABS,       CMD_ACOS,     CMD_ACOSH,   CMD_AND,     CMD_ASIN,    CMD_ASINH,
+    CMD_ATAN,      CMD_ATANH,    CMD_BASEADD, CMD_BASESUB, CMD_BASEMUL, CMD_BASEDIV,
+    CMD_BASECHS,   CMD_COMB,     CMD_COMPLEX, CMD_COS,     CMD_COSH,    CMD_CPX_T,
+    CMD_CROSS,     CMD_DET,      CMD_DIM,     CMD_DIM_T,   CMD_DOT,     CMD_E_POW_X,
+    CMD_E_POW_X_1, CMD_FNRM,     CMD_FP,      CMD_GAMMA,   CMD_HMSADD,  CMD_HMSSUB,
+    CMD_INVRT,     CMD_IP,       CMD_LN,      CMD_LN_1_X,  CMD_LOG,     CMD_MAT_T,
+    CMD_MOD,       CMD_FACT,     CMD_NEWMAT,  CMD_NOT,     CMD_OR,      CMD_PERM,
+    CMD_RAN,       CMD_REAL_T,   CMD_RND,     CMD_RNRM,    CMD_ROTXY,   CMD_RSUM,
+    CMD_SEED,      CMD_SIGN,     CMD_SIN,     CMD_SINH,    CMD_SQRT,    CMD_STR_T,
+    CMD_TANH,      CMD_TRANS,    CMD_UVEC,    CMD_XOR,     CMD_SQUARE,  CMD_Y_POW_X,
+    CMD_INV,       CMD_10_POW_X, CMD_TO_DEC,  CMD_TO_DEG,  CMD_TO_HMS,  CMD_TO_HR,
+    CMD_TO_OCT,    CMD_TO_POL,   CMD_TO_RAD,  CMD_TO_REC,  CMD_DATE,    CMD_DATE_PLUS,
+    CMD_DDAYS,     CMD_DOW,      CMD_TIME,    CMD_APPEND,  CMD_C_TO_N,  CMD_EXTEND,
+    CMD_LENGTH,    CMD_LIST_T,   CMD_NEWLIST, CMD_NEWSTR,  CMD_N_TO_C,  CMD_N_TO_S,
+    CMD_POS,       CMD_REV,      CMD_SUBSTR,  CMD_S_TO_N,  CMD_FMA,     CMD_NULL
 };
 
-static int catalog_rows = 18;
+static int catalog_rows = 15;
 
 
 static void restart_cursor();
@@ -198,7 +195,19 @@ static void insert_text(const char *text, int len) {
 static void insert_function(int cmd) {
     const command_spec *cs = cmd_array + cmd;
     if (cs->argcount == 0) {
-        squeak();
+        switch (cmd) {
+            case CMD_RAN:
+                insert_text("RAN#", 4);
+                break;
+            case CMD_DATE:
+            case CMD_TIME:
+            case CMD_NEWSTR:
+            case CMD_NEWLIST:
+                insert_text(cs->name, cs->name_length);
+                break;
+            default:
+                squeak();
+        }
     } else {
         switch (cmd) {
             case CMD_INV: insert_text("INV", 3); break;
@@ -212,14 +221,23 @@ static void insert_function(int cmd) {
             case CMD_OR: insert_text("BOR", 3); break;
             case CMD_XOR: insert_text("BXOR", 4); break;
             case CMD_NOT: insert_text("BNOT", 4); break;
+            case CMD_BASEADD: insert_text("BADD", 4); break;
+            case CMD_BASESUB: insert_text("BSUB", 4); break;
+            case CMD_BASEMUL: insert_text("BMUL", 4); break;
+            case CMD_BASEDIV: insert_text("BDIV", 4); break;
+            case CMD_BASECHS: insert_text("BNEG", 4); break;
+            case CMD_DATE_PLUS: insert_text("DATEADD", 7); break;
+            case CMD_HMSADD: insert_text("HMSADD", 6); break;
+            case CMD_HMSSUB: insert_text("HMSSUB", 6); break;
+            case CMD_FACT: insert_text("FACT", 4); break;
             case CMD_TO_DEG: insert_text("DEG", 3); break;
             case CMD_TO_RAD: insert_text("RAD", 3); break;
             case CMD_TO_HR: insert_text("HR", 2); break;
             case CMD_TO_HMS: insert_text("HMS", 3); break;
             case CMD_TO_DEC: insert_text("DEC", 3); break;
             case CMD_TO_OCT: insert_text("OCT", 3); break;
-            case CMD_TO_REC: insert_text("XCOORD", 6); break;
-            case CMD_TO_POL: insert_text("RADIUS", 6); break;
+            case CMD_TO_REC: insert_text("REC", 3); break;
+            case CMD_TO_POL: insert_text("POL", 3); break;
             default:
                 insert_text(cs->name, cs->name_length);
                 break;
@@ -265,7 +283,7 @@ static bool save() {
 
 static void update_menu(int menuid) {
     edit_menu = menuid;
-    int multirow = edit_menu != MENU_NONE && menus[edit_menu].next != MENU_NONE;
+    int multirow = edit_menu == MENU_CATALOG || edit_menu != MENU_NONE && menus[edit_menu].next != MENU_NONE;
     shell_annunciators(multirow, -1, -1, -1, -1, -1);
 }
 
@@ -723,7 +741,7 @@ static bool is_function_menu(int menu) {
 static void select_function_menu(int menu) {
     if (!is_function_menu(edit_menu))
         prev_edit_menu = edit_menu;
-    edit_menu = menu;
+    update_menu(menu);
     eqn_draw();
 }
 
@@ -735,9 +753,9 @@ struct key_text {
 
 static key_text key_text_map[] = {
     { MENU_TOP_FCN, { "\005(", "INV(", "SQRT(", "LOG(", "LN(", NULL },
-                    { "\005(", "^", "SQ(", "ALOG(", "EXP(", NULL } },
-    { MENU_CONVERT1, { "DEG(", "RAD(", "HR(", "HMS(", "XCOORD(", "RADIUS(" },
-                     { NULL, NULL, NULL, NULL, "YCOORD(", "ANGLE(" } },
+                    { NULL, "^", "SQ(", "ALOG(", "EXP(", NULL } },
+    { MENU_CONVERT1, { "DEG(", "RAD(", "HR(", "HMS(", "REC(", "POL(" },
+                     { NULL, NULL, NULL, NULL, NULL, NULL } },
     { MENU_CONVERT2, { "IP(", "FP(", "RND(", "ABS(", "SIGN(", "MOD(" },
                      { NULL, NULL, NULL, NULL, NULL, NULL } },
     { MENU_PROB, { "COMB(", "PERM(", "FACT(", "GAMMA(", "RAN#", NULL },
@@ -894,7 +912,7 @@ static int keydown_edit_2(int key, bool shift, int *repeat) {
             if (len == 0) {
                 squeak();
             } else {
-                edit_menu = prev_edit_menu;
+                update_menu(prev_edit_menu);
                 prev_edit_menu = MENU_NONE;
                 insert_text(label, len);
                 insert_text("(", 1);
@@ -903,8 +921,14 @@ static int keydown_edit_2(int key, bool shift, int *repeat) {
         } else if (edit_menu == MENU_CATALOG) {
             /* Subset of the regular FCN catalog plus Free42 extensions */
             int cmd = catalog[catalog_row * 6 + key - 1];
-            insert_function(cmd);
-            eqn_draw();
+            if (cmd == CMD_NULL) {
+                squeak();
+            } else {
+                update_menu(prev_edit_menu);
+                prev_edit_menu = MENU_NONE;
+                insert_function(cmd);
+                eqn_draw();
+            }
             return 1;
         } else {
             /* Various function menus */
@@ -915,7 +939,7 @@ static int keydown_edit_2(int key, bool shift, int *repeat) {
                     if (text == NULL)
                         squeak();
                     else {
-                        edit_menu = prev_edit_menu;
+                        update_menu(prev_edit_menu);
                         prev_edit_menu = MENU_NONE;
                         insert_text(text, (int) strlen(text));
                         eqn_draw();
@@ -1149,12 +1173,14 @@ static int keydown_edit_2(int key, bool shift, int *repeat) {
                         if (catalog_row == catalog_rows)
                             catalog_row = 0;
                     }
+                    *repeat = 1;
                     eqn_draw();
                 } else if (edit_menu != MENU_NONE && menus[edit_menu].next != MENU_NONE) {
                     /* No need to handle Up and Down separately, since none of the
                      * menus we're using here have more than two rows.
                      */
                     update_menu(menus[edit_menu].next);
+                    *repeat = 1;
                     eqn_draw();
                 } else
                     squeak();
@@ -1179,7 +1205,7 @@ static int keydown_edit_2(int key, bool shift, int *repeat) {
                     }
                     in_save_confirmation = true;
                 } else if (is_function_menu(edit_menu)) {
-                    edit_menu = prev_edit_menu;
+                    update_menu(prev_edit_menu);
                     prev_edit_menu = MENU_NONE;
                 } else {
                     update_menu(menus[edit_menu].parent);
@@ -1202,6 +1228,8 @@ static int keydown_edit(int key, bool shift, int *repeat) {
     if (core_settings.auto_repeat && t_rep_count == 1) {
         *repeat = 2;
         rep_key = t_rep_key;
+    } else if (*repeat != 0) {
+        rep_key = key;
     }
     return ret;
 }
@@ -1238,7 +1266,7 @@ int eqn_repeat() {
         if (repeat == 0)
             rep_key = -1;
         else
-            return 2;
+            return rep_key == KEY_UP || rep_key == KEY_DOWN ? 1 : 2;
     }
     return 0;
 }

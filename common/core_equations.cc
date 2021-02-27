@@ -193,58 +193,86 @@ static void insert_text(const char *text, int len) {
     eqn_draw();
 }
 
-static void insert_function(int cmd) {
-    const command_spec *cs = cmd_array + cmd;
-    if (cs->argcount == 0) {
-        switch (cmd) {
-            case CMD_RAN:
-                insert_text("RAN#", 4);
-                break;
-            case CMD_DATE:
-            case CMD_TIME:
-            case CMD_NEWSTR:
-            case CMD_NEWLIST:
-                insert_text(cs->name, cs->name_length);
-                break;
-            default:
-                squeak();
-        }
-    } else {
-        switch (cmd) {
-            case CMD_INV: insert_text("INV", 3); break;
-            case CMD_Y_POW_X: insert_text("^", 1); return;
-            case CMD_SQUARE: insert_text("SQ", 2); break;
-            case CMD_E_POW_X: insert_text("EXP", 3); break;
-            case CMD_10_POW_X: insert_text("ALOG", 4); break;
-            case CMD_E_POW_X_1: insert_text("EXPM1", 5); break;
-            case CMD_LN_1_X: insert_text("LN1P", 4); break;
-            case CMD_AND: insert_text("BAND", 4); break;
-            case CMD_OR: insert_text("BOR", 3); break;
-            case CMD_XOR: insert_text("BXOR", 4); break;
-            case CMD_NOT: insert_text("BNOT", 4); break;
-            case CMD_BASEADD: insert_text("BADD", 4); break;
-            case CMD_BASESUB: insert_text("BSUB", 4); break;
-            case CMD_BASEMUL: insert_text("BMUL", 4); break;
-            case CMD_BASEDIV: insert_text("BDIV", 4); break;
-            case CMD_BASECHS: insert_text("BNEG", 4); break;
-            case CMD_DATE_PLUS: insert_text("DATEADD", 7); break;
-            case CMD_HMSADD: insert_text("HMSADD", 6); break;
-            case CMD_HMSSUB: insert_text("HMSSUB", 6); break;
-            case CMD_FACT: insert_text("FACT", 4); break;
-            case CMD_TO_DEG: insert_text("DEG", 3); break;
-            case CMD_TO_RAD: insert_text("RAD", 3); break;
-            case CMD_TO_HR: insert_text("HR", 2); break;
-            case CMD_TO_HMS: insert_text("HMS", 3); break;
-            case CMD_TO_DEC: insert_text("DEC", 3); break;
-            case CMD_TO_OCT: insert_text("OCT", 3); break;
-            case CMD_TO_REC: insert_text("REC", 3); break;
-            case CMD_TO_POL: insert_text("POL", 3); break;
-            default:
-                insert_text(cs->name, cs->name_length);
-                break;
-        }
-        insert_text("(", 1);
+struct eqn_name_entry {
+    int2 cmd;
+    int2 len;
+    const char *name;
+};
+
+/* Most built-ins are represented in equations using the same name
+ * as in the RPN environment, with an opening parenthesis tacked on.
+ * These functions deviate from that pattern:
+ */
+static eqn_name_entry eqn_name[] = {
+    { CMD_Y_POW_X,   1, "^"        },
+    { CMD_ADD,       1, "+"        },
+    { CMD_SUB,       1, "-"        },
+    { CMD_MUL,       1, "\001"     },
+    { CMD_DIV,       1, "\000"     },
+    { CMD_SIGMAADD,  2, "\005("    },
+    { CMD_STO,       2, "L("       },
+    { CMD_RCL,       2, "G("       },
+    { CMD_INV,       4, "INV("     },
+    { CMD_SQUARE,    3, "SQ("      },
+    { CMD_E_POW_X,   4, "EXP("     },
+    { CMD_10_POW_X,  5, "ALOG("    },
+    { CMD_E_POW_X_1, 6, "EXPM1("   },
+    { CMD_LN_1_X,    5, "LN1P("    },
+    { CMD_AND,       5, "BAND("    },
+    { CMD_OR,        4, "BOR("     },
+    { CMD_XOR,       5, "BXOR("    },
+    { CMD_NOT,       5, "BNOT("    },
+    { CMD_BASEADD,   5, "BADD("    },
+    { CMD_BASESUB,   5, "BSUB("    },
+    { CMD_BASEMUL,   5, "BMUL("    },
+    { CMD_BASEDIV,   5, "BDIV("    },
+    { CMD_BASECHS,   5, "BNEG("    },
+    { CMD_DATE_PLUS, 8, "DATEADD(" },
+    { CMD_HMSADD,    7, "HMSADD("  },
+    { CMD_HMSSUB,    7, "HMSSUB("  },
+    { CMD_FACT,      5, "FACT("    },
+    { CMD_TO_DEG,    4, "DEG("     },
+    { CMD_TO_RAD,    4, "RAD("     },
+    { CMD_TO_HR,     3, "HR("      },
+    { CMD_TO_HMS,    4, "HMS("     },
+    { CMD_TO_DEC,    4, "DEC("     },
+    { CMD_TO_OCT,    4, "OCT("     },
+    { CMD_TO_REC,    4, "REC("     },
+    { CMD_TO_POL,    4, "POL("     },
+    { CMD_RAN,       4, "RAN#"     },
+    { CMD_DATE,      4, "DATE"     },
+    { CMD_TIME,      4, "TIME"     },
+    { CMD_NEWSTR,    6, "NEWSTR"   },
+    { CMD_NEWLIST,   7, "NEWLIST"  },
+    { CMD_NULL,      0, NULL       }
+};
+
+/* Inserts a function, given by its command id, into the equation.
+ * Only functions from our restricted catalog and our list of
+ * special cases (the 'catalog' and 'eqn_name' arrays, above)
+ * are allowed.
+ */
+static bool insert_function(int cmd) {
+    if (cmd == CMD_NULL) {
+        squeak();
+        return false;
     }
+    for (int i = 0; eqn_name[i].cmd != CMD_NULL; i++) {
+        if (cmd == eqn_name[i].cmd) {
+            insert_text(eqn_name[i].name, eqn_name[i].len);
+            return true;
+        }
+    }
+    for (int i = 0; i < catalog_rows * 6; i++) {
+        if (cmd == catalog[i]) {
+            const command_spec *cs = cmd_array + cmd;
+            insert_text(cs->name, cs->name_length);
+            insert_text("(", 1);
+            return true;
+        }
+    }
+    squeak();
+    return false;
 }
 
 static bool save() {
@@ -756,23 +784,6 @@ static void select_function_menu(int menu) {
     }
 }
 
-struct key_text {
-    int menuid;
-    const char *main_text[6];
-    const char *shifted_text[6];
-};
-
-static key_text key_text_map[] = {
-    { MENU_TOP_FCN, { "\005(", "INV(", "SQRT(", "LOG(", "LN(", NULL },
-                    { NULL, "^", "SQ(", "ALOG(", "EXP(", NULL } },
-    { MENU_CONVERT1, { "DEG(", "RAD(", "HR(", "HMS(", "REC(", "POL(" },
-                     { NULL, NULL, NULL, NULL, NULL, NULL } },
-    { MENU_CONVERT2, { "IP(", "FP(", "RND(", "ABS(", "SIGN(", "MOD(" },
-                     { NULL, NULL, NULL, NULL, NULL, NULL } },
-    { MENU_PROB, { "COMB(", "PERM(", "FACT(", "GAMMA(", "RAN#", NULL },
-                 { NULL, NULL, NULL, NULL, NULL, NULL } }
-};
-
 static int keydown_edit_2(int key, bool shift, int *repeat) {
     if (key >= 1024 && key < 2048) {
         char c = key - 1024;
@@ -924,10 +935,21 @@ static int keydown_edit_2(int key, bool shift, int *repeat) {
             if (len == 0) {
                 squeak();
             } else {
-                goto_prev_menu();
-                insert_text(label, len);
-                insert_text("(", 1);
-                eqn_draw();
+                /* Builtins go through the usual mapping; everything else
+                 * is inserted literally.
+                 */
+                int cmd = find_builtin(label, len);
+                if (cmd != CMD_NONE) {
+                    if (insert_function(cmd)) {
+                        goto_prev_menu();
+                        eqn_draw();
+                    }
+                } else {
+                    goto_prev_menu();
+                    insert_text(label, len);
+                    insert_text("(", 1);
+                    eqn_draw();
+                }
             }
         } else if (edit_menu == MENU_CATALOG) {
             /* Subset of the regular FCN catalog plus Free42 extensions */
@@ -935,28 +957,35 @@ static int keydown_edit_2(int key, bool shift, int *repeat) {
             if (cmd == CMD_NULL) {
                 squeak();
             } else {
-                goto_prev_menu();
-                insert_function(cmd);
-                eqn_draw();
+                if (insert_function(cmd)) {
+                    goto_prev_menu();
+                    eqn_draw();
+                }
             }
             return 1;
         } else {
             /* Various function menus */
-            for (int i = 0; i < 4; i++) {
-                key_text *kt = key_text_map + i;
-                if (kt->menuid == edit_menu) {
-                    const char *text = shift ? kt->shifted_text[key - 1] : kt->main_text[key - 1];
-                    if (text == NULL)
-                        squeak();
-                    else {
-                        goto_prev_menu();
-                        insert_text(text, (int) strlen(text));
-                        eqn_draw();
-                    }
-                    return 1;
+            int cmd;
+            if (shift && edit_menu == MENU_TOP_FCN) {
+                switch (key) {
+                    case KEY_SIGMA: cmd = CMD_SIGMASUB; break;
+                    case KEY_INV: cmd = CMD_Y_POW_X; break;
+                    case KEY_SQRT: cmd = CMD_SQUARE; break;
+                    case KEY_LOG: cmd = CMD_10_POW_X; break;
+                    case KEY_LN: cmd = CMD_E_POW_X; break;
+                    case KEY_XEQ: cmd = CMD_GTO; break;
                 }
+            } else {
+                cmd = menus[edit_menu].child[key - 1].menuid;
+                if (cmd == MENU_NONE || (cmd & 0xf000) == 0)
+                    cmd = CMD_NULL;
+                else
+                    cmd = cmd & 0x0fff;
             }
-            squeak();
+            if (insert_function(cmd)) {
+                goto_prev_menu();
+                eqn_draw();
+            }
             return 1;
         }
     } else {

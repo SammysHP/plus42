@@ -42,8 +42,33 @@ static char *edit_buf = NULL;
 static int4 edit_len, edit_capacity;
 static bool cursor_on;
 
+static int catalog_row;
 static int timeout_action = 0;
 static int rep_key = -1;
+
+static short catalog[] = {
+    CMD_ABS,     CMD_ACOS,      CMD_ACOSH,    CMD_AIP,     CMD_AND,        CMD_ASIN,
+    CMD_ASINH,   CMD_ATAN,      CMD_ATANH,    CMD_BASEADD, CMD_BASESUB,    CMD_BASEMUL,
+    CMD_BASEDIV, CMD_BASECHS,   CMD_COMB,     CMD_COMPLEX, CMD_COS,        CMD_COSH,
+    CMD_CPX_T,   CMD_CROSS,     CMD_DET,      CMD_DIM,     CMD_DIM_T,      CMD_DOT,
+    CMD_E_POW_X, CMD_E_POW_X_1, CMD_FNRM,     CMD_FP,      CMD_GAMMA,      CMD_HMSADD,
+    CMD_HMSSUB,  CMD_INVRT,     CMD_IP,       CMD_LN,      CMD_LN_1_X,     CMD_LOG,
+    CMD_MAT_T,   CMD_MOD,       CMD_FACT,     CMD_NEWMAT,  CMD_NORM,       CMD_NOT,
+    CMD_OR,      CMD_PERM,      CMD_PI,       CMD_POLAR,   CMD_PUTM,       CMD_PWRF,
+    CMD_RAN,     CMD_REAL_T,    CMD_RECT,     CMD_RND,     CMD_RNRM,       CMD_ROTXY,
+    CMD_RSUM,    CMD_SEED,      CMD_SIGN,     CMD_SIN,     CMD_SINH,       CMD_SQRT,
+    CMD_TANH,    CMD_TRANS,     CMD_UVEC,     CMD_XOR,     CMD_SQUARE,     CMD_Y_POW_X,
+    CMD_INV,     CMD_10_POW_X,  CMD_ADD,      CMD_SUB,     CMD_MUL,        CMD_DIV,
+    CMD_CHS,     CMD_TO_DEC,    CMD_TO_DEG,   CMD_TO_HMS,  CMD_TO_HR,      CMD_TO_OCT,
+    CMD_TO_POL,  CMD_TO_RAD,    CMD_TO_REC,   CMD_PERCENT, CMD_PERCENT_CH, CMD_ADATE,
+    CMD_DATE,    CMD_DATE_PLUS, CMD_DDAYS,    CMD_DOW,     CMD_TIME,       CMD_YMD,
+    CMD_RCLFLAG, CMD_STOFLAG,   CMD_X_SWAP_F, CMD_APPEND,  CMD_C_TO_N,     CMD_EXTEND,
+    CMD_HEAD,    CMD_LENGTH,    CMD_LIST_T,   CMD_NEWLIST, CMD_NEWSTR,     CMD_N_TO_C,
+    CMD_N_TO_S,  CMD_POS,       CMD_REV,      CMD_SUBSTR,  CMD_S_TO_N,     CMD_FMA
+};
+
+static int catalog_rows = 18;
+
 
 static void restart_cursor();
 
@@ -168,6 +193,39 @@ static void insert_text(const char *text, int len) {
         display_pos++;
     restart_cursor();
     eqn_draw();
+}
+
+static void insert_function(int cmd) {
+    const command_spec *cs = cmd_array + cmd;
+    if (cs->argcount == 0) {
+        squeak();
+    } else {
+        switch (cmd) {
+            case CMD_INV: insert_text("INV", 3); break;
+            case CMD_Y_POW_X: insert_text("^", 1); return;
+            case CMD_SQUARE: insert_text("SQ", 2); break;
+            case CMD_E_POW_X: insert_text("EXP", 3); break;
+            case CMD_10_POW_X: insert_text("ALOG", 4); break;
+            case CMD_E_POW_X_1: insert_text("EXPM1", 5); break;
+            case CMD_LN_1_X: insert_text("LN1P", 4); break;
+            case CMD_AND: insert_text("BAND", 4); break;
+            case CMD_OR: insert_text("BOR", 3); break;
+            case CMD_XOR: insert_text("BXOR", 4); break;
+            case CMD_NOT: insert_text("BNOT", 4); break;
+            case CMD_TO_DEG: insert_text("DEG", 3); break;
+            case CMD_TO_RAD: insert_text("RAD", 3); break;
+            case CMD_TO_HR: insert_text("HR", 2); break;
+            case CMD_TO_HMS: insert_text("HMS", 3); break;
+            case CMD_TO_DEC: insert_text("DEC", 3); break;
+            case CMD_TO_OCT: insert_text("OCT", 3); break;
+            case CMD_TO_REC: insert_text("XCOORD", 6); break;
+            case CMD_TO_POL: insert_text("RADIUS", 6); break;
+            default:
+                insert_text(cs->name, cs->name_length);
+                break;
+        }
+        insert_text("(", 1);
+    }
 }
 
 static bool save() {
@@ -327,6 +385,11 @@ bool eqn_draw() {
                 int len;
                 get_custom_key(row * 6 + k + 1, label, &len);
                 draw_key(k, 0, 1, label, len);
+            }
+        } else if (edit_menu == MENU_CATALOG) {
+            for (int k = 0; k < 6; k++) {
+                int cmd = catalog[catalog_row * 6 + k];
+                draw_key(k, 0, 1, cmd_array[cmd].name, cmd_array[cmd].name_length);
             }
         } else {
             const menu_item_spec *mi = menus[edit_menu].child;
@@ -652,8 +715,9 @@ static bool is_function_menu(int menu) {
             || menu == MENU_CONVERT2
             || menu == MENU_PROB
             || menu == MENU_CUSTOM1
-            || menu == MENU_CUSTOM1
-            || menu == MENU_CUSTOM1;
+            || menu == MENU_CUSTOM2
+            || menu == MENU_CUSTOM3
+            || menu == MENU_CATALOG;
 }
 
 static void select_function_menu(int menu) {
@@ -689,36 +753,7 @@ static int keydown_edit_2(int key, bool shift, int *repeat) {
 
     if (key >= 2048) {
         int cmd = key - 2048;
-        const command_spec *cs = cmd_array + cmd;
-        if (cs->argcount == 0) {
-            squeak();
-        } else {
-            switch (cmd) {
-                case CMD_INV: insert_text("INV", 3); break;
-                case CMD_Y_POW_X: insert_text("^", 1); return 1;
-                case CMD_SQUARE: insert_text("SQ", 2); break;
-                case CMD_E_POW_X: insert_text("EXP", 3); break;
-                case CMD_10_POW_X: insert_text("ALOG", 4); break;
-                case CMD_E_POW_X_1: insert_text("EXPM1", 5); break;
-                case CMD_LN_1_X: insert_text("LN1P", 4); break;
-                case CMD_AND: insert_text("BAND", 4); break;
-                case CMD_OR: insert_text("BOR", 3); break;
-                case CMD_XOR: insert_text("BXOR", 4); break;
-                case CMD_NOT: insert_text("BNOT", 4); break;
-                case CMD_TO_DEG: insert_text("DEG", 3); break;
-                case CMD_TO_RAD: insert_text("RAD", 3); break;
-                case CMD_TO_HR: insert_text("HR", 2); break;
-                case CMD_TO_HMS: insert_text("HMS", 3); break;
-                case CMD_TO_DEC: insert_text("DEC", 3); break;
-                case CMD_TO_OCT: insert_text("OCT", 3); break;
-                case CMD_TO_REC: insert_text("XCOORD", 6); break;
-                case CMD_TO_POL: insert_text("RADIUS", 6); break;
-                default:
-                    insert_text(cs->name, cs->name_length);
-                    break;
-            }
-            insert_text("(", 1);
-        }
+        insert_function(cmd);
         return 1;
     }
 
@@ -865,6 +900,12 @@ static int keydown_edit_2(int key, bool shift, int *repeat) {
                 insert_text("(", 1);
                 eqn_draw();
             }
+        } else if (edit_menu == MENU_CATALOG) {
+            /* Subset of the regular FCN catalog plus Free42 extensions */
+            int cmd = catalog[catalog_row * 6 + key - 1];
+            insert_function(cmd);
+            eqn_draw();
+            return 1;
         } else {
             /* Various function menus */
             for (int i = 0; i < 4; i++) {
@@ -1089,18 +1130,30 @@ static int keydown_edit_2(int key, bool shift, int *repeat) {
                 break;
             }
             case KEY_ADD: {
-                if (shift)
-                    squeak();
-                else
+                if (shift) {
+                    catalog_row = 0;
+                    select_function_menu(MENU_CATALOG);
+                } else
                     insert_text("+", 1);
                 break;
             }
             case KEY_UP:
             case KEY_DOWN: {
-                /* No need to handle Up and Down separately, since none of the
-                 * menus we're using here have more than two rows.
-                 */
-                if (edit_menu != MENU_NONE && menus[edit_menu].next != MENU_NONE) {
+                if (edit_menu == MENU_CATALOG) {
+                    if (key == KEY_UP) {
+                        catalog_row--;
+                        if (catalog_row == -1)
+                            catalog_row = catalog_rows - 1;
+                    } else {
+                        catalog_row++;
+                        if (catalog_row == catalog_rows)
+                            catalog_row = 0;
+                    }
+                    eqn_draw();
+                } else if (edit_menu != MENU_NONE && menus[edit_menu].next != MENU_NONE) {
+                    /* No need to handle Up and Down separately, since none of the
+                     * menus we're using here have more than two rows.
+                     */
                     update_menu(menus[edit_menu].next);
                     eqn_draw();
                 } else

@@ -435,12 +435,22 @@ void eqn_paste(const char *buf) {
                 return;
             }
             int len = ascii2hp(hpbuf, buf + p, t + 4, t);
-            int err = dimension_array_ref((vartype *) eqns, num_eqns + 1, 1);
-            if (err != ERR_NONE) {
-                // TODO: Error message
-                free(hpbuf);
-                squeak();
-                return;
+            if (num_eqns == 0) {
+                eqns = (vartype_realmatrix *) new_realmatrix(1, 1);
+                if (eqns == NULL) {
+                    // TODO: Error message
+                    free(hpbuf);
+                    squeak();
+                    return;
+                }
+            } else {
+                int err = dimension_array_ref((vartype *) eqns, num_eqns + 1, 1);
+                if (err != ERR_NONE) {
+                    // TODO: Error message
+                    free(hpbuf);
+                    squeak();
+                    return;
+                }
             }
             int n = selected_row + 1;
             if (n > num_eqns)
@@ -453,10 +463,16 @@ void eqn_paste(const char *buf) {
             if (!success) {
                 memmove(eqns->array->is_string + n, eqns->array->is_string + n + 1, num_eqns - n);
                 memmove(eqns->array->data + n, eqns->array->data + n + 1, (num_eqns - n) * sizeof(phloat));
+                if (num_eqns == 0) {
+                    free_vartype((vartype *) eqns);
+                    eqns = NULL;
+                }
                 eqns->rows--;
                 // TODO: Error message
                 squeak();
                 return;
+            } else if (num_eqns == 0) {
+                store_var("EQNS", 4, (vartype *) eqns);
             }
             selected_row = n;
             num_eqns++;

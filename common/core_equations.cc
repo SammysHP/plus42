@@ -320,6 +320,32 @@ static bool save() {
     return true;
 }
 
+static void print() {
+    if (!flags.f.printer_exists) {
+        // TODO: Error message
+        squeak();
+        return;
+    }
+    if (selected_row == -1 || selected_row == num_eqns) {
+        squeak();
+        return;
+    }
+    if (edit_pos == -1) {
+        if (eqns->array->is_string[selected_row]) {
+            const char *text;
+            int4 len;
+            get_matrix_string(eqns, selected_row, &text, &len);
+            print_lines(text, len, 1);
+        } else {
+            char buf[50];
+            int len = real2buf(buf, eqns->array->data[selected_row]);
+            print_lines(buf, len, 1);
+        }
+    } else {
+        print_lines(edit_buf, edit_len, 1);
+    }
+}
+
 static void update_menu(int menuid) {
     edit_menu = menuid;
     int multirow = edit_menu == MENU_CATALOG || edit_menu != MENU_NONE && menus[edit_menu].next != MENU_NONE;
@@ -877,6 +903,13 @@ static int keydown_list(int key, bool shift, int *repeat) {
             shell_request_timeout3(500);
             return 1;
         }
+        case KEY_SUB: {
+            if (shift)
+                print();
+            else
+                squeak();
+            return 1;
+        }
         case KEY_EXIT: {
             if (shift) {
                 docmd_off(NULL);
@@ -1316,7 +1349,7 @@ static int keydown_edit_2(int key, bool shift, int *repeat) {
             }
             case KEY_SUB: {
                 if (shift)
-                    squeak();
+                    print();
                 else
                     insert_function(CMD_SUB);
                 break;

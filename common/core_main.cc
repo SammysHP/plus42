@@ -194,8 +194,6 @@ bool core_hex_menu() {
     return get_front_menu() == MENU_BASE_A_THRU_F;
 }
 
-static int ascii2hp(char *dst, const char *src, int maxchars);
-
 bool core_keydown_command(const char *name, bool *enqueued, int *repeat) {
     char hpname[70];
     int len = ascii2hp(hpname, name, 63);
@@ -2697,10 +2695,10 @@ static bool parse_phloat(const char *p, int len, phloat *res) {
         return false;
 }
 
-/* NOTE: The destination buffer should be able to store maxchars + 4
+/* NOTE: The destination buffer should be able to store dst_max + 4
  * characters, because of how we parse [LF] and [ESC].
  */
-static int ascii2hp(char *dst, const char *src, int maxchars) {
+int ascii2hp(char *dst, const char *src, int dst_max, int src_max /* = -1 */) {
     int srcpos = 0, dstpos = 0;
     // state machine for detecting [LF] and [ESC]:
     // 0: ''
@@ -2712,7 +2710,9 @@ static int ascii2hp(char *dst, const char *src, int maxchars) {
     // 6: '[ESC'
     int state = 0;
     bool afterCR = false;
-    while (dstpos < maxchars + (state == 0 ? 1 : 4)) {
+    while (dstpos < dst_max + (state == 0 ? 1 : 4)) {
+        if (srcpos == src_max)
+            break;
         char c = src[srcpos++];
         retry:
         if (c == 0)
@@ -2739,6 +2739,8 @@ static int ascii2hp(char *dst, const char *src, int maxchars) {
                 continue;
             }
             while (len-- > 0) {
+                if (srcpos == src_max)
+                    goto done;
                 c = src[srcpos++];
                 if ((c & 0xc0) != 0x80)
                     // Unexpected non-continuation byte
@@ -2921,7 +2923,8 @@ static int ascii2hp(char *dst, const char *src, int maxchars) {
         }
         dst[dstpos++] = (char) code;
     }
-    return dstpos > maxchars ? maxchars : dstpos;
+    done:
+    return dstpos > dst_max ? dst_max : dstpos;
 }
 
 struct text_alias {

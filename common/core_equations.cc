@@ -404,7 +404,71 @@ char *eqn_copy() {
 }
 
 void eqn_paste(const char *buf) {
-    // TODO
+    if (edit_pos == -1) {
+        int4 s = 0;
+        while (buf[s] != 0) {
+            int4 p = s;
+            while (buf[s] != 0 && buf[s] != '\r' && buf[s] != '\n')
+                s++;
+            if (s == p) {
+                if (buf[s] == 0)
+                    break;
+                else {
+                    s++;
+                    continue;
+                }
+            }
+            int4 t = s - p;
+            char *hpbuf = (char *) malloc(t + 4);
+            if (hpbuf == NULL) {
+                // TODO: Error message
+                squeak();
+                return;
+            }
+            int len = ascii2hp(hpbuf, buf + p, t + 4, t);
+            int err = dimension_array_ref((vartype *) eqns, num_eqns + 1, 1);
+            if (err != ERR_NONE) {
+                // TODO: Error message
+                free(hpbuf);
+                squeak();
+                return;
+            }
+            int n = selected_row + 1;
+            if (n > num_eqns)
+                n = num_eqns;
+            memmove(eqns->array->is_string + n + 1, eqns->array->is_string + n, num_eqns - n);
+            memmove(eqns->array->data + n + 1, eqns->array->data + n, (num_eqns - n) * sizeof(phloat));
+            eqns->array->is_string[n] = 0;
+            bool success = put_matrix_string(eqns, n, hpbuf, len);
+            free(hpbuf);
+            if (!success) {
+                memmove(eqns->array->is_string + n, eqns->array->is_string + n + 1, num_eqns - n);
+                memmove(eqns->array->data + n, eqns->array->data + n + 1, (num_eqns - n) * sizeof(phloat));
+                eqns->rows--;
+                // TODO: Error message
+                squeak();
+                return;
+            }
+            selected_row = n;
+            num_eqns++;
+            if (buf[s] != 0)
+                s++;
+        }
+        eqn_draw();
+    } else {
+        int4 p = 0;
+        while (buf[p] != 0 && buf[p] != '\r' && buf[p] != '\n')
+            p++;
+        char *hpbuf = (char *) malloc(p + 4);
+        if (hpbuf == NULL) {
+            // TODO: Error message
+            squeak();
+            return;
+        }
+        int len = ascii2hp(hpbuf, buf, p + 4, p);
+        insert_text(hpbuf, len);
+        free(hpbuf);
+    }
 }
 
 bool eqn_draw() {

@@ -330,6 +330,7 @@ static void print() {
         squeak();
         return;
     }
+    shell_annunciators(-1, -1, 1, -1, -1, -1);
     if (edit_pos == -1) {
         if (eqns->array->is_string[selected_row]) {
             const char *text;
@@ -344,6 +345,7 @@ static void print() {
     } else {
         print_lines(edit_buf, edit_len, 1);
     }
+    shell_annunciators(-1, -1, 0, -1, -1, -1);
 }
 
 static void update_menu(int menuid) {

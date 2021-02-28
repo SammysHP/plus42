@@ -49,21 +49,21 @@ static int timeout_action = 0;
 static int rep_key = -1;
 
 static short catalog[] = {
-    CMD_ABS,       CMD_ACOS,     CMD_ACOSH,   CMD_AND,     CMD_ASIN,    CMD_ASINH,
-    CMD_ATAN,      CMD_ATANH,    CMD_BASEADD, CMD_BASESUB, CMD_BASEMUL, CMD_BASEDIV,
-    CMD_BASECHS,   CMD_COMB,     CMD_COMPLEX, CMD_COS,     CMD_COSH,    CMD_CPX_T,
-    CMD_CROSS,     CMD_DET,      CMD_DIM,     CMD_DIM_T,   CMD_DOT,     CMD_E_POW_X,
-    CMD_E_POW_X_1, CMD_FNRM,     CMD_FP,      CMD_GAMMA,   CMD_HMSADD,  CMD_HMSSUB,
-    CMD_INVRT,     CMD_IP,       CMD_LN,      CMD_LN_1_X,  CMD_LOG,     CMD_MAT_T,
-    CMD_MOD,       CMD_FACT,     CMD_NEWMAT,  CMD_NOT,     CMD_OR,      CMD_PERM,
-    CMD_RAN,       CMD_REAL_T,   CMD_RND,     CMD_RNRM,    CMD_ROTXY,   CMD_RSUM,
-    CMD_SEED,      CMD_SIGN,     CMD_SIN,     CMD_SINH,    CMD_SQRT,    CMD_STR_T,
-    CMD_TANH,      CMD_TRANS,    CMD_UVEC,    CMD_XOR,     CMD_SQUARE,  CMD_Y_POW_X,
-    CMD_INV,       CMD_10_POW_X, CMD_TO_DEC,  CMD_TO_DEG,  CMD_TO_HMS,  CMD_TO_HR,
-    CMD_TO_OCT,    CMD_TO_POL,   CMD_TO_RAD,  CMD_TO_REC,  CMD_DATE,    CMD_DATE_PLUS,
-    CMD_DDAYS,     CMD_DOW,      CMD_TIME,    CMD_APPEND,  CMD_C_TO_N,  CMD_EXTEND,
-    CMD_LENGTH,    CMD_LIST_T,   CMD_NEWLIST, CMD_NEWSTR,  CMD_N_TO_C,  CMD_N_TO_S,
-    CMD_POS,       CMD_REV,      CMD_SUBSTR,  CMD_S_TO_N,  CMD_FMA,     CMD_NULL
+    CMD_ABS,       CMD_ACOS,   CMD_ACOSH,    CMD_AND,     CMD_ASIN,    CMD_ASINH,
+    CMD_ATAN,      CMD_ATANH,  CMD_BASEADD,  CMD_BASESUB, CMD_BASEMUL, CMD_BASEDIV,
+    CMD_BASECHS,   CMD_COMB,   CMD_COMPLEX,  CMD_COS,     CMD_COSH,    CMD_CPX_T,
+    CMD_CROSS,     CMD_DET,    CMD_DIM,      CMD_DIM_T,   CMD_DOT,     CMD_E_POW_X,
+    CMD_E_POW_X_1, CMD_FNRM,   CMD_FP,       CMD_GAMMA,   CMD_HMSADD,  CMD_HMSSUB,
+    CMD_INVRT,     CMD_IP,     CMD_LN,       CMD_LN_1_X,  CMD_LOG,     CMD_MAT_T,
+    CMD_MOD,       CMD_FACT,   CMD_NEWMAT,   CMD_NOT,     CMD_OR,      CMD_PERM,
+    CMD_RAN,       CMD_REAL_T, CMD_RND,      CMD_RNRM,    CMD_ROTXY,   CMD_RSUM,
+    CMD_SEED,      CMD_SIGN,   CMD_SIN,      CMD_SINH,    CMD_SQRT,    CMD_STR_T,
+    CMD_TAN,       CMD_TANH,   CMD_TRANS,    CMD_UVEC,    CMD_XOR,     CMD_SQUARE,
+    CMD_Y_POW_X,   CMD_INV,    CMD_10_POW_X, CMD_TO_DEC,  CMD_TO_DEG,  CMD_TO_HMS,
+    CMD_TO_HR,     CMD_TO_OCT, CMD_TO_POL,   CMD_TO_RAD,  CMD_TO_REC,  CMD_DATE,
+    CMD_DATE_PLUS, CMD_DDAYS,  CMD_DOW,      CMD_TIME,    CMD_APPEND,  CMD_C_TO_N,
+    CMD_EXTEND,    CMD_LENGTH, CMD_LIST_T,   CMD_NEWLIST, CMD_NEWSTR,  CMD_N_TO_C,
+    CMD_N_TO_S,    CMD_POS,    CMD_REV,      CMD_SUBSTR,  CMD_S_TO_N,  CMD_FMA
 };
 
 static int catalog_rows = 15;
@@ -1125,14 +1125,14 @@ static int keydown_edit_2(int key, bool shift, int *repeat) {
                 if (shift)
                     squeak();
                 else
-                    insert_text("L(", 2);
+                    insert_function(CMD_STO);
                 break;
             }
             case KEY_RCL: {
                 if (shift)
                     insert_text("%", 1);
                 else
-                    insert_text("G(", 2);
+                    insert_function(CMD_RCL);
                 break;
             }
             case KEY_RDN: {
@@ -1144,23 +1144,23 @@ static int keydown_edit_2(int key, bool shift, int *repeat) {
             }
             case KEY_SIN: {
                 if (shift)
-                    insert_text("ASIN(", 5);
+                    insert_function(CMD_ASIN);
                 else
-                    insert_text("SIN(", 4);
+                    insert_function(CMD_SIN);
                 break;
             }
             case KEY_COS: {
                 if (shift)
-                    insert_text("ACOS(", 5);
+                    insert_function(CMD_ACOS);
                 else
-                    insert_text("COS(", 4);
+                    insert_function(CMD_COS);
                 break;
             }
             case KEY_TAN: {
                 if (shift)
-                    insert_text("ATAN(", 5);
+                    insert_function(CMD_ATAN);
                 else
-                    insert_text("TAN(", 4);
+                    insert_function(CMD_TAN);
                 break;
             }
             case KEY_ENTER: {
@@ -1304,21 +1304,21 @@ static int keydown_edit_2(int key, bool shift, int *repeat) {
                 if (shift)
                     insert_text(":", 1);
                 else
-                    insert_text("\000", 1);
+                    insert_function(CMD_DIV);
                 break;
             }
             case KEY_MUL: {
                 if (shift)
                     select_function_menu(MENU_PROB);
                 else
-                    insert_text("\001", 1);
+                    insert_function(CMD_MUL);
                 break;
             }
             case KEY_SUB: {
                 if (shift)
                     squeak();
                 else
-                    insert_text("-", 1);
+                    insert_function(CMD_SUB);
                 break;
             }
             case KEY_ADD: {
@@ -1326,7 +1326,7 @@ static int keydown_edit_2(int key, bool shift, int *repeat) {
                     catalog_row = 0;
                     select_function_menu(MENU_CATALOG);
                 } else
-                    insert_text("+", 1);
+                    insert_function(CMD_ADD);
                 break;
             }
             case KEY_UP:

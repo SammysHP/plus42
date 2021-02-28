@@ -2391,15 +2391,6 @@ void core_import_programs(int num_progs, const char *raw_file_name) {
         raw_close("import");
 }
 
-static int real2buf(char *buf, phloat x) {
-    int bufptr = phloat2string(x, buf, 49, 2, 0, 3, 0, MAX_MANT_DIGITS);
-    /* Convert small-caps 'E' to regular 'e' */
-    for (int i = 0; i < bufptr; i++)
-        if (buf[i] == 24)
-            buf[i] = 'e';
-    return bufptr;
-}
-
 static int complex2buf(char *buf, phloat re, phloat im, bool always_rect) {
     bool polar = !always_rect && flags.f.polar;
     phloat x, y;

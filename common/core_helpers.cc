@@ -1767,6 +1767,15 @@ int easy_phloat2string(phloat d, char *buf, int buflen, int base_mode) {
                          digits, dispmode, flags.f.thousands_separators);
 }
 
+int real2buf(char *buf, phloat x) {
+    int bufptr = phloat2string(x, buf, 49, 2, 0, 3, 0, MAX_MANT_DIGITS);
+    /* Convert small-caps 'E' to regular 'e' */
+    for (int i = 0; i < bufptr; i++)
+        if (buf[i] == 24)
+            buf[i] = 'e';
+    return bufptr;
+}
+
 int ip2revstring(phloat d, char *buf, int buflen) {
     int s = 1;
     int bufpos = 0;

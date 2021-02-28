@@ -24,6 +24,7 @@
 #include "core_helpers.h"
 #include "core_main.h"
 #include "shell.h"
+#include "shell_spool.h"
 
 static bool active = false;
 static int menu_whence;
@@ -359,8 +360,47 @@ bool eqn_editing() {
 }
 
 char *eqn_copy() {
-    // TODO
-    return NULL;
+    textbuf tb;
+    tb.buf = NULL;
+    tb.size = 0;
+    tb.capacity = 0;
+    tb.fail = false;
+    char buf[50];
+    if (edit_pos != -1) {
+        for (int4 i = 0; i < edit_len; i += 10) {
+            int4 seg_len = edit_len - i;
+            if (seg_len > 10)
+                seg_len = 10;
+            int4 bufptr = hp2ascii(buf, edit_buf + i, seg_len);
+            tb_write(&tb, buf, bufptr);
+        }
+    } else {
+        for (int4 i = 0; i < num_eqns; i++) {
+            if (eqns->array->is_string[i]) {
+                const char *text;
+                int4 len;
+                get_matrix_string(eqns, i, &text, &len);
+                for (int4 j = 0; j < len; j += 10) {
+                    int4 seg_len = len - j;
+                    if (seg_len > 10)
+                        seg_len = 10;
+                    int4 bufptr = hp2ascii(buf, text + j, seg_len);
+                    tb_write(&tb, buf, bufptr);
+                }
+            } else {
+                int len = real2buf(buf, eqns->array->data[i]);
+                tb_write(&tb, buf, len);
+            }
+            tb_write(&tb, "\r\n", 2);
+        }
+    }
+    tb_write_null(&tb);
+    if (tb.fail) {
+        // TODO: Error message
+        free(tb.buf);
+        return NULL;
+    } else
+        return tb.buf;
 }
 
 void eqn_paste(const char *buf) {
@@ -386,7 +426,7 @@ bool eqn_draw() {
         } else if (selected_row == num_eqns) {
             draw_string(0, 0, "<Bottom of List>", 16);
         } else {
-            char buf[22];
+            char buf[50];
             int4 len;
             if (eqns->array->is_string[selected_row]) {
                 const char *text;
@@ -394,7 +434,11 @@ bool eqn_draw() {
                 int bufptr = 0;
                 string2buf(buf, 22, &bufptr, text, len);
             } else {
-                len = easy_phloat2string(eqns->array->data[selected_row], buf, 22, 0);
+                len = real2buf(buf, eqns->array->data[selected_row]);
+                if (len > 22) {
+                    buf[21] = 26;
+                    len = 22;
+                }
             }
             draw_string(0, 0, buf, len);
         }
@@ -670,10 +714,7 @@ static int keydown_list(int key, bool shift, int *repeat) {
                 memcpy(edit_buf, text, len);
             } else {
                 char buf[50];
-                // TODO: This isn't the right call; what you want
-                // is something that enforces ALL. And what about thousands
-                // separators? I'm thinking no.
-                int4 len = easy_phloat2string(eqns->array->data[selected_row], buf, 50, 0);
+                int4 len = real2buf(buf, eqns->array->data[selected_row]);
                 edit_buf = (char *) malloc(len); // TODO: Error handling
                 edit_len = edit_capacity = len;
                 memcpy(edit_buf, buf, len);

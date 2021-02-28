@@ -103,6 +103,7 @@ int int2string(int4 n, char *buf, int buflen);
 int vartype2string(const vartype *v, char *buf, int buflen, int max_mant_digits = 12);
 const char *phloat2program(phloat d);
 int easy_phloat2string(phloat d, char *buf, int buflen, int base_mode);
+int real2buf(char *buf, phloat x);
 int ip2revstring(phloat d, char *buf, int buflen);
 
 

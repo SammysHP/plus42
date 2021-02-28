@@ -93,6 +93,13 @@ bool unpersist_eqn(int4 ver) {
     if (!read_bool(&in_delete_confirmation)) return false;
     if (!read_int(&edit_menu)) return false;
     if (!read_int(&prev_edit_menu)) return false;
+    if (ver < 37) {
+        catalog_row = 0;
+        menu_sticky = false;
+    } else {
+        if (!read_int(&catalog_row)) return false;
+        if (!read_bool(&menu_sticky)) return false;
+    }
     if (!read_bool(&new_eq)) return false;
     if (!read_int4(&edit_len)) return false;
     edit_capacity = edit_len;
@@ -125,6 +132,8 @@ bool persist_eqn() {
     if (!write_bool(in_delete_confirmation)) return false;
     if (!write_int(edit_menu)) return false;
     if (!write_int(prev_edit_menu)) return false;
+    if (!write_int(catalog_row)) return false;
+    if (!write_bool(menu_sticky)) return false;
     if (!write_bool(new_eq)) return false;
     if (!write_int(edit_len)) return false;
     if (fwrite(edit_buf, 1, edit_len, gfile) != edit_len) return false;

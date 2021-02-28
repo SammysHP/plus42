@@ -34,8 +34,11 @@ typedef void (*file_newliner)();
  * or extended ASCII equivalents; substitutes escape sequences for characters
  * for which no reasonable equivalents exist, and for all character codes
  * above 130.
+ * Pass arrow = false to suppress the translation of 0x5e (HP-42S up arrow,
+ * but ASCII caret), to U+2191 (Unicode up arrow), so it comes out as a caret,
+ * which is usually what you want when copying algebraic expressions.
  */
-int hp2ascii(char *dst, const char *src, int srclen);
+int hp2ascii(char *dst, const char *src, int srclen, bool arrow = true);
 
 #ifndef ANDROID
 

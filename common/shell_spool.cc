@@ -24,7 +24,7 @@
 
 #endif
 
-int hp2ascii(char *dst, const char *src, int srclen) {
+int hp2ascii(char *dst, const char *src, int srclen, bool arrow /* = true */) {
     const char *esc;
     unsigned char c;
     int s, d = 0;
@@ -64,12 +64,13 @@ int hp2ascii(char *dst, const char *src, int srclen) {
             case 29:   esc = "\303\234"; break;     // uppercase u with umlaut
             case 30:   esc = "\342\226\222"; break; // gray rectangle
             case 31:   esc = "\342\200\242"; break; // bullet
-            case 94:   esc = "\342\206\221"; break; // upward-pointing arrow
+            case 94:   if (!arrow) goto same;
+                       esc = "\342\206\221"; break; // upward-pointing arrow
             case 127:  esc = "\342\224\234"; break; // append sign
             case 128:  esc = ":"; break;            // thin colon
             case 129:  esc = "\312\217"; break;     // small-caps y
             case 138:  esc = "[LF]"; break;         // LF symbol
-            default:   dst[d++] = c; continue;
+            default: same: dst[d++] = c; continue;
         }
         while (*esc != 0)
             dst[d++] = *esc++;

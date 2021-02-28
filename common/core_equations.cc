@@ -380,7 +380,7 @@ char *eqn_copy() {
             int4 seg_len = edit_len - i;
             if (seg_len > 10)
                 seg_len = 10;
-            int4 bufptr = hp2ascii(buf, edit_buf + i, seg_len);
+            int4 bufptr = hp2ascii(buf, edit_buf + i, seg_len, false);
             tb_write(&tb, buf, bufptr);
         }
     } else {
@@ -393,7 +393,7 @@ char *eqn_copy() {
                     int4 seg_len = len - j;
                     if (seg_len > 10)
                         seg_len = 10;
-                    int4 bufptr = hp2ascii(buf, text + j, seg_len);
+                    int4 bufptr = hp2ascii(buf, text + j, seg_len, false);
                     tb_write(&tb, buf, bufptr);
                 }
             } else {

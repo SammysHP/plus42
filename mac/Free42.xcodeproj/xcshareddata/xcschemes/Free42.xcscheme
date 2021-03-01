@@ -81,7 +81,7 @@
       buildConfiguration = "Debug Decimal">
    </AnalyzeAction>
    <ArchiveAction
-      buildConfiguration = "Release Binary"
+      buildConfiguration = "Release Decimal"
       revealArchiveInOrganizer = "YES">
    </ArchiveAction>
 </Scheme>

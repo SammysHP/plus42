@@ -44,6 +44,7 @@ static bool new_eq;
 static char *edit_buf = NULL;
 static int4 edit_len, edit_capacity;
 static bool cursor_on;
+static int current_error = ERR_NONE;
 
 static int timeout_action = 0;
 static int rep_key = -1;
@@ -110,6 +111,11 @@ bool unpersist_eqn(int4 ver) {
         return false;
     if (fread(edit_buf, 1, edit_len, gfile) != edit_len) goto fail;
     if (!read_bool(&cursor_on)) goto fail;
+    if (ver < 38) {
+        current_error = ERR_NONE;
+    } else {
+        if (!read_int(&current_error)) return false;
+    }
 
     if (active && edit_pos != -1 && !in_save_confirmation && !in_delete_confirmation)
         restart_cursor();
@@ -138,6 +144,7 @@ bool persist_eqn() {
     if (!write_int(edit_len)) return false;
     if (fwrite(edit_buf, 1, edit_len, gfile) != edit_len) return false;
     if (!write_bool(cursor_on)) return false;
+    if (!write_int(current_error)) return false;
     return true;
 }
 
@@ -155,26 +162,21 @@ static bool is_name_char(char c) {
         && c != ']';
 }
 
+static void show_error(int err) {
+    current_error = err;
+    eqn_draw();
+}
+    
 static void restart_cursor() {
     timeout_action = 2;
     cursor_on = true;
     shell_request_timeout3(500);
 }
 
-/*
-static void erase_cursor() {
-    if (cursor_on) {
-        cursor_on = false;
-        char c = edit_pos == edit_len ? ' ' : edit_buf[edit_pos];
-        draw_char(edit_pos - display_pos, 0, c);
-    }
-}
-*/
-
 static int t_rep_key;
 static int t_rep_count;
 
-static void insert_text(const char *text, int len) {
+static bool insert_text(const char *text, int len) {
     if (len == 1) {
         t_rep_count++;
         if (t_rep_count == 1)
@@ -185,8 +187,8 @@ static void insert_text(const char *text, int len) {
         int newcap = edit_capacity + 32;
         char *newbuf = (char *) realloc(edit_buf, newcap);
         if (newbuf == NULL) {
-            squeak();
-            return;
+            show_error(ERR_INSUFFICIENT_MEMORY);
+            return false;
         }
         edit_buf = newbuf;
         edit_capacity = newcap;
@@ -201,6 +203,7 @@ static void insert_text(const char *text, int len) {
         display_pos++;
     restart_cursor();
     eqn_draw();
+    return true;
 }
 
 struct eqn_name_entry {
@@ -268,62 +271,87 @@ static bool insert_function(int cmd) {
         return false;
     }
     for (int i = 0; eqn_name[i].cmd != CMD_NULL; i++) {
-        if (cmd == eqn_name[i].cmd) {
-            insert_text(eqn_name[i].name, eqn_name[i].len);
-            return true;
-        }
+        if (cmd == eqn_name[i].cmd)
+            return insert_text(eqn_name[i].name, eqn_name[i].len);
     }
     for (int i = 0; i < catalog_rows * 6; i++) {
         if (cmd == catalog[i]) {
             const command_spec *cs = cmd_array + cmd;
-            insert_text(cs->name, cs->name_length);
-            insert_text("(", 1);
-            return true;
+            return insert_text(cs->name, cs->name_length)
+                && insert_text("(", 1);
         }
     }
     squeak();
     return false;
 }
 
-static bool save() {
-    // TODO: Error handling
-    if (eqns != NULL)
-        disentangle((vartype *) eqns);
+static void save() {
+    if (eqns != NULL) {
+        if (!disentangle((vartype *) eqns)) {
+            show_error(ERR_INSUFFICIENT_MEMORY);
+            return;
+        }
+    }
     if (new_eq) {
         if (num_eqns == 0) {
             eqns = (vartype_realmatrix *) new_realmatrix(1, 1);
-            store_var("EQNS", 4, (vartype *) eqns);
+            if (eqns == NULL) {
+                show_error(ERR_INSUFFICIENT_MEMORY);
+                return;
+            }
+            if (!put_matrix_string(eqns, 0, edit_buf, edit_len)) {
+                free_vartype((vartype *) eqns);
+                eqns = NULL;
+                show_error(ERR_INSUFFICIENT_MEMORY);
+                return;
+            }
+            int err = store_var("EQNS", 4, (vartype *) eqns);
+            if (err != ERR_NONE) {
+                free_vartype((vartype *) eqns);
+                eqns = NULL;
+                show_error(err);
+                return;
+            }
             selected_row = 0;
             num_eqns = 1;
         } else {
+            int err = dimension_array_ref((vartype *) eqns, num_eqns + 1, 1);
+            if (err != ERR_NONE) {
+                show_error(err);
+                return;
+            }
+            if (!put_matrix_string(eqns, num_eqns, edit_buf, edit_len)) {
+                eqns->rows = num_eqns;
+                show_error(ERR_INSUFFICIENT_MEMORY);
+                return;
+            }
             num_eqns++;
-            dimension_array_ref((vartype *) eqns, num_eqns, 1);
             selected_row++;
             if (selected_row == num_eqns)
                 selected_row--;
             int n = num_eqns - selected_row - 1;
             if (n > 0) {
+                char t1 = eqns->array->is_string[num_eqns - 1];
                 memmove(eqns->array->is_string + selected_row + 1,
                         eqns->array->is_string + selected_row,
                         n);
+                eqns->array->is_string[selected_row] = t1;
+                phloat t2 = eqns->array->data[num_eqns - 1];
                 memmove(eqns->array->data + selected_row + 1,
                         eqns->array->data + selected_row,
                         n * sizeof(phloat));
+                eqns->array->data[selected_row] = t2;
             }
-            eqns->array->is_string[selected_row] = 0;
         }
     }
-    put_matrix_string(eqns, selected_row, edit_buf, edit_len);
     free(edit_buf);
     edit_pos = -1;
     eqn_draw();
-    return true;
 }
 
 static void print() {
     if (!flags.f.printer_exists) {
-        // TODO: Error message
-        squeak();
+        show_error(ERR_PRINTING_IS_DISABLED);
         return;
     }
     if (selected_row == -1 || selected_row == num_eqns) {
@@ -433,7 +461,7 @@ char *eqn_copy() {
     }
     tb_write_null(&tb);
     if (tb.fail) {
-        // TODO: Error message
+        show_error(ERR_INSUFFICIENT_MEMORY);
         free(tb.buf);
         return NULL;
     } else
@@ -442,6 +470,10 @@ char *eqn_copy() {
 
 void eqn_paste(const char *buf) {
     if (edit_pos == -1) {
+        if (num_eqns == 0 && !ensure_var_space(1)) {
+            show_error(ERR_INSUFFICIENT_MEMORY);
+            return;
+        }
         int4 s = 0;
         while (buf[s] != 0) {
             int4 p = s;
@@ -458,25 +490,22 @@ void eqn_paste(const char *buf) {
             int4 t = s - p;
             char *hpbuf = (char *) malloc(t + 4);
             if (hpbuf == NULL) {
-                // TODO: Error message
-                squeak();
+                show_error(ERR_INSUFFICIENT_MEMORY);
                 return;
             }
             int len = ascii2hp(hpbuf, buf + p, t + 4, t);
             if (num_eqns == 0) {
                 eqns = (vartype_realmatrix *) new_realmatrix(1, 1);
                 if (eqns == NULL) {
-                    // TODO: Error message
+                    show_error(ERR_INSUFFICIENT_MEMORY);
                     free(hpbuf);
-                    squeak();
                     return;
                 }
             } else {
                 int err = dimension_array_ref((vartype *) eqns, num_eqns + 1, 1);
                 if (err != ERR_NONE) {
-                    // TODO: Error message
+                    show_error(ERR_INSUFFICIENT_MEMORY);
                     free(hpbuf);
-                    squeak();
                     return;
                 }
             }
@@ -496,8 +525,7 @@ void eqn_paste(const char *buf) {
                     eqns = NULL;
                 }
                 eqns->rows--;
-                // TODO: Error message
-                squeak();
+                show_error(ERR_INSUFFICIENT_MEMORY);
                 return;
             } else if (num_eqns == 0) {
                 store_var("EQNS", 4, (vartype *) eqns);
@@ -514,8 +542,7 @@ void eqn_paste(const char *buf) {
             p++;
         char *hpbuf = (char *) malloc(p + 4);
         if (hpbuf == NULL) {
-            // TODO: Error message
-            squeak();
+            show_error(ERR_INSUFFICIENT_MEMORY);
             return;
         }
         int len = ascii2hp(hpbuf, buf, p + 4, p);
@@ -528,7 +555,10 @@ bool eqn_draw() {
     if (!active)
         return false;
     clear_display();
-    if (in_save_confirmation) {
+    if (current_error != ERR_NONE) {
+        draw_string(0, 0, errors[current_error].text, errors[current_error].length);
+        draw_key(1, 0, 0, "OK", 2);
+    } else if (in_save_confirmation) {
         draw_string(0, 0, "Save this equation?", 19);
         draw_key(0, 0, 0, "YES", 3);
         draw_key(2, 0, 0, "NO", 2);
@@ -625,6 +655,7 @@ bool eqn_draw() {
 
 static int keydown_list(int key, bool shift, int *repeat);
 static int keydown_edit(int key, bool shift, int *repeat);
+static int keydown_error(int key, bool shift, int *repeat);
 static int keydown_save_confirmation(int key, bool shift, int *repeat);
 static int keydown_delete_confirmation(int key, bool shift, int *repeat);
 
@@ -640,7 +671,9 @@ int eqn_keydown(int key, int *repeat) {
     bool shift = mode_shift;
     set_shift(false);
     
-    if (in_save_confirmation)
+    if (current_error != ERR_NONE)
+        return keydown_error(key, shift, repeat);
+    else if (in_save_confirmation)
         return keydown_save_confirmation(key, shift, repeat);
     else if (in_delete_confirmation)
         return keydown_delete_confirmation(key, shift, repeat);
@@ -648,6 +681,16 @@ int eqn_keydown(int key, int *repeat) {
         return keydown_list(key, shift, repeat);
     else
         return keydown_edit(key, shift, repeat);
+}
+
+static int keydown_error(int key, bool shift, int *repeat) {
+    if (shift && key == KEY_EXIT) {
+        docmd_off(NULL);
+    } else {
+        show_error(ERR_NONE);
+        restart_cursor();
+    }
+    return 1;
 }
 
 static int keydown_save_confirmation(int key, bool shift, int *repeat) {
@@ -701,8 +744,10 @@ static int keydown_delete_confirmation(int key, bool shift, int *repeat) {
                 eqns = NULL;
                 num_eqns = 0;
             } else {
-                /* TODO: Error handling */
-                disentangle((vartype *) eqns);
+                if (!disentangle((vartype *) eqns)) {
+                    show_error(ERR_INSUFFICIENT_MEMORY);
+                    return 0;
+                }
                 if (eqns->array->is_string[selected_row] == 2)
                     free(*(void **) &eqns->array->data[selected_row]);
                 memmove(eqns->array->is_string + selected_row,
@@ -826,13 +871,21 @@ static int keydown_list(int key, bool shift, int *repeat) {
                 const char *text;
                 int4 len;
                 get_matrix_string(eqns, selected_row, &text, &len);
-                edit_buf = (char *) malloc(len); // TODO: Error handling
+                edit_buf = (char *) malloc(len);
+                if (edit_buf == NULL) {
+                    show_error(ERR_INSUFFICIENT_MEMORY);
+                    return 1;
+                }
                 edit_len = edit_capacity = len;
                 memcpy(edit_buf, text, len);
             } else {
                 char buf[50];
                 int4 len = real2buf(buf, eqns->array->data[selected_row]);
-                edit_buf = (char *) malloc(len); // TODO: Error handling
+                edit_buf = (char *) malloc(len);
+                if (edit_buf == NULL) {
+                    show_error(ERR_INSUFFICIENT_MEMORY);
+                    return 1;
+                }
                 edit_len = edit_capacity = len;
                 memcpy(edit_buf, buf, len);
             }
@@ -1205,7 +1258,6 @@ static int keydown_edit_2(int key, bool shift, int *repeat) {
                 } else if (edit_len == 0) {
                     squeak();
                 } else {
-                    // TODO Error handling
                     save();
                 }
                 break;
@@ -1486,7 +1538,7 @@ bool eqn_timeout() {
         eqn_draw();
     } else if (action == 2) {
         /* Cursor blinking */
-        if (edit_pos == -1 || in_save_confirmation || in_delete_confirmation)
+        if (edit_pos == -1 || current_error != ERR_NONE || in_save_confirmation || in_delete_confirmation)
             return true;
         cursor_on = !cursor_on;
         char c = cursor_on ? 255 : edit_pos == edit_len ? ' ' : edit_buf[edit_pos];

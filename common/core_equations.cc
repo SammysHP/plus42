@@ -343,6 +343,11 @@ static void save() {
                 eqns->array->data[selected_row] = t2;
             }
         }
+    } else {
+        if (!put_matrix_string(eqns, selected_row, edit_buf, edit_len)) {
+            show_error(ERR_INSUFFICIENT_MEMORY);
+            return;
+        }
     }
     free(edit_buf);
     edit_pos = -1;

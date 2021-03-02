@@ -1453,8 +1453,7 @@ static int concat(bool extend) {
         }
         if (v == NULL)
             return ERR_INSUFFICIENT_MEMORY;
-        binary_result(v);
-        return ERR_NONE;
+        return binary_result(v);
     } else if (stack[sp - 1]->type == TYPE_LIST) {
         vartype *v = dup_vartype(stack[sp]);
         if (v == NULL)
@@ -1474,22 +1473,61 @@ static int concat(bool extend) {
                 if (new_data == NULL)
                     goto nomem;
                 list->array->data = new_data;
+                // Call binary_result() before doing the actual data transfer.
+                // The reason is that binary_result() can fail, because of the
+                // T duplication, and we don't want to have to roll back all this.
+                stack[sp - 1] = NULL;
+                int err = binary_result((vartype *) list);
+                if (err != ERR_NONE) {
+                    // Try to shrink the data array back down. No worries if this
+                    // fails, we just hold on to the resized one in that case.
+                    new_data = (vartype **) realloc(list->array->data, list->size * sizeof(vartype *));
+                    if (new_data != NULL)
+                        list->array->data = new_data;
+                    stack[sp - 1] = (vartype *) list;
+                    goto nomem;
+                }
                 memcpy(list->array->data + list->size, list2->array->data, list2->size * sizeof(vartype *));
-                memset(list2->array->data, 0, list2->size * sizeof(vartype *));
                 list->size += list2->size;
+                // At this point we're done with list2. Since it's a disentangled
+                // copy, the refcount is 1 and it is going to be completely deleted.
+                // We're doing it manually rather than through free_vartype(), so
+                // we don't have to zero out the data array first.
+                free(list2->array->data);
+                free(list2->array);
+                free(list2);
+            } else {
+                // Joining an empty list to the list in Y. This is not quite a
+                // no-op, since the binary_result() causes T duplication, which
+                // can fail.
+                stack[sp - 1] = NULL;
+                int err = binary_result((vartype *) list);
+                if (err != ERR_NONE) {
+                    stack[sp - 1] = (vartype *) list;
+                    goto nomem;
+                }
+                free_vartype(v);
             }
-            free_vartype(v);
-            stack[sp - 1] = NULL;
-            binary_result((vartype *) list);
             return ERR_NONE;
         }
         vartype **new_data = (vartype **) realloc(list->array->data, (list->size + 1) * sizeof(vartype *));
         if (new_data == NULL)
             goto nomem;
         list->array->data = new_data;
-        list->array->data[list->size++] = v;
+        // Call binary_result() before doing the actual data transfer.
+        // The reason is that binary_result() can fail, because of the
+        // T duplication, and we don't want to have to roll back all this.
         stack[sp - 1] = NULL;
-        binary_result((vartype *) list);
+        int err = binary_result((vartype *) list);
+        if (err != ERR_NONE) {
+            // Unlike the 'extend' case, we don't try to shrink the data array
+            // back down here. We're only wasting the space of one pointer,
+            // so, *shrug*.
+            stack[sp - 1] = (vartype *) list;
+            goto nomem;
+        }
+        list->array->data[list->size++] = v;
+        // Not freeing v because it is now owned by the target list.
         return ERR_NONE;
     } else {
         return ERR_INVALID_TYPE;
@@ -1583,12 +1621,10 @@ int docmd_substr(arg_struct *arg) {
         }
         v = (vartype *) r;
     }
-    if (e == NULL) {
-        binary_result(v);
-        return ERR_NONE;
-    } else {
+    if (e == NULL)
+        return binary_result(v);
+    else
         return ternary_result(v);
-    }
 }
 
 int docmd_length(arg_struct *arg) {
@@ -1789,12 +1825,10 @@ int docmd_pos(arg_struct *arg) {
     vartype *v = new_real(pos);
     if (v == NULL)
         return ERR_INSUFFICIENT_MEMORY;
-    if (ternary) {
+    if (ternary)
         return ternary_result(v);
-    } else {
-        binary_result(v);
-        return ERR_NONE;
-    }
+    else
+        return binary_result(v);
 }
 
 int docmd_s_to_n(arg_struct *arg) {

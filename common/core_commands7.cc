@@ -1599,9 +1599,10 @@ int docmd_substr(arg_struct *arg) {
     int4 newlen = end - begin;
     vartype *v;
     if (newlen == len) {
-        v = s;
-        stack[sp - (e == NULL ? 1 : 2)] = NULL;
-    } if (s->type == TYPE_STRING) {
+        v = dup_vartype(s);
+        if (v == NULL)
+            return ERR_INSUFFICIENT_MEMORY;
+    } else if (s->type == TYPE_STRING) {
         vartype_string *str = (vartype_string *) s;
         char *text = str->txt();
         v = new_string(text + begin, newlen);

@@ -110,7 +110,7 @@ public class Free42Activity extends Activity {
     
     public static Free42Activity instance;
     
-    public static final String MY_STORAGE_DIR = Environment.getExternalStorageDirectory() + "/Android/data/com.thomasokken.free42";
+    public static final String MY_STORAGE_DIR = Environment.getExternalStorageDirectory() + "/Android/data/com.thomasokken.plus42";
     
     static {
         System.loadLibrary("free42");

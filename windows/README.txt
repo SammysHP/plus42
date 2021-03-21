@@ -1,43 +1,49 @@
-About Free42
+About Plus42
 
+Plus42 is an advanced scientific programmable calculator, based on Free42.
 Free42 is a complete re-implementation of the HP-42S scientific programmable
 RPN calculator, which was made from 1988 until 1995 by Hewlett-Packard.
 Free42 is a complete rewrite and contains no HP code whatsoever.
+Plus42 builds on Free42 and adds algebraic expressions modeled after those
+used on the HP-27S and HP-17B/19B; attached units and unit conversions modeled
+after those used on the HP-48/49/50 series; directories for more organized
+storage of programs and variables; and a larger display, with 131x64 pixels
+or up to 8 lines of text.
 At this time, the author supports versions that run on Android, iOS, Microsoft
 Windows, MacOS, and Linux.
 
 
-Installing Free42:
+Installing Plus42:
 
-Copy Free42Decimal.exe (or Free42Binary.exe, or both) to wherever you want it,
-e.g. create a directory "C:\Program Files\Free42" and put it there.
-When Free42 runs, it will create three additional files; they are state.bin,
+Copy Plus42Decimal.exe (or Plus42Binary.exe, or both) to wherever you want it,
+e.g. create a directory "C:\Program Files\Plus42" and put it there.
+When Plus42 runs, it will create three additional files; they are state.bin,
 print.bin, and keymap.txt, and they are used to store the calculator's internal
 state, the contents of the print-out window, and the PC keyboard map,
 respectively.
-By default, these additional files will be stored in %APPDATA%\Free42, which is
-typically C:\Users\<YourUserName>\AppData\Roaming\Free42.
-If you want to run Free42 from a removable drive, like a USB stick, and keep
-the state.bin, print.bin, and keymap.txt file with Free42 on that drive, create
-a file named "portable" in the same directory as Free42Decimal.exe or
-Free42Binary.exe. When Free42 sees this file, it will ignore %APPDATA%\Free42
+By default, these additional files will be stored in %APPDATA%\Plus42, which is
+typically C:\Users\<YourUserName>\AppData\Roaming\Plus42.
+If you want to run Plus42 from a removable drive, like a USB stick, and keep
+the state.bin, print.bin, and keymap.txt file with Plus42 on that drive, create
+a file named "portable" in the same directory as Plus42Decimal.exe or
+Plus42Binary.exe. When Plus42 sees this file, it will ignore %APPDATA%\Plus42
 and keep those files in its own directory.
 
-Free42 comes with two skins built in, but you may use different ones, by
-storing them in the directory where Free42Decimal.exe or Free42Binary are
+Plus42 comes with two skins built in, but you may use different ones, by
+storing them in the directory where Plus42Decimal.exe or Plus42Binary are
 located, or (if not running from a removable drive with the "portable" file),
-in %APPDATA%\Free42.
+in %APPDATA%\Plus42.
 
-If Free42 does not run as is, you will also need to download and install the
+If Plus42 does not run as is, you will also need to download and install the
 Visual C++ Redistributable for Visual Studio 2015 / 2017 / 2019.
 You can download this package from
 https://www.microsoft.com/en-us/download/details.aspx?id=48145
 (get the file vc_redist.x86.exe)
 
 
-Uninstalling Free42:
+Uninstalling Plus42:
 
-Remove Free42Decimal.exe, Free42Binary.exe, and %APPDATA%\Free42 and its
+Remove Plus42Decimal.exe, Plus42Binary.exe, and %APPDATA%\Plus42 and its
 contents.
 
 
@@ -145,14 +151,14 @@ mappings override any other mappings that may be defined for those keys.
 
 What's the deal with the "Decimal" and "Binary"?
 
-Starting with release 1.4, Free42 comes in decimal and binary versions. The two
+Starting with release 1.4, Plus42 comes in decimal and binary versions. The two
 look and behave identically; the only difference is the way they represent
 numbers internally.
-Free42 Decimal uses the Intel Decimal Floating-Point Math Library;
+Plus42 Decimal uses the Intel Decimal Floating-Point Math Library;
 it uses IEEE-754-2008 quadruple precision decimal floating point, which
 consumes 16 bytes per number, and gives 34 decimal digits of precision, with
 exponents ranging from -6143 to +6144.
-Free42 Binary uses the PC's FPU; it represents numbers as IEEE-754
+Plus42 Binary uses the PC's FPU; it represents numbers as IEEE-754
 compatible double precision binary floating point, which consumes 8 bytes per
 number, and gives an effective precision of nearly 16 decimal digits, with
 exponents ranging from -308 to +308.
@@ -162,13 +168,13 @@ cannot be represented exactly in binary, since they are repeating fractions
 then. This inexactness can cause some HP-42S programs to fail.
 If you understand the issues surrounding binary floating point, and you do not
 rely on legacy software that may depend on the exactness of decimal fractions,
-you may use Free42 Binary and enjoy its speed advantage. If, on the other hand,
-you need full HP-42S compatibility, you should use Free42 Decimal.
+you may use Plus42 Binary and enjoy its speed advantage. If, on the other hand,
+you need full HP-42S compatibility, you should use Plus42 Decimal.
 If you don't fully understand the above, it is best to play safe and use
-Free42 Decimal.
+Plus42 Decimal.
 
 
-Free42 is (C) 2004-2021, by Thomas Okken
+Plus42 is (C) 2004-2021, by Thomas Okken
 Contact the author at thomasokken@gmail.com
 Look for updates, and versions for other operating systems, at
 https://thomasokken.com/plus42/

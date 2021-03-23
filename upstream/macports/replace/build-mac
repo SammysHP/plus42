@@ -1,13 +1,12 @@
 #!/bin/sh -e
 
 cd mac
-rm -rf "build/Release Binary"
-rm -rf "build/Release Decimal"
-xcodebuild -project Plus42.xcodeproj -target Plus42 -configuration "Release Binary" build
-xcodebuild -project Plus42.xcodeproj -target Plus42 -configuration "Release Decimal" build
+rm -rf build/Release
+xcodebuild -project Plus42.xcodeproj -target "Plus42 Binary" -configuration Release build
+xcodebuild -project Plus42.xcodeproj -target "Plus42 Decimal" -configuration Release build
 mkdir tmp
-mv "build/Release Binary/Plus42.app" "tmp/Plus42 Binary.app"
-mv "build/Release Decimal/Plus42.app" "tmp/Plus42 Decimal.app"
+mv "build/Release/Plus42 Binary.app" tmp
+mv "build/Release/Plus42 Decimal.app" tmp
 cp README.txt tmp
 cd tmp
 zip -r ../../Plus42Mac.zip "Plus42 Binary.app" "Plus42 Decimal.app" README.txt

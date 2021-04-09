@@ -670,7 +670,7 @@ char input_name[11];
 int input_length;
 arg_struct input_arg;
 
-/* LASTERR */
+/* ERRMSG/ERRNO */
 int lasterr = 0;
 int lasterr_length;
 char lasterr_text[22];
@@ -780,7 +780,7 @@ bool no_keystrokes_yet;
  * Version 36: 3.0.1  Equation Editor
  * Version 37: 3.0.1  More Equation Editor state
  * Version 38: 3.0.1  Still more Equation Editor state
- * Version 39: 3.0.3  LASTERR
+ * Version 39: 3.0.3  ERRMSG/ERRNO
  */
 #define FREE42_VERSION 39
 

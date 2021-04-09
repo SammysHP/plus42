@@ -4700,6 +4700,15 @@ void set_old_pc(int4 pc) {
     oldpc = pc;
 }
 
+static void set_last_err(int error) {
+    if (error <= RTNERR_MAX) {
+        lasterr = error;
+    } else {
+        lasterr = -1;
+        string_copy(lasterr_text, &lasterr_length, errors[error].text, errors[error].length);
+    }
+}
+
 static int handle_error(int error) {
     if (mode_running) {
         if (error == ERR_RUN)
@@ -4723,6 +4732,7 @@ static int handle_error(int error) {
         } else if (error != ERR_NONE && error != ERR_YES) {
             if (flags.f.error_ignore && error != ERR_SUSPICIOUS_OFF) {
                 flags.f.error_ignore = 0;
+                set_last_err(error);
                 return 1;
             }
             if (solve_active() && (error == ERR_OUT_OF_RANGE
@@ -4766,6 +4776,7 @@ static int handle_error(int error) {
         } else {
             if (flags.f.error_ignore) {
                 flags.f.error_ignore = 0;
+                set_last_err(error);
                 goto noerr;
             }
             if (solve_active() && (error == ERR_OUT_OF_RANGE
@@ -4792,6 +4803,7 @@ static int handle_error(int error) {
             flags.f.stack_lift_disable = mode_disable_stack_lift;
         else if (flags.f.error_ignore) {
             flags.f.error_ignore = 0;
+            set_last_err(error);
             error = ERR_NONE;
         }
         if (error != ERR_NONE && error != ERR_STOP)

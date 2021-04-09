@@ -670,6 +670,11 @@ char input_name[11];
 int input_length;
 arg_struct input_arg;
 
+/* LASTERR */
+int lasterr = 0;
+int lasterr_length;
+char lasterr_text[22];
+
 /* BASE application */
 int baseapp = 0;
 
@@ -775,8 +780,9 @@ bool no_keystrokes_yet;
  * Version 36: 3.0.1  Equation Editor
  * Version 37: 3.0.1  More Equation Editor state
  * Version 38: 3.0.1  Still more Equation Editor state
+ * Version 39: 3.0.3  LASTERR
  */
-#define PLUS42_VERSION 38
+#define FREE42_VERSION 39
 
 
 /*******************/
@@ -4023,6 +4029,7 @@ bool write_arg(const arg_struct *arg) {
 static bool load_state2(bool *clear, bool *too_new) {
     int4 magic;
     int4 version;
+    bool plus;
     *clear = false;
     *too_new = false;
 
@@ -4039,6 +4046,7 @@ static bool load_state2(bool *clear, bool *too_new) {
             return false;
         if (magic != PLUS42_MAGIC && magic != FREE42_MAGIC)
             return false;
+        plus = magic == PLUS42_MAGIC;
         if (!read_int4(&ver)) {
             // A state file containing nothing after the magic number
             // is considered empty, and results in a hard reset. This
@@ -4047,9 +4055,11 @@ static bool load_state2(bool *clear, bool *too_new) {
             *clear = true;
             return false;
         }
+    } else {
+        plus = false;
     }
 
-    if (ver > PLUS42_VERSION) {
+    if (ver > FREE42_VERSION) {
         *too_new = true;
         return false;
     }
@@ -4199,6 +4209,14 @@ static bool load_state2(bool *clear, bool *too_new) {
     if (!read_int(&input_length)) return false;
     if (!read_arg(&input_arg, ver < 9)) return false;
 
+    if (ver < 39) {
+        lasterr = 0;
+    } else {
+        if (!read_int(&lasterr)) return false;
+        if (!read_int(&lasterr_length)) return false;
+        if (fread(lasterr_text, 1, 22, gfile) != 22) return false;
+    }
+
     if (!read_int(&baseapp)) return false;
 
     if (ver < 21) {
@@ -4234,8 +4252,10 @@ static bool load_state2(bool *clear, bool *too_new) {
         return false;
     if (!unpersist_globals())
         return false;
-    if (!unpersist_eqn(ver))
-        return false;
+    if (plus) {
+        if (!unpersist_eqn(ver))
+            return false;
+    }
 
     if (ver < 4) {
         /* Before state file version 4, I used to save the BCD table in the
@@ -4300,7 +4320,7 @@ bool load_state(int4 ver_p, bool *clear, bool *too_new) {
 }
 
 void save_state() {
-    if (!write_int4(PLUS42_MAGIC) || !write_int4(PLUS42_VERSION))
+    if (!write_int4(PLUS42_MAGIC) || !write_int4(FREE42_VERSION))
         return;
 
     // Write app version and platform, for troubleshooting purposes
@@ -4370,6 +4390,10 @@ void save_state() {
     if (!write_int(input_length)) return;
     if (!write_arg(&input_arg)) return;
 
+    if (!write_int(lasterr)) return;
+    if (!write_int(lasterr_length)) return;
+    if (fwrite(lasterr_text, 1, 22, gfile) != 22) return;
+
     if (!write_int(baseapp)) return;
 
     if (!write_int8(random_number_low)) return;
@@ -4393,7 +4417,7 @@ void save_state() {
         return;
 
     if (!write_int4(PLUS42_MAGIC)) return;
-    if (!write_int4(PLUS42_VERSION)) return;
+    if (!write_int4(FREE42_VERSION)) return;
 }
 
 // Reason:

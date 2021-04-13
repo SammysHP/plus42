@@ -335,7 +335,7 @@ extern int repeating_key;
 /* Other functions */
 /*******************/
 
-int ascii2hp(char *dst, const char *src, int dst_max, int src_max = -1);
+int ascii2hp(char *dst, int dstlen, const char *src, int srclen = -1);
 void set_shift(bool shift);
 void set_alpha_entry(bool state);
 void set_running(bool state);

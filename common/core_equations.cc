@@ -498,7 +498,7 @@ void eqn_paste(const char *buf) {
                 show_error(ERR_INSUFFICIENT_MEMORY);
                 return;
             }
-            int len = ascii2hp(hpbuf, buf + p, t + 4, t);
+            int len = ascii2hp(hpbuf, t, buf + p, t);
             if (num_eqns == 0) {
                 eqns = (vartype_realmatrix *) new_realmatrix(1, 1);
                 if (eqns == NULL) {
@@ -550,7 +550,7 @@ void eqn_paste(const char *buf) {
             show_error(ERR_INSUFFICIENT_MEMORY);
             return;
         }
-        int len = ascii2hp(hpbuf, buf, p + 4, p);
+        int len = ascii2hp(hpbuf, p, buf, p);
         insert_text(hpbuf, len);
         free(hpbuf);
     }

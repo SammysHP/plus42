@@ -989,7 +989,8 @@ void clear_row(int row) {
 static int prgmline2buf(char *buf, int len, int4 line, int highlight,
                         int cmd, arg_struct *arg, const char *orig_num,
                         bool shift_left = false,
-                        bool highlight_final_end = true) {
+                        bool highlight_final_end = true,
+                        char **xstr = NULL) {
     int bufptr = 0;
     if (line != -1) {
         if (line < 10)
@@ -1055,8 +1056,16 @@ static int prgmline2buf(char *buf, int len, int4 line, int highlight,
         string2buf(buf, len, &bufptr, arg->val.text + append,
                                      arg->length - append);
         char2buf(buf, len, &bufptr, '"');
-    } else
+    } else if (cmd == CMD_XSTR && xstr != NULL && bufptr + 7 + arg->length > len) {
+        *xstr = (char *) malloc(bufptr + 7 + arg->length);
+        if (*xstr == NULL)
+            goto normal;
+        memcpy(*xstr, buf, bufptr);
+        bufptr += command2buf(*xstr + bufptr, arg->length + 7, cmd, arg);
+    } else {
+        normal:
         bufptr += command2buf(buf + bufptr, len - bufptr, cmd, arg);
+    }
 
     return bufptr;
 }
@@ -1104,14 +1113,22 @@ void tb_print_current_program(textbuf *tb) {
             if (cmd == CMD_END)
                 end = true;
         }
-        int len = prgmline2buf(buf, 100, line, cmd == CMD_LBL, cmd, &arg, orig_num, false, false);
+        char *xstr = NULL;
+        int len = prgmline2buf(buf, 100, line, cmd == CMD_LBL, cmd, &arg, orig_num, false, false, &xstr);
+        char *buf2 = xstr == NULL ? buf : xstr;
         for (int i = 0; i < len; i++)
-            if (buf[i] == 10)
-                buf[i] = 138;
-        int utf8len = hp2ascii(utf8buf, buf, len);
-        utf8buf[utf8len++] = '\r';
-        utf8buf[utf8len++] = '\n';
-        tb_write(tb, utf8buf, utf8len);
+            if (buf2[i] == 10)
+                buf2[i] = 138;
+        int off = 0;
+        while (len > 0) {
+            int slen = len <= 100 ? len : 100;
+            int utf8len = hp2ascii(utf8buf, buf2 + off, slen);
+            tb_write(tb, utf8buf, utf8len);
+            off += slen;
+            len -= slen;
+        }
+        tb_write(tb, "\r\n", 2);
+        free(xstr);
         line++;
     } while (!end);
 }
@@ -1295,7 +1312,7 @@ void display_error(int error, bool print) {
     flags.f.two_line_message = 0;
     if (print && (flags.f.trace_print || flags.f.normal_print)
             && flags.f.printer_exists)
-        print_text(err_text, err_len, 1);
+        print_text(err_text, err_len, true);
 }
 
 void display_command(int row) {
@@ -1535,7 +1552,7 @@ static int ext_prgm_cat[] = {
     CMD_0_EQ_NN, CMD_0_NE_NN, CMD_0_LT_NN, CMD_0_GT_NN, CMD_0_LE_NN, CMD_0_GE_NN,
     CMD_X_EQ_NN, CMD_X_NE_NN, CMD_X_LT_NN, CMD_X_GT_NN, CMD_X_LE_NN, CMD_X_GE_NN,
     CMD_ERRMSG,  CMD_ERRNO,   CMD_FUNC,    CMD_LASTO,   CMD_LSTO,    CMD_RTNERR,
-    CMD_RTNNO,   CMD_RTNYES,  CMD_SST_UP,  CMD_SST_RT,  CMD_NULL,    CMD_NULL
+    CMD_RTNNO,   CMD_RTNYES,  CMD_SST_UP,  CMD_SST_RT,  CMD_XSTR,    CMD_NULL
 };
 
 static int ext_str_cat[] = {
@@ -2324,14 +2341,15 @@ struct prp_data_struct {
     int4 lines;
     int width;
     int first;
-    int trace;
-    int normal;
+    bool trace;
+    bool normal;
+    bool full_xstr;
 };
 
 static prp_data_struct *prp_data;
 static int print_program_worker(bool interrupted);
 
-int print_program(int prgm_index, int4 pc, int4 lines, int normal) {
+int print_program(int prgm_index, int4 pc, int4 lines, bool normal) {
     prp_data_struct *dat = (prp_data_struct *) malloc(sizeof(prp_data_struct));
     if (dat == NULL)
         return ERR_INSUFFICIENT_MEMORY;
@@ -2346,11 +2364,13 @@ int print_program(int prgm_index, int4 pc, int4 lines, int normal) {
     dat->width = flags.f.double_wide_print ? 12 : 24;
     dat->first = 1;
     if (normal) {
-        dat->trace = 0;
-        dat->normal = 1;
+        dat->trace = false;
+        dat->normal = true;
+        dat->full_xstr = false;
     } else {
         dat->trace = flags.f.trace_print;
         dat->normal = flags.f.normal_print;
+        dat->full_xstr = true;
     }
 
     current_prgm = prgm_index;
@@ -2364,7 +2384,7 @@ int print_program(int prgm_index, int4 pc, int4 lines, int normal) {
         while ((err = print_program_worker(false)) == ERR_INTERRUPTIBLE);
         return err;
     } else {
-        print_text(NULL, 0, 1);
+        print_text(NULL, 0, true);
         mode_interruptible = print_program_worker;
         mode_stoppable = true;
         return ERR_INTERRUPTIBLE;
@@ -2385,14 +2405,15 @@ static int print_program_worker(bool interrupted) {
         else
             get_next_command(&dat->pc, &dat->cmd, &dat->arg, 0, &orig_num);
 
+        char *xstr = NULL;
         if (dat->trace) {
             if (dat->cmd == CMD_LBL || dat->first) {
                 if (dat->len > 0) {
-                    print_lines(dat->buf, dat->len, 1);
+                    print_lines(dat->buf, dat->len, true);
                     printed = 1;
                 }
                 if (!dat->first)
-                    print_text(NULL, 0, 1);
+                    print_text(NULL, 0, true);
                 dat->first = 0;
                 dat->buf[0] = ' ';
                 dat->len = 1 + prgmline2buf(dat->buf + 1, 100 - 1, dat->line,
@@ -2400,7 +2421,7 @@ static int print_program_worker(bool interrupted) {
                                             &dat->arg, orig_num);
                 if (dat->cmd == CMD_LBL || dat->cmd == CMD_END
                         || dat->lines == 1) {
-                    print_lines(dat->buf, dat->len, 1);
+                    print_lines(dat->buf, dat->len, true);
                     printed = 1;
                     dat->len = 0;
                 }
@@ -2411,22 +2432,33 @@ static int print_program_worker(bool interrupted) {
                     dat->buf[dat->len++] = ' ';
                 }
                 len2 = prgmline2buf(dat->buf + dat->len, 100 - dat->len, -1, 0,
-                                                        dat->cmd, &dat->arg, orig_num);
+                                    dat->cmd, &dat->arg, orig_num,
+                                    false, true, dat->full_xstr ? &xstr : NULL);
                 if (dat->len > 0 && dat->len + len2 > dat->width) {
                     /* Break line before current instruction */
-                    print_lines(dat->buf, dat->len - 2, 1);
+                    print_lines(dat->buf, dat->len - 2, true);
                     printed = 1;
-                    for (i = 0; i < len2; i++)
-                        dat->buf[i] = dat->buf[dat->len + i];
-                    dat->len = len2;
+                    if (xstr == NULL) {
+                        for (i = 0; i < len2; i++)
+                            dat->buf[i] = dat->buf[dat->len + i];
+                        dat->len = len2;
+                    } else {
+                        goto print_xstr;
+                    }
+                } else if (xstr != NULL) {
+                    print_xstr:
+                    int plen = (len2 / dat->width) * dat->width;
+                    print_lines(xstr, plen, true);
+                    memcpy(dat->buf, xstr + plen, len2 - plen);
+                    dat->len = len2 - plen;
                 } else
                     dat->len += len2;
                 if (dat->lines == 1 || dat->cmd == CMD_END) {
-                    print_lines(dat->buf, dat->len, 1);
+                    print_lines(dat->buf, dat->len, true);
                     printed = 1;
                 } else if (dat->len >= dat->width) {
                     len2 = (dat->len / dat->width) * dat->width;
-                    print_lines(dat->buf, len2, 1);
+                    print_lines(dat->buf, len2, true);
                     printed = 1;
                     for (i = len2; i < dat->len; i++)
                         dat->buf[i - len2] = dat->buf[i];
@@ -2435,7 +2467,10 @@ static int print_program_worker(bool interrupted) {
             }
         } else {
             dat->len = prgmline2buf(dat->buf, 100, dat->line,
-                                    dat->cmd == CMD_LBL, dat->cmd, &dat->arg, orig_num);
+                                    dat->cmd == CMD_LBL, dat->cmd, &dat->arg,
+                                    orig_num, false, true,
+                                    dat->full_xstr ? &xstr : NULL);
+            char *buf2 = xstr == NULL ? dat->buf : xstr;
             if (dat->normal) {
                 /* In normal mode, programs are printed right-justified;
                  * we pad the instuctions to a minimum of 8 characters so
@@ -2444,18 +2479,19 @@ static int print_program_worker(bool interrupted) {
                  * right after the first space or 'goose' (6) character.
                  */
                 int p = 0;
-                while (dat->buf[p] != ' ' && dat->buf[p] != 6)
+                while (buf2[p] != ' ' && buf2[p] != 6)
                     p++;
                 while (dat->len < p + 9)
-                    dat->buf[dat->len++] = ' ';
+                    buf2[dat->len++] = ' ';
                 /* Insert blank line above LBLs */
                 if (dat->cmd == CMD_LBL && !dat->first)
-                    print_text(NULL, 0, 1);
+                    print_text(NULL, 0, true);
                 dat->first = 0;
             }
-            print_lines(dat->buf, dat->len, !dat->normal);
+            print_lines(buf2, dat->len, !dat->normal);
             printed = 1;
         }
+        free(xstr);
         dat->line++;
         dat->lines--;
 
@@ -2472,7 +2508,7 @@ static int print_program_worker(bool interrupted) {
 }
 
 void print_program_line(int prgm_index, int4 pc) {
-    print_program(prgm_index, pc, 1, 1);
+    print_program(prgm_index, pc, 1, true);
 }
 
 int command2buf(char *buf, int len, int cmd, const arg_struct *arg) {
@@ -2549,6 +2585,11 @@ int command2buf(char *buf, int len, int cmd, const arg_struct *arg) {
                 string2buf(buf, len, &bufptr, lbl->name, lbl->length);
                 char2buf(buf, len, &bufptr, '"');
             }
+        } else if (arg->type == ARGTYPE_XSTR) {
+            char2buf(buf, len, &bufptr, '"');
+            string2buf(buf, len, &bufptr, arg->val.xstr,
+                                            arg->length);
+            char2buf(buf, len, &bufptr, '"');
         } else /* ARGTYPE_COMMAND; for backward compatibility only */ {
             const command_spec *cs = &cmd_array[arg->val.cmd];
             char2buf(buf, len, &bufptr, '"');

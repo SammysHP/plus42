@@ -2757,7 +2757,7 @@ static bool parse_phloat(const char *p, int len, phloat *res) {
 /* NOTE: The destination buffer should be able to store dstlen + 4
  * characters, because of how we parse [LF] and [ESC].
  */
-int ascii2hp(char *dst, int dstlen, const char *src, int srclen) {
+int ascii2hp(char *dst, int dstlen, const char *src, int srclen /* = -1 */) {
     int srcpos = 0, dstpos = 0;
     // state machine for detecting [LF] and [ESC]:
     // 0: ''
@@ -2770,7 +2770,9 @@ int ascii2hp(char *dst, int dstlen, const char *src, int srclen) {
     int state = 0;
     bool afterCR = false;
     while (dstpos < dstlen + (state == 0 ? 1 : 4)) {
-        char c = srclen == -1 || srcpos < srclen ? src[srcpos++] : 0;
+        if (srcpos == srclen)
+            break;
+        char c = src[srcpos++];
         retry:
         if (c == 0)
             break;
@@ -2796,7 +2798,9 @@ int ascii2hp(char *dst, int dstlen, const char *src, int srclen) {
                 continue;
             }
             while (len-- > 0) {
-                c = srclen == -1 || srcpos < srclen ? src[srcpos++] : 0;
+                if (srcpos == srclen)
+                    goto done;
+                c = src[srcpos++];
                 if ((c & 0xc0) != 0x80)
                     // Unexpected non-continuation byte
                     goto retry;
@@ -2978,6 +2982,7 @@ int ascii2hp(char *dst, int dstlen, const char *src, int srclen) {
         }
         dst[dstpos++] = (char) code;
     }
+    done:
     return dstpos > dstlen ? dstlen : dstpos;
 }
 

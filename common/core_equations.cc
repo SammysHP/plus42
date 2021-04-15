@@ -985,19 +985,77 @@ static int keydown_sto(int key, bool shift, int *repeat) {
 
 static int keydown_sto_overwrite(int key, bool shift, int *repeat) {
     switch (key) {
-        case KEY_SIGMA: {
-            /* Insert */
-            // TODO
-            break;
-        }
-        case KEY_SQRT: {
-            /* Overwrite */
-            // TODO
-            break;
+        case KEY_SIGMA: /* Insert */
+        case KEY_SQRT: /* Overwrite */ {
+            if (!get_equation()) {
+                show_error(ERR_INSUFFICIENT_MEMORY);
+                return 1;
+            }
+            switch (dialog) {
+                case DIALOG_STO_OVERWRITE_X: {
+                    vartype *s = new_string(edit_buf, edit_len);
+                    if (s == NULL) {
+                        nomem:
+                        free(edit_buf);
+                        show_error(ERR_INSUFFICIENT_MEMORY);
+                        return 1;
+                    }
+                    bool sld = flags.f.stack_lift_disable;
+                    flags.f.stack_lift_disable = 0;
+                    if (key == KEY_SIGMA) {
+                        int err = recall_result_silently(s);
+                        if (err != ERR_NONE) {
+                            flags.f.stack_lift_disable = sld;
+                            free_vartype(s);
+                            goto nomem;
+                        }
+                    } else {
+                        free_vartype(stack[sp]);
+                        stack[sp] = s;
+                    }
+                    break;
+                }
+                case DIALOG_STO_OVERWRITE_PRGM: {
+                    arg_struct arg;
+                    arg.type = ARGTYPE_XSTR;
+                    arg.length = edit_len > 65535 ? 65535 : edit_len;
+                    arg.val.xstr = edit_buf;
+                    if (key == KEY_SIGMA) {
+                        store_command_after(&pc, CMD_XSTR, &arg, NULL);
+                    } else {
+                        delete_command(pc);
+                        store_command(pc, CMD_XSTR, &arg, NULL);
+                    }
+                    break;
+                }
+                case DIALOG_STO_OVERWRITE_ALPHA: {
+                    char *ptr = edit_buf;
+                    int len = edit_len;
+                    if (len > 44) {
+                        len = 44;
+                        ptr += edit_len - 44;
+                    }
+                    if (key == KEY_SIGMA) {
+                        if (reg_alpha_length + len > 44) {
+                            int excess = reg_alpha_length + len - 44;
+                            memmove(reg_alpha, reg_alpha + excess, reg_alpha_length - excess);
+                            reg_alpha_length -= excess;
+                        }
+                    } else {
+                        reg_alpha_length = 0;
+                    }
+                    memcpy(reg_alpha + reg_alpha_length, ptr, len);
+                    reg_alpha_length += len;
+                    break;
+                }
+            }
+            free(edit_buf);
+            goto done;
         }
         case KEY_LN:
         case KEY_EXIT: {
             /* Cancel */
+            done:
             dialog = DIALOG_NONE;
             eqn_draw();
             break;

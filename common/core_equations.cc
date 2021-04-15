@@ -34,8 +34,15 @@ static int4 num_eqns;
 static int selected_row = -1; // -1: top of list; num_eqns: bottom of list
 static int edit_pos; // -1: in list; >= 0: in editor
 static int display_pos;
-static bool in_save_confirmation = false;
-static bool in_delete_confirmation = false;
+
+#define DIALOG_NONE 0
+#define DIALOG_SAVE_CONFIRM 1
+#define DIALOG_DELETE_CONFIRM 2
+#define DIALOG_RCL 3
+#define DIALOG_STO 4
+#define DIALOG_STO_OVERWRITE 5
+static int dialog = DIALOG_NONE;
+
 static int edit_menu; // MENU_NONE = the navigation menu
 static int prev_edit_menu = MENU_NONE;
 static int catalog_row;
@@ -90,8 +97,21 @@ bool unpersist_eqn(int4 ver) {
     if (!read_int(&selected_row)) return false;
     if (!read_int(&edit_pos)) return false;
     if (!read_int(&display_pos)) return false;
-    if (!read_bool(&in_save_confirmation)) return false;
-    if (!read_bool(&in_delete_confirmation)) return false;
+
+    if (ver < 41) {
+        bool in_save_confirmation, in_delete_confirmation;
+        if (!read_bool(&in_save_confirmation)) return false;
+        if (!read_bool(&in_delete_confirmation)) return false;
+        if (in_save_confirmation)
+            dialog = DIALOG_SAVE_CONFIRM;
+        else if (in_delete_confirmation)
+            dialog = DIALOG_DELETE_CONFIRM;
+        else
+            dialog = DIALOG_NONE;
+    } else {
+        if (!read_int(&dialog)) return false;
+    }
+
     if (!read_int(&edit_menu)) return false;
     if (!read_int(&prev_edit_menu)) return false;
     if (ver < 37) {
@@ -117,7 +137,7 @@ bool unpersist_eqn(int4 ver) {
         if (!read_int(&current_error)) return false;
     }
 
-    if (active && edit_pos != -1 && !in_save_confirmation && !in_delete_confirmation)
+    if (active && edit_pos != -1 && dialog == DIALOG_NONE)
         restart_cursor();
     return true;
     
@@ -134,8 +154,7 @@ bool persist_eqn() {
     if (!write_int(selected_row)) return false;
     if (!write_int(edit_pos)) return false;
     if (!write_int(display_pos)) return false;
-    if (!write_bool(in_save_confirmation)) return false;
-    if (!write_bool(in_delete_confirmation)) return false;
+    if (!write_int(dialog)) return false;
     if (!write_int(edit_menu)) return false;
     if (!write_int(prev_edit_menu)) return false;
     if (!write_int(catalog_row)) return false;
@@ -563,15 +582,30 @@ bool eqn_draw() {
     if (current_error != ERR_NONE) {
         draw_string(0, 0, errors[current_error].text, errors[current_error].length);
         draw_key(1, 0, 0, "OK", 2);
-    } else if (in_save_confirmation) {
+    } else if (dialog == DIALOG_SAVE_CONFIRM) {
         draw_string(0, 0, "Save this equation?", 19);
         draw_key(0, 0, 0, "YES", 3);
         draw_key(2, 0, 0, "NO", 2);
         draw_key(4, 0, 0, "EDIT", 4);
-    } else if (in_delete_confirmation) {
+    } else if (dialog == DIALOG_DELETE_CONFIRM) {
         draw_string(0, 0, "Delete the equation?", 20);
         draw_key(1, 0, 0, "YES", 3);
         draw_key(5, 0, 0, "NO", 2);
+    } else if (dialog == DIALOG_RCL) {
+        draw_string(0, 0, "Recall equation from:", 21);
+        goto sto_rcl_keys;
+    } else if (dialog == DIALOG_STO) {
+        draw_string(0, 0, "Store equation to:", 18);
+        sto_rcl_keys:
+        draw_key(0, 0, 0, "X", 1);
+        draw_key(1, 0, 0, "PRGM", 4);
+        draw_key(2, 0, 0, "ALPHA", 5);
+        draw_key(4, 0, 0, "CNCL", 4);
+    } else if (dialog == DIALOG_STO_OVERWRITE) {
+        draw_string(0, 0, "Insert or overwrite?", 20);
+        draw_key(0, 0, 0, "INSR", 4);
+        draw_key(2, 0, 0, "OVER", 4);
+        draw_key(4, 0, 0, "CNCL", 4);
     } else if (edit_pos == -1) {
         if (selected_row == -1) {
             draw_string(0, 0, "<Top of List>", 13);
@@ -663,6 +697,9 @@ static int keydown_edit(int key, bool shift, int *repeat);
 static int keydown_error(int key, bool shift, int *repeat);
 static int keydown_save_confirmation(int key, bool shift, int *repeat);
 static int keydown_delete_confirmation(int key, bool shift, int *repeat);
+static int keydown_rcl(int key, bool shift, int *repeat);
+static int keydown_sto(int key, bool shift, int *repeat);
+static int keydown_sto_overwrite(int key, bool shift, int *repeat);
 
 int eqn_keydown(int key, int *repeat) {
     if (!active || key == 0)
@@ -678,10 +715,16 @@ int eqn_keydown(int key, int *repeat) {
     
     if (current_error != ERR_NONE)
         return keydown_error(key, shift, repeat);
-    else if (in_save_confirmation)
+    else if (dialog == DIALOG_SAVE_CONFIRM)
         return keydown_save_confirmation(key, shift, repeat);
-    else if (in_delete_confirmation)
+    else if (dialog == DIALOG_DELETE_CONFIRM)
         return keydown_delete_confirmation(key, shift, repeat);
+    else if (dialog == DIALOG_RCL)
+        return keydown_rcl(key, shift, repeat);
+    else if (dialog == DIALOG_STO)
+        return keydown_sto(key, shift, repeat);
+    else if (dialog == DIALOG_STO_OVERWRITE)
+        return keydown_sto_overwrite(key, shift, repeat);
     else if (edit_pos == -1)
         return keydown_list(key, shift, repeat);
     else
@@ -706,7 +749,7 @@ static int keydown_save_confirmation(int key, bool shift, int *repeat) {
                 squeak();
                 break;
             }
-            in_save_confirmation = false;
+            dialog = DIALOG_NONE;
             save();
             break;
         }
@@ -721,13 +764,13 @@ static int keydown_save_confirmation(int key, bool shift, int *repeat) {
             /* No */
             free(edit_buf);
             edit_pos = -1;
-            in_save_confirmation = false;
+            dialog = DIALOG_NONE;
             eqn_draw();
             break;
         }
         case KEY_LN: {
             /* Cancel */
-            in_save_confirmation = false;
+            dialog = DIALOG_NONE;
             restart_cursor();
             eqn_draw();
             break;
@@ -777,12 +820,138 @@ static int keydown_delete_confirmation(int key, bool shift, int *repeat) {
         case KEY_XEQ: {
             /* No */
             finish:
-            in_delete_confirmation = false;
+            dialog = DIALOG_NONE;
             eqn_draw();
             break;
         }
         default: {
             squeak();
+            break;
+        }
+    }
+    return 1;
+}
+
+static int keydown_rcl(int key, bool shift, int *repeat) {
+    switch (key) {
+        case KEY_SIGMA: {
+            /* X */
+            if (sp == -1 || stack[sp]->type != TYPE_STRING) {
+                nope:
+                squeak();
+            } else {
+                vartype_string *s = (vartype_string *) stack[sp];
+                if (s->length == 0)
+                    goto nope;
+                edit_buf = (char *) malloc(s->length);
+                if (edit_buf == NULL) {
+                    show_error(ERR_INSUFFICIENT_MEMORY);
+                } else {
+                    memcpy(edit_buf, s->txt(), s->length);
+                    edit_len = s->length;
+                    goto store;
+                }
+            }
+            break;
+        }
+        case KEY_INV: {
+            /* PRGM */
+            int4 oldpc = pc;
+            int cmd;
+            arg_struct arg;
+            get_next_command(&pc, &cmd, &arg, 0, NULL);
+            pc = oldpc;
+            if (cmd != CMD_XSTR || arg.length == 0) {
+                squeak();
+            } else {
+                edit_buf = (char *) malloc(arg.length);
+                if (edit_buf == NULL) {
+                    show_error(ERR_INSUFFICIENT_MEMORY);
+                } else {
+                    memcpy(edit_buf, arg.val.xstr, arg.length);
+                    edit_len = arg.length;
+                    goto store;
+                }
+            }
+            break;
+        }
+        case KEY_SQRT: {
+            /* ALPHA */
+            if (reg_alpha_length == 0) {
+                squeak();
+            } else {
+                edit_buf = (char *) malloc(reg_alpha_length);
+                if (edit_buf == NULL) {
+                    show_error(ERR_INSUFFICIENT_MEMORY);
+                } else {
+                    memcpy(edit_buf, reg_alpha, reg_alpha_length);
+                    edit_len = reg_alpha_length;
+                    store:
+                    edit_pos = 0;
+                    new_eq = true;
+                    save();
+                    if (edit_pos == 0) {
+                        free(edit_buf);
+                        edit_pos = -1;
+                    } else {
+                        dialog = DIALOG_NONE;
+                        eqn_draw();
+                    }
+                }
+            }
+            break;
+        }
+        case KEY_LN:
+        case KEY_EXIT: {
+            /* Cancel */
+            dialog = DIALOG_NONE;
+            eqn_draw();
+            break;
+        }
+    }
+    return 1;
+}
+
+static int keydown_sto(int key, bool shift, int *repeat) {
+    switch (key) {
+        case KEY_SIGMA: {
+            /* X */
+            break;
+        }
+        case KEY_INV: {
+            /* PRGM */
+            break;
+        }
+        case KEY_SQRT: {
+            /* ALPHA */
+            break;
+        }
+        case KEY_LN:
+        case KEY_EXIT: {
+            /* Cancel */
+            dialog = DIALOG_NONE;
+            eqn_draw();
+            break;
+        }
+    }
+    return 1;
+}
+
+static int keydown_sto_overwrite(int key, bool shift, int *repeat) {
+    switch (key) {
+        case KEY_SIGMA: {
+            /* Insert */
+            break;
+        }
+        case KEY_SQRT: {
+            /* Overwrite */
+            break;
+        }
+        case KEY_LN:
+        case KEY_EXIT: {
+            /* Cancel */
+            dialog = DIALOG_NONE;
+            eqn_draw();
             break;
         }
     }
@@ -907,7 +1076,7 @@ static int keydown_list(int key, bool shift, int *repeat) {
             if (selected_row == -1 || selected_row == num_eqns) {
                 squeak();
             } else {
-                in_delete_confirmation = true;
+                dialog = DIALOG_DELETE_CONFIRM;
                 eqn_draw();
             }
             return 1;
@@ -961,6 +1130,20 @@ static int keydown_list(int key, bool shift, int *repeat) {
             }
             timeout_action = 1;
             shell_request_timeout3(500);
+            return 1;
+        }
+        case KEY_STO: {
+            if (selected_row == -1 || selected_row == num_eqns) {
+                squeak();
+                return 1;
+            }
+            dialog = DIALOG_STO;
+            eqn_draw();
+            return 1;
+        }
+        case KEY_RCL: {
+            dialog = DIALOG_RCL;
+            eqn_draw();
             return 1;
         }
         case KEY_SUB: {
@@ -1463,7 +1646,7 @@ static int keydown_edit_2(int key, bool shift, int *repeat) {
                             break;
                         }
                     }
-                    in_save_confirmation = true;
+                    dialog = DIALOG_SAVE_CONFIRM;
                 } else if (is_function_menu(edit_menu)) {
                     menu_sticky = false;
                     goto_prev_menu();
@@ -1543,7 +1726,7 @@ bool eqn_timeout() {
         eqn_draw();
     } else if (action == 2) {
         /* Cursor blinking */
-        if (edit_pos == -1 || current_error != ERR_NONE || in_save_confirmation || in_delete_confirmation)
+        if (edit_pos == -1 || current_error != ERR_NONE || dialog != DIALOG_NONE)
             return true;
         cursor_on = !cursor_on;
         char c = cursor_on ? 255 : edit_pos == edit_len ? ' ' : edit_buf[edit_pos];

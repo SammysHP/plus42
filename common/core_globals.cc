@@ -782,8 +782,9 @@ bool no_keystrokes_yet;
  * Version 38: 3.0.1  Still more Equation Editor state
  * Version 39: 3.0.3  ERRMSG/ERRNO
  * Version 40: 3.0.3  Longer incomplete_str buffer
+ * Version 41: 3.0.3  Equation Editor: new dialogs
  */
-#define FREE42_VERSION 40
+#define FREE42_VERSION 41
 
 
 /*******************/

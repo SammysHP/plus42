@@ -40,7 +40,9 @@ static int display_pos;
 #define DIALOG_DELETE_CONFIRM 2
 #define DIALOG_RCL 3
 #define DIALOG_STO 4
-#define DIALOG_STO_OVERWRITE 5
+#define DIALOG_STO_OVERWRITE_X 5
+#define DIALOG_STO_OVERWRITE_PRGM 6
+#define DIALOG_STO_OVERWRITE_ALPHA 7
 static int dialog = DIALOG_NONE;
 
 static int edit_menu; // MENU_NONE = the navigation menu
@@ -601,7 +603,9 @@ bool eqn_draw() {
         draw_key(1, 0, 0, "PRGM", 4);
         draw_key(2, 0, 0, "ALPHA", 5);
         draw_key(4, 0, 0, "CNCL", 4);
-    } else if (dialog == DIALOG_STO_OVERWRITE) {
+    } else if (dialog == DIALOG_STO_OVERWRITE_X
+            || dialog == DIALOG_STO_OVERWRITE_PRGM
+            || dialog == DIALOG_STO_OVERWRITE_ALPHA) {
         draw_string(0, 0, "Insert or overwrite?", 20);
         draw_key(0, 0, 0, "INSR", 4);
         draw_key(2, 0, 0, "OVER", 4);
@@ -723,7 +727,9 @@ int eqn_keydown(int key, int *repeat) {
         return keydown_rcl(key, shift, repeat);
     else if (dialog == DIALOG_STO)
         return keydown_sto(key, shift, repeat);
-    else if (dialog == DIALOG_STO_OVERWRITE)
+    else if (dialog == DIALOG_STO_OVERWRITE_X
+            || dialog == DIALOG_STO_OVERWRITE_PRGM
+            || dialog == DIALOG_STO_OVERWRITE_ALPHA)
         return keydown_sto_overwrite(key, shift, repeat);
     else if (edit_pos == -1)
         return keydown_list(key, shift, repeat);
@@ -912,24 +918,64 @@ static int keydown_rcl(int key, bool shift, int *repeat) {
     return 1;
 }
 
+static bool get_equation() {
+    if (eqns->array->is_string[selected_row]) {
+        const char *text;
+        int4 len;
+        get_matrix_string(eqns, selected_row, &text, &len);
+        edit_buf = (char *) malloc(len);
+        if (edit_buf == NULL)
+            return false;
+        edit_len = edit_capacity = len;
+        memcpy(edit_buf, text, len);
+    } else {
+        char buf[50];
+        int4 len = real2buf(buf, eqns->array->data[selected_row]);
+        edit_buf = (char *) malloc(len);
+        if (edit_buf == NULL)
+            return false;
+        edit_len = edit_capacity = len;
+        memcpy(edit_buf, buf, len);
+    }
+    return true;
+}
+
 static int keydown_sto(int key, bool shift, int *repeat) {
     switch (key) {
         case KEY_SIGMA: {
             /* X */
-            break;
+            dialog = DIALOG_STO_OVERWRITE_X;
+            if (sp != -1 && stack[sp]->type == TYPE_STRING)
+                goto done;
+            else
+                return keydown_sto_overwrite(KEY_SIGMA, false, NULL);
         }
         case KEY_INV: {
             /* PRGM */
-            break;
+            dialog = DIALOG_STO_OVERWRITE_PRGM;
+            int4 oldpc = pc;
+            int cmd;
+            arg_struct arg;
+            get_next_command(&pc, &cmd, &arg, 0, NULL);
+            pc = oldpc;
+            if (cmd == CMD_XSTR)
+                goto done;
+            else
+                return keydown_sto_overwrite(KEY_SIGMA, false, NULL);
         }
         case KEY_SQRT: {
             /* ALPHA */
-            break;
+            dialog = DIALOG_STO_OVERWRITE_ALPHA;
+            if (reg_alpha_length > 0)
+                goto done;
+            else
+                return keydown_sto_overwrite(KEY_SIGMA, false, NULL);
         }
         case KEY_LN:
         case KEY_EXIT: {
             /* Cancel */
             dialog = DIALOG_NONE;
+            done:
             eqn_draw();
             break;
         }
@@ -941,10 +987,12 @@ static int keydown_sto_overwrite(int key, bool shift, int *repeat) {
     switch (key) {
         case KEY_SIGMA: {
             /* Insert */
+            // TODO
             break;
         }
         case KEY_SQRT: {
             /* Overwrite */
+            // TODO
             break;
         }
         case KEY_LN:
@@ -1041,27 +1089,9 @@ static int keydown_list(int key, bool shift, int *repeat) {
                 squeak();
                 return 1;
             }
-            if (eqns->array->is_string[selected_row]) {
-                const char *text;
-                int4 len;
-                get_matrix_string(eqns, selected_row, &text, &len);
-                edit_buf = (char *) malloc(len);
-                if (edit_buf == NULL) {
-                    show_error(ERR_INSUFFICIENT_MEMORY);
-                    return 1;
-                }
-                edit_len = edit_capacity = len;
-                memcpy(edit_buf, text, len);
-            } else {
-                char buf[50];
-                int4 len = real2buf(buf, eqns->array->data[selected_row]);
-                edit_buf = (char *) malloc(len);
-                if (edit_buf == NULL) {
-                    show_error(ERR_INSUFFICIENT_MEMORY);
-                    return 1;
-                }
-                edit_len = edit_capacity = len;
-                memcpy(edit_buf, buf, len);
+            if (!get_equation()) {
+                show_error(ERR_INSUFFICIENT_MEMORY);
+                return 1;
             }
             new_eq = false;
             edit_pos = 0;

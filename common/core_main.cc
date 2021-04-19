@@ -2770,9 +2770,7 @@ int ascii2hp(char *dst, int dstlen, const char *src, int srclen /* = -1 */) {
     int state = 0;
     bool afterCR = false;
     while (dstpos < dstlen + (state == 0 ? 1 : 4)) {
-        if (srcpos == srclen)
-            break;
-        char c = src[srcpos++];
+        char c = srclen == -1 || srcpos < srclen ? src[srcpos++] : 0;
         retry:
         if (c == 0)
             break;
@@ -2798,9 +2796,7 @@ int ascii2hp(char *dst, int dstlen, const char *src, int srclen /* = -1 */) {
                 continue;
             }
             while (len-- > 0) {
-                if (srcpos == srclen)
-                    goto done;
-                c = src[srcpos++];
+                c = srclen == -1 || srcpos < srclen ? src[srcpos++] : 0;
                 if ((c & 0xc0) != 0x80)
                     // Unexpected non-continuation byte
                     goto retry;
@@ -2982,7 +2978,6 @@ int ascii2hp(char *dst, int dstlen, const char *src, int srclen /* = -1 */) {
         }
         dst[dstpos++] = (char) code;
     }
-    done:
     return dstpos > dstlen ? dstlen : dstpos;
 }
 

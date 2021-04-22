@@ -957,6 +957,11 @@ void keydown_command_entry(int shift, int key) {
                 if (itemindex == -1) {
                     squeak();
                     return;
+                } else if (itemindex < 0) {
+                    set_cat_section(itemindex == -2 ? CATSECT_EXT_0_CMP : CATSECT_EXT_X_CMP);
+                    move_cat_row(0);
+                    redisplay();
+                    return;
                 }
                 if (catsect == CATSECT_PGM || catsect == CATSECT_PGM_ONLY) {
                     if (labels[itemindex].length == 0) {
@@ -1038,6 +1043,11 @@ void keydown_command_entry(int shift, int key) {
             } else if (catsect == CATSECT_EXT_STK
                     || catsect == CATSECT_EXT_MISC) {
                 set_cat_section(CATSECT_EXT_2);
+                redisplay();
+            } else if (catsect == CATSECT_EXT_0_CMP
+                    || catsect == CATSECT_EXT_X_CMP) {
+                set_cat_section(CATSECT_EXT_PRGM);
+                set_cat_row(2);
                 redisplay();
             } else {
                 pending_command = CMD_CANCELLED;
@@ -1582,6 +1592,12 @@ void keydown_command_entry(int shift, int key) {
                                 || catsect == CATSECT_EXT_MISC)) {
                     set_catalog_menu(CATSECT_EXT_2);
                     redisplay();
+                } else if (mode_commandmenu == MENU_CATALOG
+                        && ((catsect = get_cat_section()) == CATSECT_EXT_0_CMP
+                                || catsect == CATSECT_EXT_X_CMP)) {
+                    set_catalog_menu(CATSECT_EXT_PRGM);
+                    move_cat_row(2);
+                    redisplay();
                 } else {
                     pending_command = CMD_NULL;
                     finish_command_entry(false);
@@ -1667,7 +1683,9 @@ void keydown_command_entry(int shift, int key) {
                             && catsect != CATSECT_EXT_STR
                             && catsect != CATSECT_EXT_DIR
                             && catsect != CATSECT_EXT_STK
-                            && catsect != CATSECT_EXT_MISC)) {
+                            && catsect != CATSECT_EXT_MISC
+                            && catsect != CATSECT_EXT_0_CMP
+                            && catsect != CATSECT_EXT_X_CMP)) {
                     set_menu(MENULEVEL_COMMAND, MENU_ALPHA1);
                     redisplay();
                     return;
@@ -2445,14 +2463,21 @@ void keydown_normal_mode(int shift, int key) {
                         pending_command_arg.val.text[i] =
                                                 labels[labelindex].name[i];
                 } else if (catsect == CATSECT_FCN
-                        || catsect >= CATSECT_EXT_TIME && catsect <= CATSECT_EXT_MISC) {
+                        || catsect >= CATSECT_EXT_TIME && catsect <= CATSECT_EXT_X_CMP) {
                     int cmd = get_cat_item(menukey);
-                    if (cmd == -1)
+                    if (cmd == -1) {
                         if (flags.f.prgm_mode) {
                             pending_command = CMD_NULL;
                             return;
                         } else
                             cmd = CMD_NULL;
+                    } else if (cmd < 0) {
+                        set_cat_section(cmd == -2 ? CATSECT_EXT_0_CMP : CATSECT_EXT_X_CMP);
+                        move_cat_row(0);
+                        redisplay();
+                        pending_command = CMD_NULL;
+                        return;
+                    }
                     if (level == MENULEVEL_TRANSIENT
                             || !mode_plainmenu_sticky)
                         set_menu(level, MENU_NONE);
@@ -2606,7 +2631,11 @@ void keydown_normal_mode(int shift, int key) {
                 else if (catsect >= CATSECT_EXT_STK
                         && catsect <= CATSECT_EXT_MISC)
                     set_cat_section(CATSECT_EXT_2);
-                else
+                else if (catsect == CATSECT_EXT_0_CMP
+                        || catsect == CATSECT_EXT_X_CMP) {
+                    set_cat_section(CATSECT_EXT_PRGM);
+                    set_cat_row(2);
+                } else
                     set_menu(level, MENU_NONE);
             } else {
                 const menu_spec *m = menus + menu;

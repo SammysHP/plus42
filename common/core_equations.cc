@@ -20,6 +20,7 @@
 
 #include "core_equations.h"
 #include "core_commands2.h"
+#include "core_commands7.h"
 #include "core_display.h"
 #include "core_helpers.h"
 #include "core_main.h"
@@ -577,6 +578,41 @@ void eqn_paste(const char *buf) {
     }
 }
 
+static void draw_print1_menu() {
+    draw_key(0, 0, 0, "EQ", 2);
+    draw_key(1, 0, 0, "LISTE", 5);
+    draw_key(2, 0, 0, "VARS", 4);
+    draw_key(3, 0, 0, "LISTV", 5);
+    draw_key(4, 0, 0, "PRST", 4);
+    draw_key(5, 0, 0, "ADV", 3);
+}
+
+static void draw_print2_menu() {
+    if (flags.f.printer_exists) {
+        draw_key(0, 0, 0, "PON\037", 4);
+        draw_key(1, 0, 0, "POFF", 4);
+    } else {
+        draw_key(0, 0, 0, "PON", 3);
+        draw_key(1, 0, 0, "POFF\037", 5);
+    }
+    if (!flags.f.trace_print && !flags.f.normal_print)
+        draw_key(2, 0, 0, "MAN\037", 4);
+    else
+        draw_key(2, 0, 0, "MAN", 3);
+    if (!flags.f.trace_print && flags.f.normal_print)
+        draw_key(3, 0, 0, "NOR\037", 4);
+    else
+        draw_key(3, 0, 0, "NORM", 4);
+    if (flags.f.trace_print && !flags.f.normal_print)
+        draw_key(4, 0, 0, "TRAC\037", 5);
+    else
+        draw_key(4, 0, 0, "TRACE", 5);
+    if (flags.f.trace_print && flags.f.normal_print)
+        draw_key(5, 0, 0, "STRA\037", 5);
+    else
+        draw_key(5, 0, 0, "STRAC", 5);
+}
+
 bool eqn_draw() {
     if (!active)
         return false;
@@ -632,12 +668,18 @@ bool eqn_draw() {
             }
             draw_string(0, 0, buf, len);
         }
-        draw_key(0, 0, 0, "CALC", 4);
-        draw_key(1, 0, 0, "EDIT", 4);
-        draw_key(2, 0, 0, "DELET", 5);
-        draw_key(3, 0, 0, "NEW", 3);
-        draw_key(4, 0, 0, "^", 1, true);
-        draw_key(5, 0, 0, "\016", 1, true);
+        if (edit_menu == MENU_PRINT1) {
+            draw_print1_menu();
+        } else if (edit_menu == MENU_PRINT2) {
+            draw_print2_menu();
+        } else {
+            draw_key(0, 0, 0, "CALC", 4);
+            draw_key(1, 0, 0, "EDIT", 4);
+            draw_key(2, 0, 0, "DELET", 5);
+            draw_key(3, 0, 0, "NEW", 3);
+            draw_key(4, 0, 0, "^", 1, true);
+            draw_key(5, 0, 0, "\016", 1, true);
+        }
     } else {
         int len = edit_len - display_pos;
         if (len > 22) {
@@ -666,6 +708,10 @@ bool eqn_draw() {
             draw_key(3, 0, 0, "\017", 1);
             draw_key(4, 0, 0, "\017>", 2);
             draw_key(5, 0, 0, "ALPHA", 5);
+        } else if (edit_menu == MENU_PRINT1) {
+            draw_print1_menu();
+        } else if (edit_menu == MENU_PRINT2) {
+            draw_print2_menu();
         } else if (edit_menu >= MENU_CUSTOM1 && edit_menu <= MENU_CUSTOM3) {
             int row = edit_menu - MENU_CUSTOM1;
             for (int k = 0; k < 6; k++) {
@@ -698,6 +744,8 @@ bool eqn_draw() {
 
 static int keydown_list(int key, bool shift, int *repeat);
 static int keydown_edit(int key, bool shift, int *repeat);
+static int keydown_print1(int key, bool shift, int *repeat);
+static int keydown_print2(int key, bool shift, int *repeat);
 static int keydown_error(int key, bool shift, int *repeat);
 static int keydown_save_confirmation(int key, bool shift, int *repeat);
 static int keydown_delete_confirmation(int key, bool shift, int *repeat);
@@ -731,10 +779,137 @@ int eqn_keydown(int key, int *repeat) {
             || dialog == DIALOG_STO_OVERWRITE_PRGM
             || dialog == DIALOG_STO_OVERWRITE_ALPHA)
         return keydown_sto_overwrite(key, shift, repeat);
+    else if (edit_menu == MENU_PRINT1)
+        return keydown_print1(key, shift, repeat);
+    else if (edit_menu == MENU_PRINT2)
+        return keydown_print2(key, shift, repeat);
     else if (edit_pos == -1)
         return keydown_list(key, shift, repeat);
     else
         return keydown_edit(key, shift, repeat);
+}
+
+static int keydown_print1(int key, bool shift, int *repeat) {
+    arg_struct arg;
+    switch (key) {
+        case KEY_SIGMA: {
+            /* EQ */
+            print();
+            goto exit_menu;
+        }
+        case KEY_INV: {
+            /* LISTE */
+            squeak();
+            return 1;
+        }
+        case KEY_SQRT: {
+            /* VARS */
+            arg.type = ARGTYPE_STR;
+            arg.length = 0;
+            docmd_prmvar(&arg);
+            return 1;
+        }
+        case KEY_LOG: {
+            /* LISTV */
+            docmd_prusr(NULL);
+            goto exit_menu;
+        }
+        case KEY_LN: {
+            /* PRSTK */
+            docmd_prstk(&arg);
+            goto exit_menu;
+        }
+        case KEY_XEQ: {
+            /* ADV */
+            docmd_adv(NULL);
+            return 1;
+        }
+        case KEY_UP:
+        case KEY_DOWN: {
+            edit_menu = MENU_PRINT2;
+            eqn_draw();
+            return 1;
+        }
+        case KEY_EXIT: {
+            if (shift) {
+                docmd_off(NULL);
+            } else {
+                exit_menu:
+                goto_prev_menu();
+                if (edit_pos != -1)
+                    restart_cursor();
+                eqn_draw();
+            }
+            return 1;
+        }
+        default: {
+            squeak();
+            return 1;
+        }
+    }
+}
+
+static int keydown_print2(int key, bool shift, int *repeat) {
+    switch (key) {
+        case KEY_SIGMA: {
+            /* PRON */
+            flags.f.printer_exists = true;
+            break;
+        }
+        case KEY_INV: {
+            /* PROFF */
+            flags.f.printer_exists = false;
+            break;
+        }
+        case KEY_SQRT: {
+            /* MAN */
+            flags.f.trace_print = false;
+            flags.f.normal_print = false;
+            break;
+        }
+        case KEY_LOG: {
+            /* NORM */
+            flags.f.trace_print = false;
+            flags.f.normal_print = true;
+            break;
+        }
+        case KEY_LN: {
+            /* TRACE */
+            flags.f.trace_print = true;
+            flags.f.normal_print = false;
+            break;
+        }
+        case KEY_XEQ: {
+            /* STRACE */
+            flags.f.trace_print = true;
+            flags.f.normal_print = true;
+            break;
+        }
+        case KEY_UP:
+        case KEY_DOWN: {
+            edit_menu = MENU_PRINT1;
+            break;
+        }
+        case KEY_EXIT: {
+            if (shift) {
+                docmd_off(NULL);
+                return 1;
+            } else {
+                goto_prev_menu();
+                if (edit_pos != -1)
+                    restart_cursor();
+                eqn_draw();
+                return 1;
+            }
+        }
+        default: {
+            squeak();
+            return 1;
+        }
+    }
+
+    eqn_draw();
+    return 1;
 }
 
 static int keydown_error(int key, bool shift, int *repeat) {
@@ -1064,6 +1239,27 @@ static int keydown_sto_overwrite(int key, bool shift, int *repeat) {
     return 1;
 }
 
+static bool is_function_menu(int menu) {
+    return menu == MENU_TOP_FCN
+            || menu == MENU_CONVERT1
+            || menu == MENU_CONVERT2
+            || menu == MENU_PROB
+            || menu == MENU_CUSTOM1
+            || menu == MENU_CUSTOM2
+            || menu == MENU_CUSTOM3
+            || menu == MENU_CATALOG;
+}
+
+static void select_function_menu(int menu) {
+    if (!is_function_menu(edit_menu))
+        prev_edit_menu = edit_menu;
+    menu_sticky = menu == edit_menu || edit_menu != MENU_NONE && menus[edit_menu].next == menu;
+    if (!menu_sticky) {
+        update_menu(menu);
+        eqn_draw();
+    }
+}
+
 static int keydown_list(int key, bool shift, int *repeat) {
     switch (key) {
         case KEY_UP: {
@@ -1236,7 +1432,7 @@ static int keydown_list(int key, bool shift, int *repeat) {
         }
         case KEY_SUB: {
             if (shift)
-                print();
+                select_function_menu(MENU_PRINT1);
             else
                 squeak();
             return 1;
@@ -1254,27 +1450,6 @@ static int keydown_list(int key, bool shift, int *repeat) {
             squeak();
             return 1;
         }
-    }
-}
-
-static bool is_function_menu(int menu) {
-    return menu == MENU_TOP_FCN
-            || menu == MENU_CONVERT1
-            || menu == MENU_CONVERT2
-            || menu == MENU_PROB
-            || menu == MENU_CUSTOM1
-            || menu == MENU_CUSTOM2
-            || menu == MENU_CUSTOM3
-            || menu == MENU_CATALOG;
-}
-
-static void select_function_menu(int menu) {
-    if (!is_function_menu(edit_menu))
-        prev_edit_menu = edit_menu;
-    menu_sticky = menu == edit_menu || edit_menu != MENU_NONE && menus[edit_menu].next == menu;
-    if (!menu_sticky) {
-        update_menu(menu);
-        eqn_draw();
     }
 }
 
@@ -1678,10 +1853,13 @@ static int keydown_edit_2(int key, bool shift, int *repeat) {
                 break;
             }
             case KEY_SUB: {
-                if (shift)
-                    print();
-                else
+                if (shift) {
+                    select_function_menu(MENU_PRINT1);
+                    cursor_on = false;
+                    eqn_draw();
+                } else {
                     insert_function(CMD_SUB);
+                }
                 break;
             }
             case KEY_ADD: {
@@ -1814,7 +1992,8 @@ bool eqn_timeout() {
         eqn_draw();
     } else if (action == 2) {
         /* Cursor blinking */
-        if (edit_pos == -1 || current_error != ERR_NONE || dialog != DIALOG_NONE)
+        if (edit_pos == -1 || current_error != ERR_NONE || dialog != DIALOG_NONE
+                || edit_menu == MENU_PRINT1 || edit_menu == MENU_PRINT2)
             return true;
         cursor_on = !cursor_on;
         char c = cursor_on ? 255 : edit_pos == edit_len ? ' ' : edit_buf[edit_pos];

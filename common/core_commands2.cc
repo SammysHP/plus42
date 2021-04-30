@@ -1394,7 +1394,7 @@ int docmd_prusr(arg_struct *arg) {
     else {
         shell_annunciators(-1, -1, 1, -1, -1, -1);
         print_text(NULL, 0, true);
-        prusr_state = 0;
+        prusr_state = arg == NULL ? 2 : 0;
         prusr_index = vars_count - 1;
         mode_interruptible = prusr_worker;
         mode_stoppable = true;
@@ -1408,16 +1408,21 @@ static int prusr_worker(bool interrupted) {
         return ERR_STOP;
     }
 
-    if (prusr_state == 0) {
+    if (prusr_state != 1) {
         char lbuf[8];
         char rbuf[100];
         int llen, rlen;
         if (prusr_index < 0) {
-            if (vars_count > 0)
-                print_text(NULL, 0, true);
-            prusr_state = 1;
-            prusr_index = 0;
-            goto state1;
+            if (prusr_state == 2) {
+                shell_annunciators(-1, -1, 0, -1, -1, -1);
+                return ERR_NONE;
+            } else {
+                if (vars_count > 0)
+                    print_text(NULL, 0, true);
+                prusr_state = 1;
+                prusr_index = 0;
+                goto state1;
+            }
         }
         if ((vars[prusr_index].flags & (VAR_HIDDEN | VAR_PRIVATE)) == 0) {
             llen = 0;

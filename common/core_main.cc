@@ -218,6 +218,15 @@ bool core_keydown(int key, bool *enqueued, int *repeat) {
         if (eqr == 1)
             // Still in equation editor
             *enqueued = 1; // prevent key timeouts
+        if (mode_interruptible) {
+            /* We're in the middle of an interruptible function (e.g., PRUSR). */
+            int error = mode_interruptible(false);
+            if (error == ERR_INTERRUPTIBLE)
+                /* Still not done */
+                return true;
+            mode_interruptible = NULL;
+            shell_annunciators(-1, -1, -1, 0, -1, -1);
+        }
         return false;
     }
 

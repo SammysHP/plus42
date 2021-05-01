@@ -376,31 +376,49 @@ static void save() {
     eqn_draw();
 }
 
-static void print() {
-    if (!flags.f.printer_exists) {
-        show_error(ERR_PRINTING_IS_DISABLED);
-        return;
+static int print_eq_row;
+static bool print_eq_do_all;
+
+static int print_eq_worker(bool interrupted) {
+    if (interrupted) {
+        shell_annunciators(-1, -1, 0, -1, -1, -1);
+        return ERR_STOP;
     }
-    if (selected_row == -1 || selected_row == num_eqns) {
-        squeak();
-        return;
-    }
-    shell_annunciators(-1, -1, 1, -1, -1, -1);
-    if (edit_pos == -1) {
-        if (eqns->array->is_string[selected_row]) {
+
+    if (print_eq_row != selected_row || edit_pos == -1) {
+        if (eqns->array->is_string[print_eq_row]) {
             const char *text;
             int4 len;
-            get_matrix_string(eqns, selected_row, &text, &len);
+            get_matrix_string(eqns, print_eq_row, &text, &len);
             print_lines(text, len, 1);
         } else {
             char buf[50];
-            int len = real2buf(buf, eqns->array->data[selected_row]);
+            int len = real2buf(buf, eqns->array->data[print_eq_row]);
             print_lines(buf, len, 1);
         }
     } else {
         print_lines(edit_buf, edit_len, 1);
     }
-    shell_annunciators(-1, -1, 0, -1, -1, -1);
+
+    if (print_eq_do_all) {
+        if (print_eq_row == num_eqns - 1)
+            goto done;
+        print_text(NULL, 0, true);
+        print_eq_row++;
+        return ERR_INTERRUPTIBLE;
+    } else {
+        done:
+        shell_annunciators(-1, -1, 0, -1, -1, -1);
+        return ERR_NONE;
+    }
+}
+
+static void print_eq(bool all) {
+    print_eq_row = all ? 0 : selected_row;
+    print_eq_do_all = all;
+    mode_interruptible = print_eq_worker;
+    mode_stoppable = false;
+    shell_annunciators(-1, -1, 1, -1, -1, -1);
 }
 
 static void update_menu(int menuid) {
@@ -786,7 +804,6 @@ int eqn_keydown(int key, int *repeat) {
         if (key == KEY_EXIT) {
             mode_interruptible(true);
             mode_interruptible = NULL;
-            shell_annunciators(-1, -1, -1, 0, -1, -1);
             return 1;
         } else {
             int err = mode_interruptible(false);
@@ -796,7 +813,6 @@ int eqn_keydown(int key, int *repeat) {
                 return 3;
             }
             mode_interruptible = NULL;
-            shell_annunciators(-1, -1, -1, 0, -1, -1);
             // Continue normal key event processing...
             if (key == 0 || key == KEY_SHIFT)
                 return 1;
@@ -832,30 +848,65 @@ static int keydown_print1(int key, bool shift, int *repeat) {
     switch (key) {
         case KEY_SIGMA: {
             /* EQ */
-            print();
-            goto exit_menu;
+            if (flags.f.printer_exists) {
+                if (selected_row == -1 || selected_row == num_eqns) {
+                    squeak();
+                    return 1;
+                } else {
+                    print_eq(false);
+                    goto exit_menu;
+                }
+            } else {
+                show_error(ERR_PRINTING_IS_DISABLED);
+                return 1;
+            }
         }
         case KEY_INV: {
             /* LISTE */
-            squeak();
-            return 1;
+            if (flags.f.printer_exists) {
+                if (num_eqns == 0) {
+                    squeak();
+                    return 1;
+                } else {
+                    print_eq(true);
+                    goto exit_menu;
+                }
+            } else {
+                show_error(ERR_PRINTING_IS_DISABLED);
+                return 1;
+            }
         }
         case KEY_SQRT: {
             /* VARS */
-            arg.type = ARGTYPE_STR;
-            arg.length = 0;
-            docmd_prmvar(&arg);
-            return 1;
+            if (flags.f.printer_exists) {
+                arg.type = ARGTYPE_STR;
+                arg.length = 0;
+                docmd_prmvar(&arg);
+                goto exit_menu;
+            } else {
+                show_error(ERR_PRINTING_IS_DISABLED);
+                return 1;
+            }
         }
         case KEY_LOG: {
             /* LISTV */
-            docmd_prusr(NULL);
-            goto exit_menu;
+            if (flags.f.printer_exists) {
+                docmd_prusr(NULL);
+                goto exit_menu;
+            } else {
+                show_error(ERR_PRINTING_IS_DISABLED);
+                return 1;
+            }
         }
         case KEY_LN: {
             /* PRSTK */
-            docmd_prstk(&arg);
-            goto exit_menu;
+            if (flags.f.printer_exists) {
+                docmd_prstk(&arg);
+                goto exit_menu;
+            } else {
+                show_error(ERR_PRINTING_IS_DISABLED);
+                return 1;
+            }
         }
         case KEY_XEQ: {
             /* ADV */

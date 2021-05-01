@@ -385,7 +385,7 @@ static int print_eq_worker(bool interrupted) {
         return ERR_STOP;
     }
 
-    if (print_eq_row != selected_row || edit_pos == -1) {
+    if (print_eq_do_all || edit_pos == -1) {
         if (eqns->array->is_string[print_eq_row]) {
             const char *text;
             int4 len;

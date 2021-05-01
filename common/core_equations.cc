@@ -753,17 +753,55 @@ static int keydown_rcl(int key, bool shift, int *repeat);
 static int keydown_sto(int key, bool shift, int *repeat);
 static int keydown_sto_overwrite(int key, bool shift, int *repeat);
 
+/* eqn_keydown() return values:
+ * 0: equation editor not active; caller should perform normal event processing
+ * 1: equation editor active
+ * 2: equation editor active; caller should NOT suppress key timeouts
+ *    (this mode is for when PRMSLVi, PGMINTi, or PMEXEC are being performed,
+ *     i.e., when the CALC menu key in the list view has been pressed)
+ * 3: equation editor active but busy; request CPU
+ */
 int eqn_keydown(int key, int *repeat) {
-    if (!active || key == 0)
+    if (!active)
         return 0;
-
-    if (key == KEY_SHIFT) {
-        set_shift(!mode_shift);
-        return 1;
-    }
     
-    bool shift = mode_shift;
-    set_shift(false);
+    bool shift = false;
+    if (mode_interruptible == NULL) {
+        if (key == 0)
+            return 1;
+        if (key == KEY_SHIFT) {
+            set_shift(!mode_shift);
+            return 1;
+        }
+        shift = mode_shift;
+        set_shift(false);
+    } else {
+        // Used to make print functions EQ, LISTE, and LISTV interruptible
+        if (key == KEY_SHIFT) {
+            set_shift(!mode_shift);
+        } else if (key != 0) {
+            shift = mode_shift;
+            set_shift(false);
+        }
+        if (key == KEY_EXIT) {
+            mode_interruptible(true);
+            mode_interruptible = NULL;
+            shell_annunciators(-1, -1, -1, 0, -1, -1);
+            return 1;
+        } else {
+            int err = mode_interruptible(false);
+            if (err == ERR_INTERRUPTIBLE) {
+                if (key != 0 && key != KEY_SHIFT)
+                    squeak();
+                return 3;
+            }
+            mode_interruptible = NULL;
+            shell_annunciators(-1, -1, -1, 0, -1, -1);
+            // Continue normal key event processing...
+            if (key == 0 || key == KEY_SHIFT)
+                return 1;
+        }
+    }
     
     if (current_error != ERR_NONE)
         return keydown_error(key, shift, repeat);
@@ -840,7 +878,7 @@ static int keydown_print1(int key, bool shift, int *repeat) {
                     restart_cursor();
                 eqn_draw();
             }
-            return 1;
+            return mode_interruptible == NULL ? 1 : 3;
         }
         default: {
             squeak();

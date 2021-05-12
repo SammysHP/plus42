@@ -972,7 +972,7 @@ int docmd_varmnu1(arg_struct *arg) {
     int err = docmd_varmenu(arg);
     if (err == ERR_NONE) {
         mode_varmenu = true;
-        varmenu_role = 3;
+        varmenu_role = program_running() ? 3 : 4;
     }
     return err;
 }

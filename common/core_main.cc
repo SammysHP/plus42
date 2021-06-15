@@ -4306,7 +4306,7 @@ void do_interactive(int command) {
 
 static void continue_running() {
     int error;
-    while (!shell_wants_cpu()) {
+    do {
         int cmd;
         arg_struct arg;
         oldpc = pc;
@@ -4335,7 +4335,7 @@ static void continue_running() {
             return;
         if (mode_getkey)
             return;
-    }
+    } while (!shell_wants_cpu());
 }
 
 struct synonym_spec {

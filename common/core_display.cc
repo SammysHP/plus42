@@ -1018,15 +1018,36 @@ void draw_key(int n, int highlight, int hide_meta,
         m = smallchars_map[c];
         o = smallchars_offset[m];
         cw = smallchars_offset[m + 1] - o;
+        bool tp = false, bp = false, p;
         for (j = 0; j < cw; j++) {
             int b, k;
             b = smallchars[o + j];
             for (k = 0; k < 8; k++)
-                if ((b >> k) & 1)
-                    if (reverse)
+                if ((b >> k) & 1) {
+                    if (reverse) {
                         display[(k + 8) * 17 + (x >> 3)] |= (1 << (x & 7));
-                    else
+                        if (k == 1 || k == 7) {
+                            if (k == 1) {
+                                p = tp;
+                                tp = true;
+                            } else {
+                                p = bp;
+                                bp = true;
+                            }
+                            if (!p)
+                                display[(k + 8) * 17 + ((x - 1) >> 3)] &= ~(1 << ((x - 1) & 7));
+                            display[(k + 8) * 17 + ((x + 1) >> 3)] &= ~(1 << ((x + 1) & 7));
+                        }
+                    } else
                         display[(k + 8) * 17 + (x >> 3)] &= ~(1 << (x & 7));
+                } else {
+                    if (reverse) {
+                        if (k == 1)
+                            tp = false;
+                        else if (k == 7)
+                            bp = false;
+                    }
+                }
             x++;
         }
         x++;

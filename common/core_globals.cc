@@ -271,8 +271,8 @@ const menu_spec menus[] = {
     { /* MENU_MODES5 */ MENU_NONE, MENU_MODES1, MENU_MODES4,
                       { { 0x2000 + CMD_4STK,    0, "" },
                         { 0x2000 + CMD_NSTK,    0, "" },
-                        { 0x1000 + CMD_NULL,    0, "" },
-                        { 0x1000 + CMD_NULL,    0, "" },
+                        { 0x2000 + CMD_CAPS,    0, "" },
+                        { 0x2000 + CMD_MIXED,   0, "" },
                         { 0x1000 + CMD_NULL,    0, "" },
                         { 0x1000 + CMD_NULL,    0, "" } } },
     { /* MENU_DISP */ MENU_NONE, MENU_NONE, MENU_NONE,
@@ -629,6 +629,7 @@ int mode_goose;
 bool mode_time_clktd;
 bool mode_time_clk24;
 int mode_wsize;
+bool mode_menu_caps;
 
 phloat entered_number;
 int entered_string_length;
@@ -783,8 +784,9 @@ bool no_keystrokes_yet;
  * Version 39: 3.0.3  ERRMSG/ERRNO
  * Version 40: 3.0.3  Longer incomplete_str buffer
  * Version 41: 3.0.3  Equation Editor: new dialogs
+ * Version 42: 3.0.6  CAPS/Mixed for menus
  */
-#define FREE42_VERSION 41
+#define FREE42_VERSION 42
 
 
 /*******************/
@@ -1633,6 +1635,8 @@ static bool persist_globals() {
         goto done;
     if (!write_int(mode_wsize))
         goto done;
+    if (!write_bool(mode_menu_caps))
+        goto done;
     if (fwrite(&flags, 1, sizeof(flags_struct), gfile) != sizeof(flags_struct))
         goto done;
     if (!write_int(prgms_count))
@@ -1820,6 +1824,13 @@ static bool unpersist_globals() {
         }
     } else
         mode_wsize = 36;
+    if (ver >= 42) {
+        if (!read_bool(&mode_menu_caps)) {
+            mode_menu_caps = false;
+            goto done;
+        }
+    } else
+        mode_menu_caps = false;
     if (fread(&flags, 1, sizeof(flags_struct), gfile)
             != sizeof(flags_struct))
         goto done;
@@ -4772,6 +4783,7 @@ void hard_reset(int reason) {
     mode_time_clktd = false;
     mode_time_clk24 = shell_clk24();
     mode_wsize = 36;
+    mode_menu_caps = false;
 
     reset_math();
 

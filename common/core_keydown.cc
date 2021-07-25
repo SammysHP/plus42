@@ -2370,15 +2370,6 @@ void keydown_normal_mode(int shift, int key) {
                     move_cat_row(0);
                     redisplay();
                     return;
-                } else if (catsect == CATSECT_EXT_2) {
-                    if (menukey == 0) {
-                        set_cat_section(CATSECT_EXT_MISC);
-                        move_cat_row(0);
-                        redisplay();
-                    } else {
-                        squeak();
-                    }
-                    return;
                 } else if (catsect == CATSECT_PGM
                             || catsect == CATSECT_PGM_ONLY) {
                     int labelindex = get_cat_item(menukey);

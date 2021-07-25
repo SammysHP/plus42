@@ -921,7 +921,7 @@ void keydown_command_entry(int shift, int key) {
                         move_cat_row(0);
                         break;
                     case 5:
-                        set_cat_section(CATSECT_EXT_DIR);
+                        set_cat_section(CATSECT_EXT_STK);
                         move_cat_row(0);
                         break;
                 }
@@ -930,19 +930,11 @@ void keydown_command_entry(int shift, int key) {
             } else if (catsect == CATSECT_EXT_2) {
                 switch (menukey) {
                     case 0:
-                        if (core_settings.allow_big_stack)
-                            set_cat_section(CATSECT_EXT_STK);
-                        else
-                            set_cat_section(CATSECT_EXT_MISC);
+                        set_cat_section(CATSECT_EXT_DIR);
                         move_cat_row(0);
                         break;
                     case 1:
-                        if (core_settings.allow_big_stack) {
-                            set_cat_section(CATSECT_EXT_MISC);
-                        } else {
-                            squeak();
-                            return;
-                        }
+                        set_cat_section(CATSECT_EXT_MISC);
                         move_cat_row(0);
                         break;
                     default:
@@ -1037,10 +1029,10 @@ void keydown_command_entry(int shift, int key) {
                     || catsect == CATSECT_EXT_BASE
                     || catsect == CATSECT_EXT_PRGM
                     || catsect == CATSECT_EXT_STR
-                    || catsect == CATSECT_EXT_DIR) {
+                    || catsect == CATSECT_EXT_STK) {
                 set_cat_section(CATSECT_EXT_1);
                 redisplay();
-            } else if (catsect == CATSECT_EXT_STK
+            } else if (catsect == CATSECT_EXT_DIR
                     || catsect == CATSECT_EXT_MISC) {
                 set_cat_section(CATSECT_EXT_2);
                 redisplay();
@@ -1584,11 +1576,11 @@ void keydown_command_entry(int shift, int key) {
                                 || catsect == CATSECT_EXT_BASE
                                 || catsect == CATSECT_EXT_PRGM
                                 || catsect == CATSECT_EXT_STR
-                                || catsect == CATSECT_EXT_DIR)) {
+                                || catsect == CATSECT_EXT_STK)) {
                     set_catalog_menu(CATSECT_EXT_1);
                     redisplay();
                 } else if (mode_commandmenu == MENU_CATALOG
-                        && ((catsect = get_cat_section()) == CATSECT_EXT_STK
+                        && ((catsect = get_cat_section()) == CATSECT_EXT_DIR
                                 || catsect == CATSECT_EXT_MISC)) {
                     set_catalog_menu(CATSECT_EXT_2);
                     redisplay();
@@ -1681,8 +1673,8 @@ void keydown_command_entry(int shift, int key) {
                             && catsect != CATSECT_EXT_BASE
                             && catsect != CATSECT_EXT_PRGM
                             && catsect != CATSECT_EXT_STR
-                            && catsect != CATSECT_EXT_DIR
                             && catsect != CATSECT_EXT_STK
+                            && catsect != CATSECT_EXT_DIR
                             && catsect != CATSECT_EXT_MISC
                             && catsect != CATSECT_EXT_0_CMP
                             && catsect != CATSECT_EXT_X_CMP)) {
@@ -2357,56 +2349,35 @@ void keydown_normal_mode(int shift, int key) {
                     return;
                 } else if (catsect == CATSECT_EXT_1) {
                     switch (menukey) {
-                        case 0:
-                            set_cat_section(CATSECT_EXT_TIME);
-                            move_cat_row(0);
-                            break;
-                        case 1:
-                            set_cat_section(CATSECT_EXT_XFCN);
-                            move_cat_row(0);
-                            break;
-                        case 2:
-                            set_cat_section(CATSECT_EXT_BASE);
-                            move_cat_row(0);
-                            break;
-                        case 3:
-                            set_cat_section(CATSECT_EXT_PRGM);
-                            move_cat_row(0);
-                            break;
-                        case 4:
-                            set_cat_section(CATSECT_EXT_STR);
-                            move_cat_row(0);
-                            break;
-                        case 5:
-                            set_cat_section(CATSECT_EXT_DIR);
-                            move_cat_row(0);
-                            break;
+                        case 0: set_cat_section(CATSECT_EXT_TIME); break;
+                        case 1: set_cat_section(CATSECT_EXT_XFCN); break;
+                        case 2: set_cat_section(CATSECT_EXT_BASE); break;
+                        case 3: set_cat_section(CATSECT_EXT_PRGM); break;
+                        case 4: set_cat_section(CATSECT_EXT_STR); break;
+                        case 5: set_cat_section(CATSECT_EXT_STK); break;
                     }
+                    move_cat_row(0);
                     redisplay();
                     return;
                 } else if (catsect == CATSECT_EXT_2) {
                     switch (menukey) {
-                        case 0:
-                            if (core_settings.allow_big_stack)
-                                set_cat_section(CATSECT_EXT_STK);
-                            else
-                                set_cat_section(CATSECT_EXT_MISC);
-                            move_cat_row(0);
-                            break;
-                        case 1:
-                            if (core_settings.allow_big_stack) {
-                                set_cat_section(CATSECT_EXT_MISC);
-                            } else {
-                                squeak();
-                                return;
-                            }
-                            move_cat_row(0);
-                            break;
+                        case 0: set_cat_section(CATSECT_EXT_DIR); break;
+                        case 1: set_cat_section(CATSECT_EXT_MISC); break;
                         default:
                             squeak();
                             return;
                     }
+                    move_cat_row(0);
                     redisplay();
+                    return;
+                } else if (catsect == CATSECT_EXT_2) {
+                    if (menukey == 0) {
+                        set_cat_section(CATSECT_EXT_MISC);
+                        move_cat_row(0);
+                        redisplay();
+                    } else {
+                        squeak();
+                    }
                     return;
                 } else if (catsect == CATSECT_PGM
                             || catsect == CATSECT_PGM_ONLY) {
@@ -2627,9 +2598,9 @@ void keydown_normal_mode(int shift, int key) {
                         || catsect == CATSECT_MAT)
                     set_cat_section(CATSECT_TOP);
                 else if (catsect >= CATSECT_EXT_TIME
-                        && catsect <= CATSECT_EXT_DIR)
+                        && catsect <= CATSECT_EXT_STK)
                     set_cat_section(CATSECT_EXT_1);
-                else if (catsect >= CATSECT_EXT_STK
+                else if (catsect >= CATSECT_EXT_DIR
                         && catsect <= CATSECT_EXT_MISC)
                     set_cat_section(CATSECT_EXT_2);
                 else if (catsect == CATSECT_EXT_0_CMP

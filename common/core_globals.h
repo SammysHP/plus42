@@ -451,9 +451,9 @@ extern int4 incomplete_saved_highlight_row;
 #define CATSECT_EXT_BASE 16
 #define CATSECT_EXT_PRGM 17
 #define CATSECT_EXT_STR 18
-#define CATSECT_EXT_DIR 19
+#define CATSECT_EXT_STK 19
 #define CATSECT_EXT_2 20
-#define CATSECT_EXT_STK 21
+#define CATSECT_EXT_DIR 21
 #define CATSECT_EXT_MISC 22
 #define CATSECT_EXT_0_CMP 23
 #define CATSECT_EXT_X_CMP 24

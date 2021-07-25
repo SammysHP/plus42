@@ -1704,18 +1704,12 @@ static void draw_catalog() {
         draw_key(2, 0, 0, "BASE", 4);
         draw_key(3, 0, 0, "PRGM", 4);
         draw_key(4, 0, 0, "STR", 3);
-        draw_key(5, 0, 0, "DIR", 3);
+        draw_key(5, 0, 0, "STK", 3);
         mode_updown = true;
         shell_annunciators(1, -1, -1, -1, -1, -1);
     } else if (catsect == CATSECT_EXT_2) {
-        draw_ext_2:
-        if (core_settings.allow_big_stack) {
-            draw_key(0, 0, 0, "STK", 3);
-            draw_key(1, 0, 0, "MISC", 4);
-        } else {
-            draw_key(0, 0, 0, "MISC", 4);
-            draw_key(1, 0, 0, "", 0);
-        }
+        draw_key(0, 0, 0, "DIR", 3);
+        draw_key(1, 0, 0, "MISC", 4);
         draw_key(2, 0, 0, "", 0);
         draw_key(3, 0, 0, "", 0);
         draw_key(4, 0, 0, "", 0);
@@ -1796,15 +1790,8 @@ static void draw_catalog() {
             case CATSECT_EXT_BASE: subcat = ext_base_cat; subcat_rows = 1; break;
             case CATSECT_EXT_PRGM: subcat = ext_prgm_cat; subcat_rows = 3; break;
             case CATSECT_EXT_STR: subcat = ext_str_cat; subcat_rows = 3; break;
+            case CATSECT_EXT_STK: subcat = ext_stk_cat; subcat_rows = 3; break;
             case CATSECT_EXT_DIR: subcat = ext_dir_cat; subcat_rows = 1; break;
-            case CATSECT_EXT_STK:
-                if (!core_settings.allow_big_stack) {
-                    set_cat_section(CATSECT_EXT_2);
-                    goto draw_ext_2;
-                } else {
-                    subcat = ext_stk_cat; subcat_rows = 3;
-                    break;
-                }
             case CATSECT_EXT_MISC: subcat = ext_misc_cat; subcat_rows = MISC_CAT_ROWS; break;
             case CATSECT_EXT_0_CMP: subcat = ext_0_cmp_cat; subcat_rows = 1; break;
             case CATSECT_EXT_X_CMP: subcat = ext_x_cmp_cat; subcat_rows = 1; break;
@@ -2862,9 +2849,9 @@ void set_catalog_menu(int section) {
         case CATSECT_EXT_BASE:
         case CATSECT_EXT_PRGM:
         case CATSECT_EXT_STR:
-        case CATSECT_EXT_DIR:
-        case CATSECT_EXT_2:
         case CATSECT_EXT_STK:
+        case CATSECT_EXT_2:
+        case CATSECT_EXT_DIR:
         case CATSECT_EXT_MISC:
         case CATSECT_EXT_0_CMP:
         case CATSECT_EXT_X_CMP:
@@ -2987,9 +2974,9 @@ void update_catalog() {
         case CATSECT_EXT_BASE:
         case CATSECT_EXT_PRGM:
         case CATSECT_EXT_STR:
-        case CATSECT_EXT_DIR:
-        case CATSECT_EXT_2:
         case CATSECT_EXT_STK:
+        case CATSECT_EXT_2:
+        case CATSECT_EXT_DIR:
         case CATSECT_EXT_MISC:
         case CATSECT_EXT_0_CMP:
         case CATSECT_EXT_X_CMP:

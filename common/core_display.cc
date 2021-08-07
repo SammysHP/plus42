@@ -43,7 +43,7 @@
 #endif
 
 
-static const char bigchars[131][5] =
+static const char bigchars[130][5] =
     {
         { 0x08, 0x08, 0x2a, 0x08, 0x08 },
         { 0x22, 0x14, 0x08, 0x14, 0x22 },
@@ -174,8 +174,7 @@ static const char bigchars[131][5] =
         { 0x08, 0x04, 0x08, 0x10, 0x08 },
         { 0x7f, 0x08, 0x08, 0x08, 0x08 },
         { 0x28, 0x00, 0x00, 0x00, 0x00 },
-        { 0x04, 0x08, 0x70, 0x08, 0x04 },
-        { 0x7f, 0x7f, 0x7f, 0x7f, 0x7f }
+        { 0x04, 0x08, 0x70, 0x08, 0x04 }
     };
 
 static const char smallchars[407] =
@@ -918,9 +917,7 @@ void draw_char(int x, int y, char c) {
     unsigned char uc = (unsigned char) c;
     if (x < 0 || x >= 22 || y < 0 || y >= 2)
         return;
-    if (uc == 255)
-        uc = 130;
-    else if (uc >= 130)
+    if (uc >= 130)
         uc -= 128;
     X = x * 6;
     Y = y * 8;
@@ -938,11 +935,29 @@ void draw_char(int x, int y, char c) {
     mark_dirty(Y, X, Y + 8, X + 5);
 }
 
+void draw_block(int x, int y) {
+    int X, Y, h, v;
+    if (x < 0 || x >= 22 || y < 0 || y >= 2)
+        return;
+    X = x * 6;
+    Y = y * 8;
+    for (v = 0; v < 8; v++) {
+        int YY = Y + v;
+        for (h = 0; h < 5; h++) {
+            int XX = X + h;
+            char mask = 1 << (XX & 7);
+            if (v < 7)
+                display[YY * 17 + (XX >> 3)] |= mask;
+            else
+                display[YY * 17 + (XX >> 3)] &= ~mask;
+        }
+    }
+    mark_dirty(Y, X, Y + 8, X + 5);
+}
+
 const char *get_char(char c) {
     unsigned char uc = (unsigned char) c;
-    if (uc == 255)
-        uc = 130;
-    else if (uc >= 130)
+    if (uc >= 130)
         uc -= 128;
     return bigchars[uc];
 }

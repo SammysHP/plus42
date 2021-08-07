@@ -713,7 +713,7 @@ bool eqn_draw() {
             int cpos = edit_pos - display_pos;
             if (cpos > off)
                 draw_string(off, 0, edit_buf + display_pos + off, cpos - off);
-            draw_char(cpos, 0, 255);
+            draw_block(cpos, 0);
             if (cpos < len)
                 draw_string(cpos + 1, 0, edit_buf + display_pos + cpos + 1, len - cpos - 1);
         } else {
@@ -2085,8 +2085,12 @@ bool eqn_timeout() {
                 || edit_menu == MENU_PRINT1 || edit_menu == MENU_PRINT2)
             return true;
         cursor_on = !cursor_on;
-        char c = cursor_on ? 255 : edit_pos == edit_len ? ' ' : edit_buf[edit_pos];
-        draw_char(edit_pos - display_pos, 0, c);
+        if (cursor_on) {
+            draw_block(edit_pos - display_pos, 0);
+        } else {
+            char c = edit_pos == edit_len ? ' ' : edit_buf[edit_pos];
+            draw_char(edit_pos - display_pos, 0, c);
+        }
         flush_display();
         timeout_action = 2;
         shell_request_timeout3(500);

@@ -4033,8 +4033,8 @@ static int get_token(const char *buf, int *pos, int *start) {
         (*pos)++;
     }
     *start = *pos;
-    (*pos)++;
     if (c == '"') {
+        (*pos)++;
         while (true) {
             c = buf[*pos];
             if (c == 0)

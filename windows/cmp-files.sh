@@ -34,6 +34,8 @@ cmp core_math2.cpp ../common/core_math2.cc
 cmp core_math2.h ../common/core_math2.h
 cmp core_main.cpp ../common/core_main.cc
 cmp core_main.h ../common/core_main.h
+cmp core_parser.cpp ../common/core_parser.cc
+cmp core_parser.h ../common/core_parser.h
 cmp core_phloat.cpp ../common/core_phloat.cc
 cmp core_phloat.h ../common/core_phloat.h
 cmp core_sto_rcl.cpp ../common/core_sto_rcl.cc

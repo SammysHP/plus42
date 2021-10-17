@@ -35,6 +35,8 @@ ln -fs ../../../../../common/core_math1.cc
 ln -fs ../../../../../common/core_math1.h
 ln -fs ../../../../../common/core_math2.cc
 ln -fs ../../../../../common/core_math2.h
+ln -fs ../../../../../common/core_parser.cc
+ln -fs ../../../../../common/core_parser.h
 ln -fs ../../../../../common/core_phloat.cc
 ln -fs ../../../../../common/core_phloat.h
 ln -fs ../../../../../common/core_sto_rcl.cc

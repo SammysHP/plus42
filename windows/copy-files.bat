@@ -33,6 +33,8 @@ copy ..\common\core_math2.cc core_math2.cpp
 copy ..\common\core_math2.h .
 copy ..\common\core_main.cc core_main.cpp
 copy ..\common\core_main.h .
+copy ..\common\core_parser.cc core_parser.cpp
+copy ..\common\core_parser.h .
 copy ..\common\core_phloat.cc core_phloat.cpp
 copy ..\common\core_phloat.h .
 copy ..\common\core_sto_rcl.cc core_sto_rcl.cpp

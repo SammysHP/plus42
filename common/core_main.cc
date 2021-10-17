@@ -2509,14 +2509,27 @@ static void serialize_list(textbuf *tb, vartype_list *list, int indent) {
                 tb_write(tb, "\n", 1);
                 break;
             }
-            case TYPE_STRING: {
-                vartype_string *s = (vartype_string *) elem;
+            case TYPE_STRING:
+            case TYPE_EQUATION: {
+                const char *text;
+                int length;
+                char d;
+                if (elem->type == TYPE_STRING) {
+                    vartype_string *s = (vartype_string *) elem;
+                    text = s->txt();
+                    length = s->length;
+                    d = '"';
+                } else {
+                    vartype_equation *eq = (vartype_equation *) elem;
+                    text = eq->data->text;
+                    length = eq->data->length;
+                    d = '\'';
+                }
                 tb_indent(tb, indent);
-                tb_write(tb, "\"", 1);
-                const char *txt = s->txt();
+                tb_write(tb, &d, 1);
                 char cbuf[5];
-                for (int j = 0; j < s->length; j++) {
-                    unsigned char c = txt[j];
+                for (int j = 0; j < length; j++) {
+                    unsigned char c = text[j];
                     if (c == 10)
                         c = 138;
                     else if (c >= 130 && c != 138)
@@ -2530,7 +2543,8 @@ static void serialize_list(textbuf *tb, vartype_list *list, int indent) {
                         tb_write(tb, cbuf, n);
                     }
                 }
-                tb_write(tb, "\"\n", 2);
+                tb_write(tb, &d, 1);
+                tb_write(tb, "\n", 1);
                 break;
             }
             case TYPE_REALMATRIX: {
@@ -2717,6 +2731,12 @@ char *core_copy() {
     } else if (stack[sp]->type == TYPE_LIST) {
         serialize_list(&tb, (vartype_list *) stack[sp], 0);
         goto textbuf_finish;
+    } else if (stack[sp]->type == TYPE_EQUATION) {
+        vartype_equation *eq = (vartype_equation *) stack[sp];
+        char *buf = (char *) malloc(5 * eq->data->length + 1);
+        int bufptr = hp2ascii(buf, eq->data->text, eq->data->length);
+        buf[bufptr] = 0;
+        return buf;
     } else {
         // Shouldn't happen: unrecognized data type
         return NULL;
@@ -4033,13 +4053,14 @@ static int get_token(const char *buf, int *pos, int *start) {
         (*pos)++;
     }
     *start = *pos;
-    if (c == '"') {
+    if (c == '"' || c == '\'') {
+        char d = c;
         (*pos)++;
         while (true) {
             c = buf[*pos];
             if (c == 0)
                 return *pos - *start;
-            if (c == '"') {
+            if (c == d) {
                 (*pos)++;
                 return *pos - *start;
             }
@@ -4210,16 +4231,22 @@ static vartype *deserialize_list(const char *buf, int *pos) {
             tlen = get_token(buf, pos, &tstart);
             if (tlen != 1 || buf[tstart] != ']')
                 goto failure;
-        } else if (buf[tstart] == '"') {
+        } else if (buf[tstart] == '"' || buf[tstart] == '\'') {
             int slen;
             char *s = parse_string(buf + tstart, tlen, &slen);
             if (s == NULL)
                 return NULL;
-            vartype *str = new_string(s, slen);
+            vartype *v;
+            if (buf[tstart] == '"') {
+                v = new_string(s, slen);
+            } else {
+                int errpos;
+                v = new_equation(s, slen, &errpos);
+            }
             free(s);
-            if (str == NULL)
+            if (v == NULL)
                 goto failure;
-            list->array->data[i] = str;
+            list->array->data[i] = v;
         } else {
             phloat re, im;
             int slen;

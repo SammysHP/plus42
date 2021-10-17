@@ -1840,17 +1840,17 @@ static void draw_catalog() {
         int show_real = 1;
         int show_cpx = 1;
         int show_mat = 1;
-        int show_list = 1;
+        int show_other = 1;
 
         switch (catsect) {
             case CATSECT_REAL:
             case CATSECT_REAL_ONLY:
-                show_cpx = show_mat = show_list = 0; break;
+                show_cpx = show_mat = show_other = 0; break;
             case CATSECT_CPX:
-                show_real = show_mat = show_list = 0; break;
+                show_real = show_mat = show_other = 0; break;
             case CATSECT_MAT:
             case CATSECT_MAT_ONLY:
-                show_real = show_cpx = show_list = 0; break;
+                show_real = show_cpx = show_other = 0; break;
         }
 
         for (i = 0; i < vars_count; i++) {
@@ -1870,7 +1870,8 @@ static void draw_catalog() {
                     if (show_mat) vcount++;
                     break;
                 case TYPE_LIST:
-                    if (show_list) vcount++;
+                case TYPE_EQUATION:
+                    if (show_other) vcount++;
                     break;
             }
         }
@@ -1909,7 +1910,8 @@ static void draw_catalog() {
                 case TYPE_COMPLEXMATRIX:
                     if (show_mat) break; else continue;
                 case TYPE_LIST:
-                    if (show_list) break; else continue;
+                case TYPE_EQUATION:
+                    if (show_other) break; else continue;
                 default:
                     continue;
             }

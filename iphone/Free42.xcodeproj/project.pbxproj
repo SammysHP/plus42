@@ -93,6 +93,8 @@
 		E9AE2566233C1CD0005072BA /* click4.wav in Resources */ = {isa = PBXBuildFile; fileRef = E9AE2561233C1CD0005072BA /* click4.wav */; };
 		E9B16DFA0F88EE46002BB9B2 /* shell_loadimage.cc in Sources */ = {isa = PBXBuildFile; fileRef = E9B16DF80F88EE46002BB9B2 /* shell_loadimage.cc */; };
 		E9BB9E9625682C7100708152 /* Launch Screen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = E9BB9E9525682C7100708152 /* Launch Screen.storyboard */; };
+		E9BD6066271C793300CD68E4 /* core_parser.cc in Sources */ = {isa = PBXBuildFile; fileRef = E9BD6064271C793200CD68E4 /* core_parser.cc */; };
+		E9BD6067271C793300CD68E4 /* core_parser.cc in Sources */ = {isa = PBXBuildFile; fileRef = E9BD6064271C793200CD68E4 /* core_parser.cc */; };
 		E9C255DC1996B9C1007634C9 /* Ehrling42sl.gif in Resources */ = {isa = PBXBuildFile; fileRef = E9C255DA1996B9C1007634C9 /* Ehrling42sl.gif */; };
 		E9C255DD1996B9C1007634C9 /* Ehrling42sl.layout in Resources */ = {isa = PBXBuildFile; fileRef = E9C255DB1996B9C1007634C9 /* Ehrling42sl.layout */; };
 		E9CECB81255ED605003398B3 /* libz.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = E9CECB80255ED605003398B3 /* libz.tbd */; };
@@ -327,6 +329,8 @@
 		E9BA0E7E0F9224700087EBFB /* SelectSkinView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SelectSkinView.h; sourceTree = "<group>"; };
 		E9BA0EAC0F9224F00087EBFB /* AboutView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AboutView.h; sourceTree = "<group>"; };
 		E9BB9E9525682C7100708152 /* Launch Screen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = "Launch Screen.storyboard"; sourceTree = "<group>"; };
+		E9BD6064271C793200CD68E4 /* core_parser.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = core_parser.cc; path = ../common/core_parser.cc; sourceTree = "<group>"; };
+		E9BD6065271C793300CD68E4 /* core_parser.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = core_parser.h; path = ../common/core_parser.h; sourceTree = "<group>"; };
 		E9C255DA1996B9C1007634C9 /* Ehrling42sl.gif */ = {isa = PBXFileReference; lastKnownFileType = image.gif; name = Ehrling42sl.gif; path = skins/Ehrling42sl.gif; sourceTree = "<group>"; };
 		E9C255DB1996B9C1007634C9 /* Ehrling42sl.layout */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Ehrling42sl.layout; path = skins/Ehrling42sl.layout; sourceTree = "<group>"; };
 		E9CD21690FA39C41008E1E65 /* SelectFileView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SelectFileView.h; sourceTree = "<group>"; };
@@ -562,6 +566,8 @@
 				E91005C30F893F8900B68C27 /* core_math1.h */,
 				E91005C40F893F8900B68C27 /* core_math2.cc */,
 				E91005C50F893F8900B68C27 /* core_math2.h */,
+				E9BD6064271C793200CD68E4 /* core_parser.cc */,
+				E9BD6065271C793300CD68E4 /* core_parser.h */,
 				E91005C60F893F8900B68C27 /* core_phloat.cc */,
 				E91005C70F893F8900B68C27 /* core_phloat.h */,
 				E91005C80F893F8900B68C27 /* core_sto_rcl.cc */,
@@ -632,7 +638,7 @@
 					};
 				};
 			};
-			buildConfigurationList = C01FCF4E08A954540054247B /* Build configuration list for PBXProject "Plus42" */;
+			buildConfigurationList = C01FCF4E08A954540054247B /* Build configuration list for PBXProject "Free42" */;
 			compatibilityVersion = "Xcode 3.2";
 			developmentRegion = en;
 			hasScannedForEncodings = 1;
@@ -818,6 +824,7 @@
 				E91005D80F893F8900B68C27 /* core_globals.cc in Sources */,
 				E91005D90F893F8900B68C27 /* core_helpers.cc in Sources */,
 				E91005DA0F893F8900B68C27 /* core_keydown.cc in Sources */,
+				E9BD6066271C793300CD68E4 /* core_parser.cc in Sources */,
 				E91005DB0F893F8900B68C27 /* core_linalg1.cc in Sources */,
 				E91005DC0F893F8900B68C27 /* core_linalg2.cc in Sources */,
 				E91005DD0F893F8900B68C27 /* core_main.cc in Sources */,
@@ -866,6 +873,7 @@
 				E9FC40DD260707AF00E52296 /* core_commands3.cc in Sources */,
 				E9FC40DE260707AF00E52296 /* core_commands4.cc in Sources */,
 				E9FC40DF260707AF00E52296 /* core_commands5.cc in Sources */,
+				E9BD6067271C793300CD68E4 /* core_parser.cc in Sources */,
 				E9FC40E0260707AF00E52296 /* StatesView.mm in Sources */,
 				E9FC40E1260707AF00E52296 /* readtest_lines.cc in Sources */,
 				E9FC40E2260707AF00E52296 /* core_commands6.cc in Sources */,
@@ -1212,7 +1220,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		C01FCF4E08A954540054247B /* Build configuration list for PBXProject "Plus42" */ = {
+		C01FCF4E08A954540054247B /* Build configuration list for PBXProject "Free42" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				C01FCF4F08A954540054247B /* Debug */,

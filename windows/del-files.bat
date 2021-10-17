@@ -33,6 +33,8 @@ del core_math2.cpp
 del core_math2.h
 del core_main.cpp
 del core_main.h
+del core_parser.cpp
+del core_parser.h
 del core_phloat.cpp
 del core_phloat.h
 del core_sto_rcl.cpp

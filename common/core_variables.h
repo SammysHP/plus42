@@ -31,6 +31,7 @@
 #define TYPE_COMPLEXMATRIX 4
 #define TYPE_STRING 5
 #define TYPE_LIST 6
+#define TYPE_EQUATION 7
 
 struct vartype {
     int type;
@@ -111,12 +112,28 @@ struct vartype_list {
 };
 
 
+class Evaluator;
+
+struct equation_data {
+    int refcount;
+    int4 length;
+    char *text;
+    Evaluator *ev;
+};
+
+struct vartype_equation {
+    int type;
+    equation_data *data;
+};
+
+
 vartype *new_real(phloat value);
 vartype *new_complex(phloat re, phloat im);
 vartype *new_string(const char *s, int slen);
 vartype *new_realmatrix(int4 rows, int4 columns);
 vartype *new_complexmatrix(int4 rows, int4 columns);
 vartype *new_list(int4 size);
+vartype *new_equation(const char *text, int4 length, int *errpos);
 void free_vartype(vartype *v);
 void clean_vartype_pools();
 void free_long_strings(char *is_string, phloat *data, int4 n);

@@ -81,7 +81,8 @@ const error_spec errors[] = {
     { /* NUMBER_TOO_SMALL */       "Number Too Small",        16 },
     { /* BIG_STACK_DISABLED */     "Big Stack Disabled",      18 },
     { /* INVALID_CONTEXT */        "Invalid Context",         15 },
-    { /* NAME_TOO_LONG */          "Name Too Long",           13 }
+    { /* NAME_TOO_LONG */          "Name Too Long",           13 },
+    { /* PARSE_ERROR */            "Parse Error",             11 }
 };
 
 
@@ -785,9 +786,9 @@ bool no_keystrokes_yet;
  * Version 40: 3.0.3  Longer incomplete_str buffer
  * Version 41: 3.0.3  Equation Editor: new dialogs
  * Version 42: 3.0.6  CAPS/Mixed for menus
- * Version 43: 3.0.7  Plus42 stuff
+ * Version 43: 3.0.7  Equation type
  */
-#define FREE42_VERSION 42
+#define FREE42_VERSION 43
 
 
 /*******************/
@@ -876,13 +877,13 @@ struct matrix_persister {
     int4 columns;
 };
 
-static int array_count;
-static int array_list_capacity;
-static void **array_list;
+static int shared_data_count;
+static int shared_data_capacity;
+static void **shared_data;
 
 
-static bool array_list_grow();
-static int array_list_search(void *array);
+static bool shared_data_grow();
+static int shared_data_search(void *data);
 static bool persist_vartype(vartype *v);
 static bool unpersist_vartype(vartype **v, bool padded);
 static void update_label_table(int prgm, int4 pc, int inserted);
@@ -913,21 +914,21 @@ void vartype_string::trim1() {
     }
 }
 
-static bool array_list_grow() {
-    if (array_count < array_list_capacity)
+static bool shared_data_grow() {
+    if (shared_data_count < shared_data_capacity)
         return true;
-    array_list_capacity += 10;
-    void **p = (void **) realloc(array_list,
-                                 array_list_capacity * sizeof(void *));
+    shared_data_capacity += 10;
+    void **p = (void **) realloc(shared_data,
+                                 shared_data_capacity * sizeof(void *));
     if (p == NULL)
         return false;
-    array_list = p;
+    shared_data = p;
     return true;
 }
 
-static int array_list_search(void *array) {
-    for (int i = 0; i < array_count; i++)
-        if (array_list[i] == array)
+static int shared_data_search(void *data) {
+    for (int i = 0; i < shared_data_count; i++)
+        if (shared_data[i] == data)
             return i;
     return -1;
 }
@@ -957,13 +958,13 @@ static bool persist_vartype(vartype *v) {
             int4 columns = rm->columns;
             bool must_write = true;
             if (rm->array->refcount > 1) {
-                int n = array_list_search(rm->array);
+                int n = shared_data_search(rm->array);
                 if (n == -1) {
                     // A negative row count signals a new shared matrix
                     rows = -rows;
-                    if (!array_list_grow())
+                    if (!shared_data_grow())
                         return false;
-                    array_list[array_count++] = rm->array;
+                    shared_data[shared_data_count++] = rm->array;
                 } else {
                     // A zero row count means this matrix shares its data
                     // with a previously written matrix
@@ -1001,13 +1002,13 @@ static bool persist_vartype(vartype *v) {
             int4 columns = cm->columns;
             bool must_write = true;
             if (cm->array->refcount > 1) {
-                int n = array_list_search(cm->array);
+                int n = shared_data_search(cm->array);
                 if (n == -1) {
                     // A negative row count signals a new shared matrix
                     rows = -rows;
-                    if (!array_list_grow())
+                    if (!shared_data_grow())
                         return false;
-                    array_list[array_count++] = cm->array;
+                    shared_data[shared_data_count++] = cm->array;
                 } else {
                     // A zero row count means this matrix shares its data
                     // with a previously written matrix
@@ -1032,13 +1033,13 @@ static bool persist_vartype(vartype *v) {
             int data_index = -1;
             bool must_write = true;
             if (list->array->refcount > 1) {
-                int n = array_list_search(list->array);
+                int n = shared_data_search(list->array);
                 if (n == -1) {
                     // data_index == -2 indicates a new shared list
                     data_index = -2;
-                    if (!array_list_grow())
+                    if (!shared_data_grow())
                         return false;
-                    array_list[array_count++] = list->array;
+                    shared_data[shared_data_count++] = list->array;
                 } else {
                     // data_index >= 0 refers to a previously shared list
                     data_index = n;
@@ -1051,6 +1052,33 @@ static bool persist_vartype(vartype *v) {
                 for (int4 i = 0; i < list->size; i++)
                     if (!persist_vartype(list->array->data[i]))
                         return false;
+            }
+            return true;
+        }
+        case TYPE_EQUATION: {
+            vartype_equation *eq = (vartype_equation *) v;
+            int data_index = -1;
+            bool must_write = true;
+            if (eq->data->refcount > 1) {
+                int n = shared_data_search(eq->data);
+                if (n == -1) {
+                    // data_index == -2 indicates a new shared equation
+                    data_index = -2;
+                    if (!shared_data_grow())
+                        return false;
+                    shared_data[shared_data_count++] = eq->data;
+                } else {
+                    // data_index >= 0 refers to a previously shared equation
+                    data_index = n;
+                    must_write = false;
+                }
+            }
+            if (!write_int(data_index))
+                return false;
+            if (must_write) {
+                int4 len = eq->data->length;
+                return write_int4(len)
+                    && fwrite(eq->data->text, 1, len, gfile) == len;
             }
             return true;
         }
@@ -1147,7 +1175,7 @@ static bool unpersist_vartype(vartype **v, bool padded) {
                     return false;
                 if (rows == 0) {
                     // Shared matrix
-                    vartype *m = dup_vartype((vartype *) array_list[columns]);
+                    vartype *m = dup_vartype((vartype *) shared_data[columns]);
                     if (m == NULL)
                         return false;
                     else {
@@ -1245,11 +1273,11 @@ static bool unpersist_vartype(vartype **v, bool padded) {
                     return false;
                 }
                 if (shared) {
-                    if (!array_list_grow()) {
+                    if (!shared_data_grow()) {
                         free_vartype((vartype *) rm);
                         return false;
                     }
-                    array_list[array_count++] = rm;
+                    shared_data[shared_data_count++] = rm;
                 }
                 *v = (vartype *) rm;
                 return true;
@@ -1260,7 +1288,7 @@ static bool unpersist_vartype(vartype **v, bool padded) {
                     return false;
                 if (rows == 0) {
                     // Shared matrix
-                    vartype *m = dup_vartype((vartype *) array_list[columns]);
+                    vartype *m = dup_vartype((vartype *) shared_data[columns]);
                     if (m == NULL)
                         return false;
                     else {
@@ -1282,11 +1310,11 @@ static bool unpersist_vartype(vartype **v, bool padded) {
                     }
                 }
                 if (shared) {
-                    if (!array_list_grow()) {
+                    if (!shared_data_grow()) {
                         free_vartype((vartype *) cm);
                         return false;
                     }
-                    array_list[array_count++] = cm;
+                    shared_data[shared_data_count++] = cm;
                 }
                 *v = (vartype *) cm;
                 return true;
@@ -1298,7 +1326,7 @@ static bool unpersist_vartype(vartype **v, bool padded) {
                     return false;
                 if (data_index >= 0) {
                     // Shared list
-                    vartype *m = dup_vartype((vartype *) array_list[data_index]);
+                    vartype *m = dup_vartype((vartype *) shared_data[data_index]);
                     if (m == NULL)
                         return false;
                     else {
@@ -1311,11 +1339,11 @@ static bool unpersist_vartype(vartype **v, bool padded) {
                 if (list == NULL)
                     return false;
                 if (shared) {
-                    if (!array_list_grow()) {
+                    if (!shared_data_grow()) {
                         free_vartype((vartype *) list);
                         return false;
                     }
-                    array_list[array_count++] = list;
+                    shared_data[shared_data_count++] = list;
                 }
                 for (int4 i = 0; i < size; i++) {
                     if (!unpersist_vartype(&list->array->data[i], false)) {
@@ -1324,6 +1352,45 @@ static bool unpersist_vartype(vartype **v, bool padded) {
                     }
                 }
                 *v = (vartype *) list;
+                return true;
+            }
+            case TYPE_EQUATION: {
+                int data_index;
+                if (!read_int(&data_index))
+                    return false;
+                if (data_index >= 0) {
+                    // Shared list
+                    vartype *m = dup_vartype((vartype *) shared_data[data_index]);
+                    if (m == NULL)
+                        return false;
+                    else {
+                        *v = m;
+                        return true;
+                    }
+                }
+                int4 len;
+                if (!read_int4(&len))
+                    return false;
+                char *buf = (char *) malloc(len);
+                if (buf == NULL)
+                    return false;
+                if (fread(buf, 1, len, gfile) != len) {
+                    free(buf);
+                    return false;
+                }
+                int errpos;
+                *v = new_equation(buf, len, &errpos);
+                free(buf);
+                if (*v == NULL)
+                    return false;
+                bool shared = data_index == -2;
+                if (shared) {
+                    if (!shared_data_grow()) {
+                        free_vartype(*v);
+                        return false;
+                    }
+                    shared_data[shared_data_count++] = *v;
+                }
                 return true;
             }
             default:
@@ -1459,7 +1526,7 @@ static bool unpersist_vartype(vartype **v, bool padded) {
                 return false;
             if (mp.rows == 0) {
                 // Shared matrix
-                vartype *m = dup_vartype((vartype *) array_list[mp.columns]);
+                vartype *m = dup_vartype((vartype *) shared_data[mp.columns]);
                 if (m == NULL)
                     return false;
                 else {
@@ -1541,11 +1608,11 @@ static bool unpersist_vartype(vartype **v, bool padded) {
                 #endif
             }
             if (shared) {
-                if (!array_list_grow()) {
+                if (!shared_data_grow()) {
                     free_vartype((vartype *) rm);
                     return false;
                 }
-                array_list[array_count++] = rm;
+                shared_data[shared_data_count++] = rm;
             }
             *v = (vartype *) rm;
             return true;
@@ -1557,7 +1624,7 @@ static bool unpersist_vartype(vartype **v, bool padded) {
                 return false;
             if (mp.rows == 0) {
                 // Shared matrix
-                vartype *m = dup_vartype((vartype *) array_list[mp.columns]);
+                vartype *m = dup_vartype((vartype *) shared_data[mp.columns]);
                 if (m == NULL)
                     return false;
                 else {
@@ -1594,11 +1661,11 @@ static bool unpersist_vartype(vartype **v, bool padded) {
                 #endif
             }
             if (shared) {
-                if (!array_list_grow()) {
+                if (!shared_data_grow()) {
                     free_vartype((vartype *) cm);
                     return false;
                 }
-                array_list[array_count++] = cm;
+                shared_data[shared_data_count++] = cm;
             }
             *v = (vartype *) cm;
             return true;
@@ -1610,9 +1677,9 @@ static bool unpersist_vartype(vartype **v, bool padded) {
 
 static bool persist_globals() {
     int i;
-    array_count = 0;
-    array_list_capacity = 0;
-    array_list = NULL;
+    shared_data_count = 0;
+    shared_data_capacity = 0;
+    shared_data = NULL;
     bool ret = false;
 
     if (!write_int(sp))
@@ -1716,7 +1783,7 @@ static bool persist_globals() {
     ret = true;
 
     done:
-    free(array_list);
+    free(shared_data);
     return ret;
 }
 
@@ -1724,9 +1791,9 @@ bool loading_state = false;
 
 static bool unpersist_globals() {
     int i;
-    array_count = 0;
-    array_list_capacity = 0;
-    array_list = NULL;
+    shared_data_count = 0;
+    shared_data_capacity = 0;
+    shared_data = NULL;
     bool ret = false;
 #ifdef WINDOWS
     bool padded = ver < 18;
@@ -2131,7 +2198,7 @@ static bool unpersist_globals() {
     ret = true;
 
     done:
-    free(array_list);
+    free(shared_data);
     return ret;
 }
 

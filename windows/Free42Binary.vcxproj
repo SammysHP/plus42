@@ -112,6 +112,7 @@
     <ClCompile Include="core_main.cpp" />
     <ClCompile Include="core_math1.cpp" />
     <ClCompile Include="core_math2.cpp" />
+    <ClCompile Include="core_parser.cpp" />
     <ClCompile Include="core_phloat.cpp" />
     <ClCompile Include="core_sto_rcl.cpp" />
     <ClCompile Include="core_tables.cpp" />
@@ -153,6 +154,7 @@
     <ClInclude Include="core_main.h" />
     <ClInclude Include="core_math1.h" />
     <ClInclude Include="core_math2.h" />
+    <ClInclude Include="core_parser.h" />
     <ClInclude Include="core_phloat.h" />
     <ClInclude Include="core_sto_rcl.h" />
     <ClInclude Include="core_tables.h" />

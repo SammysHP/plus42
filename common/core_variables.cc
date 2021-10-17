@@ -21,6 +21,7 @@
 #include "core_globals.h"
 #include "core_helpers.h"
 #include "core_display.h"
+#include "core_parser.h"
 #include "core_variables.h"
 
 
@@ -183,6 +184,36 @@ vartype *new_list(int4 size) {
     return (vartype *) list;
 }
 
+vartype *new_equation(const char *text, int4 len, int *errpos) {
+    *errpos = -1;
+    vartype_equation *eq = (vartype_equation *) malloc(sizeof(vartype_equation));
+    if (eq == NULL)
+        return NULL;
+    eq->type = TYPE_EQUATION;
+    eq->data = (equation_data *) malloc(sizeof(equation_data));
+    if (eq->data == NULL) {
+        free(eq);
+        return NULL;
+    }
+    eq->data->length = len;
+    eq->data->text = (char *) malloc(len);
+    if (eq->data->text == NULL) {
+        free(eq->data);
+        free(eq);
+        return NULL;
+    }
+    memcpy(eq->data->text, text, len);
+    eq->data->ev = Parser::parse(std::string(text, len), errpos);
+    if (eq->data->ev == NULL) {
+        free(eq->data->text);
+        free(eq->data);
+        free(eq);
+        return NULL;
+    }
+    eq->data->refcount = 1;
+    return (vartype *) eq;
+}
+
 void free_vartype(vartype *v) {
     if (v == NULL)
         return;
@@ -241,6 +272,16 @@ void free_vartype(vartype *v) {
                 free(list->array);
             }
             free(list);
+            break;
+        }
+        case TYPE_EQUATION: {
+            vartype_equation *eq = (vartype_equation *) v;
+            if (--(eq->data->refcount) == 0) {
+                free(eq->data->text);
+                delete eq->data->ev;
+                free(eq->data);
+            }
+            free(eq);
             break;
         }
     }
@@ -352,6 +393,15 @@ vartype *dup_vartype(const vartype *v) {
             *list2 = *list;
             list->array->refcount++;
             return (vartype *) list2;
+        }
+        case TYPE_EQUATION: {
+            vartype_equation *eq = (vartype_equation *) v;
+            vartype_equation *eq2 = (vartype_equation *) malloc(sizeof(vartype_equation));
+            if (eq2 == NULL)
+                return NULL;
+            *eq2 = *eq;
+            eq->data->refcount++;
+            return (vartype *) eq2;
         }
         default:
             return NULL;
@@ -467,6 +517,7 @@ int disentangle(vartype *v) {
         case TYPE_REAL:
         case TYPE_COMPLEX:
         case TYPE_STRING:
+        case TYPE_EQUATION:
         default:
             return 1;
     }

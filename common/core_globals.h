@@ -71,6 +71,7 @@ extern FILE *gfile;
 #define ERR_BIG_STACK_DISABLED     36
 #define ERR_INVALID_CONTEXT        37
 #define ERR_NAME_TOO_LONG          38
+#define ERR_PARSE_ERROR            39
 
 #define RTNERR_MAX 8
 

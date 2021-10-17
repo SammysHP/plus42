@@ -1959,3 +1959,30 @@ int docmd_newstr(arg_struct *arg) {
         return ERR_INSUFFICIENT_MEMORY;
     return recall_result(v);
 }
+
+int docmd_parse(arg_struct *arg) {
+    vartype_string *s = (vartype_string *) stack[sp];
+    int errpos;
+    vartype *eq = new_equation(s->txt(), s->length, &errpos);
+    if (eq == NULL)
+        return errpos == -1 ? ERR_INSUFFICIENT_MEMORY : ERR_PARSE_ERROR;
+    unary_result(eq);
+    return ERR_NONE;
+}
+
+int docmd_unparse(arg_struct *arg) {
+    vartype_equation *eq = (vartype_equation *) stack[sp];
+    vartype *v = new_string(eq->data->text, eq->data->length);
+    if (v == NULL)
+        return ERR_INSUFFICIENT_MEMORY;
+    unary_result(v);
+    return ERR_NONE;
+}
+
+int docmd_eval(arg_struct *arg) {
+    return ERR_NOT_YET_IMPLEMENTED;
+}
+
+int docmd_eqn_t(arg_struct *arg) {
+    return stack[sp]->type == TYPE_EQUATION ? ERR_YES : ERR_NO;
+}

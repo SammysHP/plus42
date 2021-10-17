@@ -1116,17 +1116,30 @@ int docmd_prv(arg_struct *arg) {
         shell_annunciators(-1, -1, 1, -1, -1, -1);
         string2buf(lbuf, 8, &llen, arg->val.text, arg->length);
         char2buf(lbuf, 8, &llen, '=');
-        if (v->type == TYPE_STRING) {
-            vartype_string *s = (vartype_string *) v;
-            char *sbuf = (char *) malloc(s->length + 2);
+        if (v->type == TYPE_STRING || v->type == TYPE_EQUATION) {
+            const char *text;
+            int4 length;
+            char d;
+            if (v->type == TYPE_STRING) {
+                vartype_string *s = (vartype_string *) v;
+                text = s->txt();
+                length = s->length;
+                d = '"';
+            } else {
+                vartype_equation *eq = (vartype_equation *) v;
+                text = eq->data->text;
+                length = eq->data->length;
+                d = '\'';
+            }
+            char *sbuf = (char *) malloc(length + 2);
             if (sbuf == NULL) {
                 shell_annunciators(-1, -1, 0, -1, -1, -1);
                 return ERR_INSUFFICIENT_MEMORY;
             }
-            sbuf[0] = '"';
-            memcpy(sbuf + 1, s->txt(), s->length);
-            sbuf[s->length + 1] = '"';
-            print_wide(lbuf, llen, sbuf, s->length + 2);
+            sbuf[0] = d;
+            memcpy(sbuf + 1, text, length);
+            sbuf[length + 1] = d;
+            print_wide(lbuf, llen, sbuf, length + 2);
             free(sbuf);
         } else {
             rlen = vartype2string(v, rbuf, 100);
@@ -1338,17 +1351,30 @@ int docmd_prx(arg_struct *arg) {
         return ERR_PRINTING_IS_DISABLED;
     else {
         shell_annunciators(-1, -1, 1, -1, -1, -1);
-        if (stack[sp]->type == TYPE_STRING) {
-            vartype_string *s = (vartype_string *) stack[sp];
-            char *lbuf = (char *) malloc(s->length + 2);
+        if (stack[sp]->type == TYPE_STRING || stack[sp]->type == TYPE_EQUATION) {
+            const char *text;
+            int length;
+            char d;
+            if (stack[sp]->type == TYPE_STRING) {
+                vartype_string *s = (vartype_string *) stack[sp];
+                text = s->txt();
+                length = s->length;
+                d = '"';
+            } else {
+                vartype_equation *eq = (vartype_equation *) stack[sp];
+                text = eq->data->text;
+                length = eq->data->length;
+                d = '\'';
+            }
+            char *lbuf = (char *) malloc(length + 2);
             if (lbuf == NULL) {
                 shell_annunciators(-1, -1, 0, -1, -1, -1);
                 return ERR_INSUFFICIENT_MEMORY;
             }
-            lbuf[0] = '"';
-            memcpy(lbuf + 1, s->txt(), s->length);
-            lbuf[s->length + 1] = '"';
-            print_right(lbuf, s->length + 2, "***", 3);
+            lbuf[0] = d;
+            memcpy(lbuf + 1, text, length);
+            lbuf[length + 1] = d;
+            print_right(lbuf, length + 2, "***", 3);
             free(lbuf);
         } else {
             char buf[100];

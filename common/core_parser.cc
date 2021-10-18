@@ -74,9 +74,9 @@ double Context::getVariable(std::string name) {
     }
     std::map<std::string, double>::iterator t = variables.find(name);
     if (t != variables.end())
-        return 0;
+        return t->second;
     else
-        return variables[name];
+        return 0;
 }
 
 void Context::setFunction(std::string name, Function *function) {
@@ -134,14 +134,14 @@ double Abs::eval(Context *c) {
 }
 
 void Abs::printAlg(OutputStream *os) {
-    os->write("abs(");
+    os->write("ABS(");
     ev->printAlg(os);
     os->write(")");
 }
 
 void Abs::printRpn(OutputStream *os) {
     ev->printRpn(os);
-    os->write(" abs");
+    os->write(" ABS");
 }
 
 //////////////////
@@ -157,14 +157,14 @@ double Acos::eval(Context *c) {
 }
 
 void Acos::printAlg(OutputStream *os) {
-    os->write("acos(");
+    os->write("ACOS(");
     ev->printAlg(os);
     os->write(")");
 }
 
 void Acos::printRpn(OutputStream *os) {
     ev->printRpn(os);
-    os->write(" acos");
+    os->write(" ACOS");
 }
 
 //////////////////
@@ -180,14 +180,14 @@ double Asin::eval(Context *c) {
 }
 
 void Asin::printAlg(OutputStream *os) {
-    os->write("asin(");
+    os->write("ASIN(");
     ev->printAlg(os);
     os->write(")");
 }
 
 void Asin::printRpn(OutputStream *os) {
     ev->printRpn(os);
-    os->write(" asin");
+    os->write(" ASIN");
 }
 
 //////////////////
@@ -203,14 +203,14 @@ double Atan::eval(Context *c) {
 }
 
 void Atan::printAlg(OutputStream *os) {
-    os->write("atan(");
+    os->write("ATAN(");
     ev->printAlg(os);
     os->write(")");
 }
 
 void Atan::printRpn(OutputStream *os) {
     ev->printRpn(os);
-    os->write(" atan");
+    os->write(" ATAN");
 }
 
 //////////////////
@@ -265,7 +265,7 @@ double Cos::eval(Context *c) {
 }
 
 void Cos::printAlg(OutputStream *os) {
-    os->write("cos(");
+    os->write("COS(");
     ev->printAlg(os);
     os->write(")");
 }
@@ -314,14 +314,14 @@ double Exp::eval(Context *c) {
 }
 
 void Exp::printAlg(OutputStream *os) {
-    os->write("exp(");
+    os->write("EXP(");
     ev->printAlg(os);
     os->write(")");
 }
 
 void Exp::printRpn(OutputStream *os) {
     ev->printRpn(os);
-    os->write(" exp");
+    os->write(" EXP");
 }
 
 //////////////////////
@@ -409,14 +409,14 @@ double Log::eval(Context *c) {
 }
 
 void Log::printAlg(OutputStream *os) {
-    os->write("log(");
+    os->write("LOG(");
     ev->printAlg(os);
     os->write(")");
 }
 
 void Log::printRpn(OutputStream *os) {
     ev->printRpn(os);
-    os->write(" log");
+    os->write(" LOG");
 }
 
 /////////////////
@@ -440,7 +440,7 @@ double Max::eval(Context *c) {
 }
 
 void Max::printAlg(OutputStream *os) {
-    os->write("max(");
+    os->write("MAX(");
     for (int i = 0; i < evs->size(); i++) {
         if (i != 0)
             os->write(",");
@@ -455,7 +455,7 @@ void Max::printRpn(OutputStream *os) {
         os->write(" ");
     }
     os->write((double) evs->size());
-    os->write(" max");
+    os->write(" MAX");
 }
 
 /////////////////
@@ -479,7 +479,7 @@ double Min::eval(Context *c) {
 }
 
 void Min::printAlg(OutputStream *os) {
-    os->write("min(");
+    os->write("MIN(");
     for (int i = 0; i < evs->size(); i++) {
         if (i != 0)
             os->write(",");
@@ -494,7 +494,7 @@ void Min::printRpn(OutputStream *os) {
         os->write(" ");
     }
     os->write((double) evs->size());
-    os->write(" min");
+    os->write(" MIN");
 }
 
 //////////////////////
@@ -538,7 +538,7 @@ void Positive::printAlg(OutputStream *os) {
 
 void Positive::printRpn(OutputStream *os) {
     ev->printRpn(os);
-    os->write(" nop");
+    os->write(" NOP");
 }
 
 ///////////////////
@@ -632,14 +632,14 @@ double Sin::eval(Context *c) {
 }
 
 void Sin::printAlg(OutputStream *os) {
-    os->write("sin(");
+    os->write("SIN(");
     ev->printAlg(os);
     os->write(")");
 }
 
 void Sin::printRpn(OutputStream *os) {
     ev->printRpn(os);
-    os->write(" sin");
+    os->write(" SIN");
 }
 
 //////////////////
@@ -655,14 +655,14 @@ double Sqrt::eval(Context *c) {
 }
 
 void Sqrt::printAlg(OutputStream *os) {
-    os->write("sqrt(");
+    os->write("SQRT(");
     ev->printAlg(os);
     os->write(")");
 }
 
 void Sqrt::printRpn(OutputStream *os) {
     ev->printRpn(os);
-    os->write(" sqrt");
+    os->write(" SQRT");
 }
 
 /////////////////
@@ -704,14 +704,14 @@ double Tan::eval(Context *c) {
 }
 
 void Tan::printAlg(OutputStream *os) {
-    os->write("tan(");
+    os->write("TAN(");
     ev->printAlg(os);
     os->write(")");
 }
 
 void Tan::printRpn(OutputStream *os) {
     ev->printRpn(os);
-    os->write(" tan");
+    os->write(" TAN");
 }
 
 //////////////////////
@@ -1017,40 +1017,40 @@ Evaluator *Parser::parseThing() {
                 return NULL;
             }
             /* TODO: Parsing an arbitrarily long argument list when you
-                * know you know exactly one seems a bit stupid, and will lead
-                * to unhelpful error messages.
-                */
-            if (t == "sin" || t == "cos" || t == "tan"
-                    || t == "asin" || t == "acos" || t == "atan"
-                    || t == "log" || t == "exp" || t == "sqrt"
-                    || t == "abs") {
+             * know you need exactly one seems a bit stupid, and will lead
+             * to unhelpful error messages.
+             */
+            if (t == "SIN" || t == "COS" || t == "TAN"
+                    || t == "ASIN" || t == "ACOS" || t == "ATAN"
+                    || t == "LOG" || t == "EXP" || t == "SQRT"
+                    || t == "ABS") {
                 if (evs->size() != 1)
                     goto fail;
                 Evaluator *ev = (*evs)[0];
                 delete evs;
-                if (t == "sin")
+                if (t == "SIN")
                     return new Sin(tpos, ev);
-                else if (t == "cos")
+                else if (t == "COS")
                     return new Cos(tpos, ev);
-                else if (t == "tan")
+                else if (t == "TAN")
                     return new Tan(tpos, ev);
-                else if (t == "asin")
+                else if (t == "ASIN")
                     return new Asin(tpos, ev);
-                else if (t == "acos")
+                else if (t == "ACOS")
                     return new Acos(tpos, ev);
-                else if (t == "atan")
+                else if (t == "ATAN")
                     return new Atan(tpos, ev);
-                else if (t == "log")
+                else if (t == "LOG")
                     return new Log(tpos, ev);
-                else if (t == "exp")
+                else if (t == "EXP")
                     return new Exp(tpos, ev);
-                else if (t == "sqrt")
+                else if (t == "SQRT")
                     return new Sqrt(tpos, ev);
-                else // t == "abs"
+                else // t == "ABS"
                     return new Abs(tpos, ev);
-            } else if (t == "max")
+            } else if (t == "MAX")
                 return new Max(tpos, evs);
-            else if (t == "min")
+            else if (t == "MIN")
                 return new Min(tpos, evs);
             else
                 return new Call(tpos, t, evs);
@@ -1133,7 +1133,7 @@ int main(int argc, char *argv[]) {
         fflush(stdout);
         if (fgets(line, 1024, stdin) == NULL)
             break;
-        //strcpy(line, "sin(1.57)");
+        //strcpy(line, "SIN(1.57)");
         int linelen = strlen(line);
         while (linelen > 0 && isspace(line[0]))
             memmove(line, line + 1, linelen--);

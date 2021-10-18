@@ -27,6 +27,7 @@
 #include "core_globals.h"
 #include "core_helpers.h"
 #include "core_main.h"
+#include "core_parser.h"
 #include "core_sto_rcl.h"
 #include "core_variables.h"
 #include "shell.h"
@@ -1980,7 +1981,16 @@ int docmd_unparse(arg_struct *arg) {
 }
 
 int docmd_eval(arg_struct *arg) {
-    return ERR_NOT_YET_IMPLEMENTED;
+    vartype_equation *eq = (vartype_equation *) stack[sp];
+    Evaluator *ev = eq->data->ev;
+    Context c;
+    c.setVariable(std::string("A"), 11);
+    c.setVariable(std::string("B"), 22);
+    c.setVariable(std::string("C"), 33);
+    double result = ev->eval(&c);
+    vartype *v = new_real(result);
+    unary_result(v);
+    return ERR_NONE;
 }
 
 int docmd_eqn_t(arg_struct *arg) {

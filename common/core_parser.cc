@@ -167,6 +167,32 @@ void Acos::printRpn(OutputStream *os) {
     os->write(" ACOS");
 }
 
+/////////////////
+/////  And  /////
+/////////////////
+
+And::~And() {
+    delete left;
+    delete right;
+}
+
+double And::eval(Context *c) {
+    return left->eval(c) != 0 && right->eval(c) != 0;
+}
+
+void And::printAlg(OutputStream *os) {
+    left->printAlg(os);
+    os->write(" AND ");
+    right->printAlg(os);
+}
+
+void And::printRpn(OutputStream *os) {
+    left->printRpn(os);
+    os->write(" ");
+    right->printRpn(os);
+    os->write(" AND");
+}
+
 //////////////////
 /////  Asin  /////
 //////////////////
@@ -252,6 +278,162 @@ void Call::printRpn(OutputStream *os) {
     os->write(name);
 }
 
+///////////////////////
+/////  CompareEQ  /////
+///////////////////////
+
+CompareEQ::~CompareEQ() {
+    delete left;
+    delete right;
+}
+
+double CompareEQ::eval(Context *c) {
+    return left->eval(c) == right->eval(c);
+}
+
+void CompareEQ::printAlg(OutputStream *os) {
+    left->printAlg(os);
+    os->write("=");
+    right->printAlg(os);
+}
+
+void CompareEQ::printRpn(OutputStream *os) {
+    left->printRpn(os);
+    os->write(" ");
+    right->printRpn(os);
+    os->write(" =");
+}
+
+////////////////////////
+/////  CompareNE  /////
+////////////////////////
+
+CompareNE::~CompareNE() {
+    delete left;
+    delete right;
+}
+
+double CompareNE::eval(Context *c) {
+    return left->eval(c) != right->eval(c);
+}
+
+void CompareNE::printAlg(OutputStream *os) {
+    left->printAlg(os);
+    os->write("<>");
+    right->printAlg(os);
+}
+
+void CompareNE::printRpn(OutputStream *os) {
+    left->printRpn(os);
+    os->write(" ");
+    right->printRpn(os);
+    os->write(" <>");
+}
+
+////////////////////////
+/////  CompareLT  /////
+////////////////////////
+
+CompareLT::~CompareLT() {
+    delete left;
+    delete right;
+}
+
+double CompareLT::eval(Context *c) {
+    return left->eval(c) < right->eval(c);
+}
+
+void CompareLT::printAlg(OutputStream *os) {
+    left->printAlg(os);
+    os->write("<");
+    right->printAlg(os);
+}
+
+void CompareLT::printRpn(OutputStream *os) {
+    left->printRpn(os);
+    os->write(" ");
+    right->printRpn(os);
+    os->write(" <");
+}
+
+////////////////////////
+/////  CompareLE  /////
+////////////////////////
+
+CompareLE::~CompareLE() {
+    delete left;
+    delete right;
+}
+
+double CompareLE::eval(Context *c) {
+    return left->eval(c) <= right->eval(c);
+}
+
+void CompareLE::printAlg(OutputStream *os) {
+    left->printAlg(os);
+    os->write("<=");
+    right->printAlg(os);
+}
+
+void CompareLE::printRpn(OutputStream *os) {
+    left->printRpn(os);
+    os->write(" ");
+    right->printRpn(os);
+    os->write(" <=");
+}
+
+////////////////////////
+/////  CompareGT  /////
+////////////////////////
+
+CompareGT::~CompareGT() {
+    delete left;
+    delete right;
+}
+
+double CompareGT::eval(Context *c) {
+    return left->eval(c) > right->eval(c);
+}
+
+void CompareGT::printAlg(OutputStream *os) {
+    left->printAlg(os);
+    os->write(">");
+    right->printAlg(os);
+}
+
+void CompareGT::printRpn(OutputStream *os) {
+    left->printRpn(os);
+    os->write(" ");
+    right->printRpn(os);
+    os->write(" >");
+}
+
+////////////////////////
+/////  CompareGE  /////
+////////////////////////
+
+CompareGE::~CompareGE() {
+    delete left;
+    delete right;
+}
+
+double CompareGE::eval(Context *c) {
+    return left->eval(c) >= right->eval(c);
+}
+
+void CompareGE::printAlg(OutputStream *os) {
+    left->printAlg(os);
+    os->write(">=");
+    right->printAlg(os);
+}
+
+void CompareGE::printRpn(OutputStream *os) {
+    left->printRpn(os);
+    os->write(" ");
+    right->printRpn(os);
+    os->write(" >=");
+}
+
 /////////////////
 /////  Cos  /////
 /////////////////
@@ -299,6 +481,32 @@ void Difference::printRpn(OutputStream *os) {
     os->write(" ");
     right->printRpn(os);
     os->write(" -");
+}
+
+//////////////////////
+/////  Equation  /////
+//////////////////////
+
+Equation::~Equation() {
+    delete left;
+    delete right;
+}
+
+double Equation::eval(Context *c) {
+    return left->eval(c) - right->eval(c);
+}
+
+void Equation::printAlg(OutputStream *os) {
+    left->printAlg(os);
+    os->write("=");
+    right->printAlg(os);
+}
+
+void Equation::printRpn(OutputStream *os) {
+    left->printRpn(os);
+    os->write(" ");
+    right->printRpn(os);
+    os->write(" =");
 }
 
 /////////////////
@@ -495,6 +703,54 @@ void Min::printRpn(OutputStream *os) {
     }
     os->write((double) evs->size());
     os->write(" MIN");
+}
+
+/////////////////
+/////  Not  /////
+/////////////////
+
+Not::~Not() {
+    delete ev;
+}
+
+double Not::eval(Context *c) {
+    return ev->eval(c) == 0;
+}
+
+void Not::printAlg(OutputStream *os) {
+    os->write(" NOT ");
+    ev->printAlg(os);
+}
+
+void Not::printRpn(OutputStream *os) {
+    ev->printRpn(os);
+    os->write(" NOT");
+}
+
+////////////////
+/////  Or  /////
+////////////////
+
+Or::~Or() {
+    delete left;
+    delete right;
+}
+
+double Or::eval(Context *c) {
+    return left->eval(c) != 0 || right->eval(c) != 0;
+}
+
+void Or::printAlg(OutputStream *os) {
+    left->printAlg(os);
+    os->write(" OR ");
+    right->printAlg(os);
+}
+
+void Or::printRpn(OutputStream *os) {
+    left->printRpn(os);
+    os->write(" ");
+    right->printRpn(os);
+    os->write(" OR");
 }
 
 //////////////////////
@@ -730,6 +986,32 @@ void Variable::printRpn(OutputStream *os) {
     os->write(name);
 }
 
+/////////////////
+/////  Xor  /////
+/////////////////
+
+Xor::~Xor() {
+    delete left;
+    delete right;
+}
+
+double Xor::eval(Context *c) {
+    return (left->eval(c) != 0) != (right->eval(c) != 0);
+}
+
+void Xor::printAlg(OutputStream *os) {
+    left->printAlg(os);
+    os->write(" XOR ");
+    right->printAlg(os);
+}
+
+void Xor::printRpn(OutputStream *os) {
+    left->printRpn(os);
+    os->write(" ");
+    right->printRpn(os);
+    os->write(" XOR");
+}
+
 ///////////////////
 /////  Lexer  /////
 ///////////////////
@@ -856,7 +1138,7 @@ class Lexer {
                         || c == '(' || c == ')' || c == '[' || c == ']'
                         || c == '^' || c == ':' || c == '='
                         // Note: 42S mul/div/NE/LE/GE symbols!
-                        || c == '<' || c == '>')
+                        || c == '<' || c == '>' || c == ' ')
                     break;
                 pos++;
             }
@@ -872,7 +1154,7 @@ class Lexer {
 
 /* static */ Evaluator *Parser::parse(std::string expr, int *errpos) {
     Parser pz(expr);
-    Evaluator *ev = pz.parseExpr();
+    Evaluator *ev = pz.parseEquation();
     if (ev == NULL)
         *errpos = pz.lex->lpos();
     return ev;
@@ -886,7 +1168,142 @@ Parser::~Parser() {
     delete lex;
 }
 
+Evaluator *Parser::parseEquation() {
+    Evaluator *ev = parseExpr();
+    if (ev == NULL)
+        return NULL;
+    std::string t;
+    int tpos;
+    if (!nextToken(&t, &tpos)) {
+        fail:
+        delete ev;
+        return NULL;
+    }
+    if (t == "")
+        return ev;
+    if (t != "=")
+        goto fail;
+    Evaluator *ev2 = parseExpr();
+    if (ev2 == NULL)
+        goto fail;
+    return new Equation(tpos, ev, ev2);
+}
+
 Evaluator *Parser::parseExpr() {
+    Evaluator *ev = parseAnd();
+    if (ev == NULL)
+        return NULL;
+    while (true) {
+        std::string t;
+        int tpos;
+        if (!nextToken(&t, &tpos)) {
+            fail:
+            delete ev;
+            return NULL;
+        }
+        if (t == "")
+            return ev;
+        if (t == "OR" || t == "XOR") {
+            Evaluator *ev2 = parseAnd();
+            if (ev2 == NULL)
+                goto fail;
+            if (t == "OR")
+                ev = new Or(tpos, ev, ev2);
+            else // t == "XOR"
+                ev = new Xor(tpos, ev, ev2);
+        } else {
+            pushback(t, tpos);
+            return ev;
+        }
+    }
+}
+
+Evaluator *Parser::parseAnd() {
+    Evaluator *ev = parseNot();
+    if (ev == NULL)
+        return NULL;
+    while (true) {
+        std::string t;
+        int tpos;
+        if (!nextToken(&t, &tpos)) {
+            fail:
+            delete ev;
+            return NULL;
+        }
+        if (t == "")
+            return ev;
+        if (t == "AND") {
+            Evaluator *ev2 = parseNot();
+            if (ev2 == NULL)
+                goto fail;
+            ev = new And(tpos, ev, ev2);
+        } else {
+            pushback(t, tpos);
+            return ev;
+        }
+    }
+}
+
+Evaluator *Parser::parseNot() {
+    std::string t;
+    int tpos;
+    if (!nextToken(&t, &tpos) || t == "")
+        return NULL;
+    if (t == "NOT") {
+        Evaluator *ev = parseComparison();
+        if (ev == NULL)
+            return NULL;
+        else
+            // Check ev->isBool(); if wrong, set error position
+            // appropriately, delete ev, and return NULL.
+            // Implement similar type checks throughout the parser,
+            // in all places where Evaluators are instantiated.
+            // Don't defer the checks to the instantiation itself,
+            // but perform them as early as possible. Check their
+            // behavior against the 17B.
+            return new Not(tpos, ev);
+    } else {
+        pushback(t, tpos);
+        return parseComparison();
+    }
+}
+
+Evaluator *Parser::parseComparison() {
+    Evaluator *ev = parseNumExpr();
+    if (ev == NULL)
+        return NULL;
+    std::string t;
+    int tpos;
+    if (!nextToken(&t, &tpos)) {
+        fail:
+        delete ev;
+        return NULL;
+    }
+    if (t == "")
+        return ev;
+    if (t == "=" || t == "<>" || t == "<" || t == "<=" || t == ">" || t == ">=") {
+        Evaluator *ev2 = parseNumExpr();
+        if (ev2 == NULL)
+            goto fail;
+        if (t == "=")
+            return new CompareEQ(tpos, ev, ev2);
+        else if (t == "<>")
+            return new CompareNE(tpos, ev, ev2);
+        else if (t == "<")
+            return new CompareLT(tpos, ev, ev2);
+        else if (t == "<=")
+            return new CompareLE(tpos, ev, ev2);
+        else if (t == ">")
+            return new CompareGT(tpos, ev, ev2);
+        else // t == ">="
+            return new CompareGE(tpos, ev, ev2);
+    } else {
+        pushback(t, tpos);
+        return ev;
+    }
+}
+
+Evaluator *Parser::parseNumExpr() {
     Evaluator *ev = parseTerm();
     if (ev == NULL)
         return NULL;

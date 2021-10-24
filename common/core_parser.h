@@ -48,6 +48,7 @@ class Evaluator {
 
     Evaluator(int pos) : tpos(pos) {}
     virtual ~Evaluator() {}
+    virtual bool isBool() { return false; }
 
     int pos() { return tpos; }
 
@@ -81,6 +82,22 @@ class Acos : public Evaluator {
 
     Acos(int pos, Evaluator *ev) : Evaluator(pos), ev(ev) {}
     ~Acos();
+    double eval(Context *c);
+    void printAlg(OutputStream *os);
+    void printRpn(OutputStream *os);
+};
+
+class And : public Evaluator {
+
+    private:
+
+    Evaluator *left, *right;
+
+    public:
+
+    And(int pos, Evaluator *left, Evaluator *right) : Evaluator(pos), left(left), right(right) {}
+    ~And();
+    bool isBool() { return true; }
     double eval(Context *c);
     void printAlg(OutputStream *os);
     void printRpn(OutputStream *os);
@@ -132,6 +149,102 @@ class Call : public Evaluator {
     void printRpn(OutputStream *os);
 };
 
+class CompareEQ : public Evaluator {
+
+    private:
+
+    Evaluator *left, *right;
+
+    public:
+
+    CompareEQ(int pos, Evaluator *left, Evaluator *right) : Evaluator(pos), left(left), right(right) {}
+    ~CompareEQ();
+    bool isBool() { return true; }
+    double eval(Context *c);
+    void printAlg(OutputStream *os);
+    void printRpn(OutputStream *os);
+};
+
+class CompareNE : public Evaluator {
+
+    private:
+
+    Evaluator *left, *right;
+
+    public:
+
+    CompareNE(int pos, Evaluator *left, Evaluator *right) : Evaluator(pos), left(left), right(right) {}
+    ~CompareNE();
+    bool isBool() { return true; }
+    double eval(Context *c);
+    void printAlg(OutputStream *os);
+    void printRpn(OutputStream *os);
+};
+
+class CompareLT : public Evaluator {
+
+    private:
+
+    Evaluator *left, *right;
+
+    public:
+
+    CompareLT(int pos, Evaluator *left, Evaluator *right) : Evaluator(pos), left(left), right(right) {}
+    ~CompareLT();
+    bool isBool() { return true; }
+    double eval(Context *c);
+    void printAlg(OutputStream *os);
+    void printRpn(OutputStream *os);
+};
+
+class CompareLE : public Evaluator {
+
+    private:
+
+    Evaluator *left, *right;
+
+    public:
+
+    CompareLE(int pos, Evaluator *left, Evaluator *right) : Evaluator(pos), left(left), right(right) {}
+    ~CompareLE();
+    bool isBool() { return true; }
+    double eval(Context *c);
+    void printAlg(OutputStream *os);
+    void printRpn(OutputStream *os);
+};
+
+class CompareGT : public Evaluator {
+
+    private:
+
+    Evaluator *left, *right;
+
+    public:
+
+    CompareGT(int pos, Evaluator *left, Evaluator *right) : Evaluator(pos), left(left), right(right) {}
+    ~CompareGT();
+    bool isBool() { return true; }
+    double eval(Context *c);
+    void printAlg(OutputStream *os);
+    void printRpn(OutputStream *os);
+};
+
+class CompareGE : public Evaluator {
+
+    private:
+
+    Evaluator *left, *right;
+
+    public:
+
+    CompareGE(int pos, Evaluator *left, Evaluator *right) : Evaluator(pos), left(left), right(right) {}
+    ~CompareGE();
+    bool isBool() { return true; }
+    double eval(Context *c);
+    void printAlg(OutputStream *os);
+    void printRpn(OutputStream *os);
+};
+
 class Cos : public Evaluator {
 
     private:
@@ -157,6 +270,21 @@ class Difference : public Evaluator {
 
     Difference(int pos, Evaluator *left, Evaluator *right) : Evaluator(pos), left(left), right(right) {}
     ~Difference();
+    double eval(Context *c);
+    void printAlg(OutputStream *os);
+    void printRpn(OutputStream *os);
+};
+
+class Equation : public Evaluator {
+
+    private:
+
+    Evaluator *left, *right;
+
+    public:
+
+    Equation(int pos, Evaluator *left, Evaluator *right) : Evaluator(pos), left(left), right(right) {}
+    ~Equation();
     double eval(Context *c);
     void printAlg(OutputStream *os);
     void printRpn(OutputStream *os);
@@ -277,6 +405,38 @@ class Negative : public Evaluator {
 
     Negative(int pos, Evaluator *ev) : Evaluator(pos), ev(ev) {}
     ~Negative();
+    double eval(Context *c);
+    void printAlg(OutputStream *os);
+    void printRpn(OutputStream *os);
+};
+
+class Not : public Evaluator {
+
+    private:
+
+    Evaluator *ev;
+
+    public:
+
+    Not(int pos, Evaluator *ev) : Evaluator(pos), ev(ev) {}
+    ~Not();
+    bool isBool() { return true; }
+    double eval(Context *c);
+    void printAlg(OutputStream *os);
+    void printRpn(OutputStream *os);
+};
+
+class Or : public Evaluator {
+
+    private:
+
+    Evaluator *left, *right;
+
+    public:
+
+    Or(int pos, Evaluator *left, Evaluator *right) : Evaluator(pos), left(left), right(right) {}
+    ~Or();
+    bool isBool() { return true; }
     double eval(Context *c);
     void printAlg(OutputStream *os);
     void printRpn(OutputStream *os);
@@ -416,6 +576,22 @@ class Variable : public Evaluator {
     void printRpn(OutputStream *os);
 };
 
+class Xor : public Evaluator {
+
+    private:
+
+    Evaluator *left, *right;
+
+    public:
+
+    Xor(int pos, Evaluator *left, Evaluator *right) : Evaluator(pos), left(left), right(right) {}
+    ~Xor();
+    bool isBool() { return true; }
+    double eval(Context *c);
+    void printAlg(OutputStream *os);
+    void printRpn(OutputStream *os);
+};
+
 class Lexer;
 
 class Parser {
@@ -435,7 +611,12 @@ class Parser {
 
     Parser(std::string expr);
     ~Parser();
+    Evaluator *parseEquation();
     Evaluator *parseExpr();
+    Evaluator *parseAnd();
+    Evaluator *parseNot();
+    Evaluator *parseComparison();
+    Evaluator *parseNumExpr();
     Evaluator *parseTerm();
     Evaluator *parseFactor();
     Evaluator *parseThing();

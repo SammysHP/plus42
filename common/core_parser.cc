@@ -588,6 +588,39 @@ void Identity::printRpn(OutputStream *os) {
     ev->printRpn(os);
 }
 
+////////////////
+/////  If  /////
+////////////////
+
+If::~If() {
+    delete condition;
+    delete trueEv;
+    delete falseEv;
+}
+
+double If::eval(Context *c) {
+    return condition->eval(c) != 0 ? trueEv->eval(c) : falseEv->eval(c);
+}
+
+void If::printAlg(OutputStream *os) {
+    os->write("IF(");
+    condition->printAlg(os);
+    os->write(":");
+    trueEv->printAlg(os);
+    os->write(":");
+    falseEv->printAlg(os);
+    os->write(")");
+}
+
+void If::printRpn(OutputStream *os) {
+    condition->printRpn(os);
+    os->write(" ");
+    trueEv->printRpn(os);
+    os->write(" ");
+    falseEv->printRpn(os);
+    os->write(" IF");
+}
+
 /////////////////////
 /////  Literal  /////
 /////////////////////
@@ -638,7 +671,7 @@ Max::~Max() {
 }
 
 double Max::eval(Context *c) {
-    double res = -DBL_MAX;
+    double res = -std::numeric_limits<double>::infinity();
     for (int i = 0; i < evs->size(); i++) {
         double x = (*evs)[i]->eval(c);
         if (x > res)
@@ -677,7 +710,7 @@ Min::~Min() {
 }
 
 double Min::eval(Context *c) {
-    double res = DBL_MAX;
+    double res = std::numeric_limits<double>::infinity();
     for (int i = 0; i < evs->size(); i++) {
         double x = (*evs)[i]->eval(c);
         if (x < res)
@@ -1152,9 +1185,21 @@ class Lexer {
 /////  Parser  /////
 ////////////////////
 
+#define CTX_TOP 0
+#define CTX_VALUE 1
+#define CTX_BOOLEAN 2
+
 /* static */ Evaluator *Parser::parse(std::string expr, int *errpos) {
     Parser pz(expr);
-    Evaluator *ev = pz.parseEquation();
+    Evaluator *ev = pz.parseExpr(CTX_TOP);
+    if (ev != NULL) {
+        std::string t;
+        int tpos;
+        if (!pz.nextToken(&t, &tpos) || t != "") {
+            delete ev;
+            ev = NULL;
+        }
+    }
     if (ev == NULL)
         *errpos = pz.lex->lpos();
     return ev;
@@ -1168,28 +1213,15 @@ Parser::~Parser() {
     delete lex;
 }
 
-Evaluator *Parser::parseEquation() {
-    Evaluator *ev = parseExpr();
-    if (ev == NULL)
-        return NULL;
-    std::string t;
-    int tpos;
-    if (!nextToken(&t, &tpos)) {
-        fail:
-        delete ev;
-        return NULL;
-    }
-    if (t == "")
-        return ev;
-    if (t != "=")
-        goto fail;
-    Evaluator *ev2 = parseExpr();
-    if (ev2 == NULL)
-        goto fail;
-    return new Equation(tpos, ev, ev2);
+Evaluator *Parser::parseExpr(int context) {
+    int old_context = this->context;
+    this->context = context;
+    Evaluator *ret = parseExpr2();
+    this->context = old_context;
+    return ret;
 }
 
-Evaluator *Parser::parseExpr() {
+Evaluator *Parser::parseExpr2() {
     Evaluator *ev = parseAnd();
     if (ev == NULL)
         return NULL;
@@ -1204,9 +1236,15 @@ Evaluator *Parser::parseExpr() {
         if (t == "")
             return ev;
         if (t == "OR" || t == "XOR") {
+            if (context != CTX_BOOLEAN || !ev->isBool())
+                goto fail;
             Evaluator *ev2 = parseAnd();
             if (ev2 == NULL)
                 goto fail;
+            if (!ev2->isBool()) {
+                delete ev2;
+                goto fail;
+            }
             if (t == "OR")
                 ev = new Or(tpos, ev, ev2);
             else // t == "XOR"
@@ -1233,9 +1271,15 @@ Evaluator *Parser::parseAnd() {
         if (t == "")
             return ev;
         if (t == "AND") {
+            if (context != CTX_BOOLEAN || !ev->isBool())
+                goto fail;
             Evaluator *ev2 = parseNot();
             if (ev2 == NULL)
                 goto fail;
+            if (!ev2->isBool()) {
+                delete ev2;
+                goto fail;
+            }
             ev = new And(tpos, ev, ev2);
         } else {
             pushback(t, tpos);
@@ -1251,17 +1295,14 @@ Evaluator *Parser::parseNot() {
         return NULL;
     if (t == "NOT") {
         Evaluator *ev = parseComparison();
-        if (ev == NULL)
+        if (ev == NULL) {
             return NULL;
-        else
-            // Check ev->isBool(); if wrong, set error position
-            // appropriately, delete ev, and return NULL.
-            // Implement similar type checks throughout the parser,
-            // in all places where Evaluators are instantiated.
-            // Don't defer the checks to the instantiation itself,
-            // but perform them as early as possible. Check their
-            // behavior against the 17B.
+        } else if (context != CTX_BOOLEAN || !ev->isBool()) {
+            delete ev;
+            return NULL;
+        } else {
             return new Not(tpos, ev);
+        }
     } else {
         pushback(t, tpos);
         return parseComparison();
@@ -1281,10 +1322,28 @@ Evaluator *Parser::parseComparison() {
     }
     if (t == "")
         return ev;
-    if (t == "=" || t == "<>" || t == "<" || t == "<=" || t == ">" || t == ">=") {
+    if (context == CTX_TOP && t == "=") {
+        if (ev->isBool())
+            goto fail;
+        context = CTX_VALUE; // Only one '=' allowed
         Evaluator *ev2 = parseNumExpr();
         if (ev2 == NULL)
             goto fail;
+        if (ev2->isBool()) {
+            delete ev2;
+            goto fail;
+        }
+        return new Equation(tpos, ev, ev2);
+    } else if (t == "=" || t == "<>" || t == "<" || t == "<=" || t == ">" || t == ">=") {
+        if (context != CTX_BOOLEAN || ev->isBool())
+            goto fail;
+        Evaluator *ev2 = parseNumExpr();
+        if (ev2 == NULL)
+            goto fail;
+        if (ev2->isBool()) {
+            delete ev2;
+            goto fail;
+        }
         if (t == "=")
             return new CompareEQ(tpos, ev, ev2);
         else if (t == "<>")
@@ -1311,15 +1370,20 @@ Evaluator *Parser::parseNumExpr() {
         std::string t;
         int tpos;
         if (!nextToken(&t, &tpos)) {
+            fail:
             delete ev;
             return NULL;
         }
         if (t == "")
             return ev;
         if (t == "+" || t == "-") {
+            if (ev->isBool())
+                goto fail;
             Evaluator *ev2 = parseTerm();
-            if (ev2 == NULL) {
-                delete ev;
+            if (ev2 == NULL)
+                goto fail;
+            if (ev2->isBool()) {
+                delete ev2;
                 return NULL;
             }
             if (t == "+")
@@ -1342,6 +1406,10 @@ Evaluator *Parser::parseTerm() {
         Evaluator *ev = parseTerm();
         if (ev == NULL)
             return NULL;
+        if (ev->isBool()) {
+            delete ev;
+            return NULL;
+        }
         if (t == "+")
             return new Positive(tpos, ev);
         else
@@ -1352,17 +1420,22 @@ Evaluator *Parser::parseTerm() {
         if (ev == NULL)
             return NULL;
         while (true) {
-            if (!nextToken(&t, &tpos)) {
-                delete ev;
-                return NULL;
-            }
+            if (!nextToken(&t, &tpos))
+                goto fail;
             if (t == "")
                 return ev;
             if (t == "*" || t == "/") {
-                Evaluator *ev2 = parseFactor();
-                if (ev2 == NULL) {
+                if (ev->isBool()) {
+                    fail:
                     delete ev;
                     return NULL;
+                }
+                Evaluator *ev2 = parseFactor();
+                if (ev2 == NULL)
+                    goto fail;
+                if (ev2->isBool()) {
+                    delete ev2;
+                    goto fail;
                 }
                 if (t == "*")
                     ev = new Product(tpos, ev, ev2);
@@ -1389,9 +1462,15 @@ Evaluator *Parser::parseFactor() {
             return NULL;
         }
         if (t == "^") {
+            if (ev->isBool())
+                goto fail;
             Evaluator *ev2 = parseThing();
             if (ev2 == NULL)
                 goto fail;
+            if (ev2->isBool()) {
+                delete ev2;
+                goto fail;
+            }
             ev = new Power(tpos, ev, ev2);
         } else {
             pushback(t, tpos);
@@ -1409,6 +1488,10 @@ Evaluator *Parser::parseThing() {
         Evaluator *ev = parseThing();
         if (ev == NULL)
             return NULL;
+        if (ev->isBool()) {
+            delete ev;
+            return NULL;
+        }
         if (t == "+")
             return new Positive(tpos, ev);
         else
@@ -1423,7 +1506,25 @@ Evaluator *Parser::parseThing() {
         if (!nextToken(&t2, &t2pos))
             return NULL;
         if (t2 == "(") {
-            std::vector<Evaluator *> *evs = parseExprList();
+            int nargs;
+            bool isIF;
+            if (t == "SIN" || t == "COS" || t == "TAN"
+                    || t == "ASIN" || t == "ACOS" || t == "ATAN"
+                    || t == "LOG" || t == "EXP" || t == "SQRT"
+                    || t == "ABS") {
+                nargs = 1;
+                isIF = false;
+            } else if (t == "MIN" || t == "MAX") {
+                nargs = -1;
+                isIF = false;
+            } else if (t == "IF") {
+                nargs = 3;
+                isIF = true;
+            } else {
+                nargs = -1;
+                isIF = false;
+            }
+            std::vector<Evaluator *> *evs = parseExprList(nargs, isIF);
             if (evs == NULL)
                 return NULL;
             if (!nextToken(&t2, &t2pos) || t2 != ")") {
@@ -1433,16 +1534,10 @@ Evaluator *Parser::parseThing() {
                 delete evs;
                 return NULL;
             }
-            /* TODO: Parsing an arbitrarily long argument list when you
-             * know you need exactly one seems a bit stupid, and will lead
-             * to unhelpful error messages.
-             */
             if (t == "SIN" || t == "COS" || t == "TAN"
                     || t == "ASIN" || t == "ACOS" || t == "ATAN"
                     || t == "LOG" || t == "EXP" || t == "SQRT"
                     || t == "ABS") {
-                if (evs->size() != 1)
-                    goto fail;
                 Evaluator *ev = (*evs)[0];
                 delete evs;
                 if (t == "SIN")
@@ -1465,18 +1560,25 @@ Evaluator *Parser::parseThing() {
                     return new Sqrt(tpos, ev);
                 else // t == "ABS"
                     return new Abs(tpos, ev);
-            } else if (t == "MAX")
-                return new Max(tpos, evs);
-            else if (t == "MIN")
-                return new Min(tpos, evs);
-            else
+            } else if (t == "MAX" || t == "MIN") {
+                if (t == "MAX")
+                    return new Max(tpos, evs);
+                else // t == "MIN"
+                    return new Min(tpos, evs);
+            } else if (t == "IF") {
+                Evaluator *condition = (*evs)[0];
+                Evaluator *trueEv = (*evs)[1];
+                Evaluator *falseEv = (*evs)[2];
+                delete evs;
+                return new If(tpos, condition, trueEv, falseEv);
+            } else
                 return new Call(tpos, t, evs);
         } else {
             pushback(t2, t2pos);
             return new Variable(tpos, t);
         }
     } else if (t == "(") {
-        Evaluator *ev = parseExpr();
+        Evaluator *ev = parseExpr(context == CTX_TOP ? CTX_VALUE : context);
         if (ev == NULL)
             return NULL;
         std::string t2;
@@ -1490,30 +1592,50 @@ Evaluator *Parser::parseThing() {
         return NULL;
 }
 
-std::vector<Evaluator *> *Parser::parseExprList() {
+std::vector<Evaluator *> *Parser::parseExprList(int nargs, bool isIF) {
+    std::string t;
+    int tpos;
+    if (!nextToken(&t, &tpos) || t == "")
+        return NULL;
+    pushback(t, tpos);
     std::vector<Evaluator *> *evs = new std::vector<Evaluator *>;
-    while (true) {
-        std::string t;
-        int tpos;
-        if (!nextToken(&t, &tpos)) {
+    if (t == ")") {
+        if (nargs == 0 || nargs == -1) {
+            return evs;
+        } else {
             fail:
             for (int i = 0; i < evs->size(); i++)
                 delete (*evs)[i];
             delete evs;
             return NULL;
         }
+    } else {
         pushback(t, tpos);
-        if (t == ")")
-            return evs;
-        Evaluator *ev = parseExpr();
+    }
+
+    while (true) {
+        Evaluator *ev = parseExpr(isIF ? CTX_BOOLEAN : CTX_VALUE);
         if (ev == NULL)
             goto fail;
+        if (isIF != ev->isBool()) {
+            delete ev;
+            goto fail;
+        }
+        isIF = false;
         evs->push_back(ev);
         if (!nextToken(&t, &tpos))
             goto fail;
-        if (t != ",") {
+        if (t == ":") {
+            if (evs->size() == nargs)
+                goto fail;
+        } else {
             pushback(t, tpos);
-            return evs;
+            if (t == ")") {
+                if (nargs == -1 || nargs == evs->size())
+                    return evs;
+                else
+                    goto fail;
+            }
         }
     }
 }

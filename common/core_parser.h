@@ -336,6 +336,22 @@ class Identity : public Evaluator {
     void printRpn(OutputStream *os);
 };
 
+class If : public Evaluator {
+
+    private:
+
+    Evaluator *condition, *trueEv, *falseEv;
+
+    public:
+
+    If(int pos, Evaluator *condition, Evaluator *trueEv, Evaluator *falseEv)
+            : Evaluator(pos), condition(condition), trueEv(trueEv), falseEv(falseEv) {}
+    ~If();
+    double eval(Context *c);
+    void printAlg(OutputStream *os);
+    void printRpn(OutputStream *os);
+};
+
 class Literal : public Evaluator {
 
     private:
@@ -602,6 +618,7 @@ class Parser {
     Lexer *lex;
     std::string pb;
     int pbpos;
+    int context;
 
     public:
 
@@ -611,8 +628,8 @@ class Parser {
 
     Parser(std::string expr);
     ~Parser();
-    Evaluator *parseEquation();
-    Evaluator *parseExpr();
+    Evaluator *parseExpr(int context);
+    Evaluator *parseExpr2();
     Evaluator *parseAnd();
     Evaluator *parseNot();
     Evaluator *parseComparison();
@@ -620,7 +637,7 @@ class Parser {
     Evaluator *parseTerm();
     Evaluator *parseFactor();
     Evaluator *parseThing();
-    std::vector<Evaluator *> *parseExprList();
+    std::vector<Evaluator *> *parseExprList(int nargs, bool isIF);
     bool nextToken(std::string *tok, int *tpos);
     void pushback(std::string o, int p);
     static bool isOperator(const std::string &s);

@@ -82,7 +82,8 @@ const error_spec errors[] = {
     { /* BIG_STACK_DISABLED */     "Big Stack Disabled",      18 },
     { /* INVALID_CONTEXT */        "Invalid Context",         15 },
     { /* NAME_TOO_LONG */          "Name Too Long",           13 },
-    { /* PARSE_ERROR */            "Parse Error",             11 }
+    { /* PARSE_ERROR */            "Parse Error",             11 },
+    { /* INVALID_EQUATION */       "Invalid Equation",        16 }
 };
 
 

@@ -24,6 +24,7 @@
 #include "core_display.h"
 #include "core_helpers.h"
 #include "core_main.h"
+#include "core_parser.h"
 #include "shell.h"
 #include "shell_spool.h"
 
@@ -57,6 +58,7 @@ static bool cursor_on;
 static int current_error = ERR_NONE;
 
 static int timeout_action = 0;
+static int timeout_edit_pos;
 static int rep_key = -1;
 
 static short catalog[] = {
@@ -637,6 +639,8 @@ bool eqn_draw() {
     clear_display();
     if (current_error != ERR_NONE) {
         draw_string(0, 0, errors[current_error].text, errors[current_error].length);
+        if (current_error == ERR_INVALID_EQUATION)
+            goto draw_eqn_menu;
         draw_key(1, 0, 0, "OK", 2);
     } else if (dialog == DIALOG_SAVE_CONFIRM) {
         draw_string(0, 0, "Save this equation?", 19);
@@ -691,6 +695,7 @@ bool eqn_draw() {
         } else if (edit_menu == MENU_PRINT2) {
             draw_print2_menu();
         } else {
+            draw_eqn_menu:
             draw_key(0, 0, 0, "CALC", 4);
             draw_key(1, 0, 0, "EDIT", 4);
             draw_key(2, 0, 0, "DELET", 5);
@@ -1349,6 +1354,19 @@ static void select_function_menu(int menu) {
     }
 }
 
+static void start_edit(int pos) {
+    if (!get_equation()) {
+        show_error(ERR_INSUFFICIENT_MEMORY);
+    } else {
+        new_eq = false;
+        edit_pos = pos;
+        display_pos = 0;
+        update_menu(MENU_NONE);
+        restart_cursor();
+        eqn_draw();
+    }
+}
+
 static int keydown_list(int key, bool shift, int *repeat) {
     switch (key) {
         case KEY_UP: {
@@ -1381,16 +1399,33 @@ static int keydown_list(int key, bool shift, int *repeat) {
                 squeak();
                 return 1;
             }
-            const char *name;
-            int4 len = 0;
-            if (eqns->array->is_string[selected_row]) {
-                get_matrix_string(eqns, selected_row, &name, &len);
-                int4 i = 0;
-                while (i < len && is_name_char(name[i]))
-                    i++;
-                if (i > 0 && i < len && name[i] == ':')
-                    len = i;
+            if (!eqns->array->is_string[selected_row]) {
+                show_error(ERR_INVALID_TYPE);
+                return 1;
             }
+            const char *eq;
+            int4 len = 0;
+            get_matrix_string(eqns, selected_row, &eq, &len);
+            int4 namelen = 0;
+            while (namelen < len && is_name_char(eq[namelen]))
+                namelen++;
+            if (namelen == len || eq[namelen] != ':')
+                namelen = 0;
+            int errpos;
+            Evaluator *ev = Parser::parse(std::string(eq + namelen, len - namelen), &errpos);
+            if (ev == NULL) {
+                squeak();
+                show_error(ERR_INVALID_EQUATION);
+                current_error = ERR_NONE;
+                timeout_action = 3;
+                timeout_edit_pos = errpos;
+                shell_request_timeout3(1000);
+            } else {
+                delete ev;
+                show_error(ERR_NOT_YET_IMPLEMENTED);
+            }
+            return 1;
+#if 0
             if (len != 0 && len <= 7) {
                 pending_command_arg.length = len;
                 memcpy(pending_command_arg.val.text, name, len);
@@ -1425,6 +1460,7 @@ static int keydown_list(int key, bool shift, int *repeat) {
                 */
             redisplay();
             return 2;
+#endif
         }
         case KEY_INV: {
             /* EDIT */
@@ -1432,16 +1468,7 @@ static int keydown_list(int key, bool shift, int *repeat) {
                 squeak();
                 return 1;
             }
-            if (!get_equation()) {
-                show_error(ERR_INSUFFICIENT_MEMORY);
-                return 1;
-            }
-            new_eq = false;
-            edit_pos = 0;
-            display_pos = 0;
-            update_menu(MENU_NONE);
-            restart_cursor();
-            eqn_draw();
+            start_edit(0);
             return 1;
         }
         case KEY_SQRT: {
@@ -2094,6 +2121,9 @@ bool eqn_timeout() {
         flush_display();
         timeout_action = 2;
         shell_request_timeout3(500);
+    } else if (action == 3) {
+        /* Start editing after parse error message has timed out */
+        start_edit(timeout_edit_pos);
     }
     return true;
 }

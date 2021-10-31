@@ -72,6 +72,7 @@ extern FILE *gfile;
 #define ERR_INVALID_CONTEXT        37
 #define ERR_NAME_TOO_LONG          38
 #define ERR_PARSE_ERROR            39
+#define ERR_INVALID_EQUATION       40
 
 #define RTNERR_MAX 8
 

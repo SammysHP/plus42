@@ -1054,17 +1054,18 @@ class Lexer {
     private:
 
     std::string text;
-    int pos;
+    int pos, prevpos;
 
     public:
 
     Lexer(std::string text) {
         this->text = text;
         pos = 0;
+        prevpos = 0;
     }
 
     int lpos() {
-        return pos;
+        return prevpos;
     }
 
     bool nextToken(std::string *tok, int *tpos) {
@@ -1081,7 +1082,7 @@ class Lexer {
         // Compound symbols
         if (c == '<' || c == '>') {
             if (pos < text.length()) {
-                char c2 = text[pos + 1];
+                char c2 = text[pos];
                 if (c2 == '=' || c == '<' && c2 == '>') {
                     pos++;
                     *tok = text.substr(start, 2);
@@ -1091,31 +1092,43 @@ class Lexer {
             *tok = text.substr(start, 1);
             return true;
         }
+        if (c == '!') {
+            if (pos < text.length() && text[pos] == '=') {
+                pos++;
+                *tok = std::string("<>");
+                return true;
+            }
+        }
         // One-character symbols
         if (c == '+' || c == '-' || c == '*' || c == '/'
                 || c == '(' || c == ')' || c == '[' || c == ']'
                 || c == '^' || c == ':' || c == '=') {
-                // Note: 42S mul/div/NE/LE/GE symbols!
             *tok = text.substr(start, 1);
             return true;
+        }
+        switch (c) {
+            case '\0': *tok = std::string("/"); return true;
+            case '\1': *tok = std::string("*"); return true;
+            case '\11': *tok = std::string("<="); return true;
+            case '\13': *tok = std::string(">="); return true;
+            case '\14': *tok = std::string("<>"); return true;
         }
         // What's left at this point is numbers and names.
         // Which one we're currently looking at depends on its
         // first character; if that's a digit or a decimal,
         // it's a number; anything else, it's a name.
         bool multi_dot = false;
-        if (c == '.' || c >= '0' && c <= '9') {
-            int state = c == '.' ? 1 : 0;
-            int d0 = c == '.' ? 0 : 1;
+        if (c == '.' || c == ',' || c >= '0' && c <= '9') {
+            int state = c == '.' || c == ',' ? 1 : 0;
+            int d0 = c == '.' || c == ',' ? 0 : 1;
             int d1 = 0, d2 = 0;
             while (pos < text.length()) {
                 c = text[pos];
                 switch (state) {
                     case 0:
-                        if (c == '.')
+                        if (c == '.' || c == ',')
                             state = 1;
-                        else if (c == 'E' || c == 'e')
-                            // Note: 42S exponent symbol!
+                        else if (c == 'E' || c == 'e' || c == 24)
                             state = 2;
                         else if (c >= '0' && c <= '9')
                             d0++;
@@ -1123,12 +1136,11 @@ class Lexer {
                             goto done;
                         break;
                     case 1:
-                        if (c == '.') {
+                        if (c == '.' || c == ',') {
                             multi_dot = true;
                             goto done;
                         }
-                        else if (c == 'E' || c == 'e')
-                            // Note: 42S exponent symbol!
+                        else if (c == 'E' || c == 'e' || c == 24)
                             state = 2;
                         else if (c >= '0' && c <= '9')
                             d1++;
@@ -1155,7 +1167,7 @@ class Lexer {
             }
             done:
             // Invalid number scenarios:
-            if (d0 == 0 && d1 == 0 // A '.' not followed by a digit.
+            if (d0 == 0 && d1 == 0 // A dot not followed by a digit.
                     || multi_dot // Multiple periods
                     || state == 2  // An 'E' not followed by a valid character.
                     || state == 3 && d2 == 0) { // An 'E' not followed by at least one digit
@@ -1170,7 +1182,7 @@ class Lexer {
                 if (c == '+' || c == '-' || c == '*' || c == '/'
                         || c == '(' || c == ')' || c == '[' || c == ']'
                         || c == '^' || c == ':' || c == '='
-                        // Note: 42S mul/div/NE/LE/GE symbols!
+                        || c == '\0' || c == '\1' || c == '\11' || c == '\13' || c == '\14'
                         || c == '<' || c == '>' || c == ' ')
                     break;
                 pos++;
@@ -1192,17 +1204,26 @@ class Lexer {
 /* static */ Evaluator *Parser::parse(std::string expr, int *errpos) {
     Parser pz(expr);
     Evaluator *ev = pz.parseExpr(CTX_TOP);
-    if (ev != NULL) {
-        std::string t;
-        int tpos;
-        if (!pz.nextToken(&t, &tpos) || t != "") {
-            delete ev;
-            ev = NULL;
-        }
-    }
-    if (ev == NULL)
+    if (ev == NULL) {
+        fail:
         *errpos = pz.lex->lpos();
-    return ev;
+        return NULL;
+    }
+    std::string t;
+    int tpos;
+    if (!pz.nextToken(&t, &tpos)) {
+        delete ev;
+        goto fail;
+    }
+    if (t == "") {
+        // Text consumed completely; this is the good scenario
+        return ev;
+    } else {
+        // Trailing garbage
+        delete ev;
+        *errpos = tpos;
+        return NULL;
+    }
 }
 
 Parser::Parser(std::string expr) : text(expr), pbpos(-1) {
@@ -1656,7 +1677,11 @@ void Parser::pushback(std::string o, int p) {
 }
 
 /* static */ bool Parser::isOperator(const std::string &s) {
-    return s.find_first_of("+-*/^(),") != std::string::npos;
+    fprintf(stderr, "isOperator(\"%s\")\n", s.c_str());
+    // TODO: This doesn't handle 42S-style multiplication and
+    // TODO: division yet, nor any relational operators.
+    // TODO: Before fixing this... what is this for, again?
+    return s.find_first_of("+-*/^():") != std::string::npos;
 }
 
 #if 0

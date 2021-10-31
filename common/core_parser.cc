@@ -1521,7 +1521,20 @@ Evaluator *Parser::parseThing() {
     double d;
     if (sscanf(t.c_str(), "%lf", &d) == 1) {
         return new Literal(tpos, d);
-    } else if (!isOperator(t)) {
+    } else if (t == "(") {
+        Evaluator *ev = parseExpr(context == CTX_TOP ? CTX_VALUE : context);
+        if (ev == NULL)
+            return NULL;
+        std::string t2;
+        int t2pos;
+        if (!nextToken(&t2, &t2pos) || t2 != ")") {
+            delete ev;
+            return NULL;
+        }
+        return new Identity(tpos, ev);
+    } else {
+        // t should be a valid identifier at this point.
+        // TODO: Does this need to be checked?
         std::string t2;
         int t2pos;
         if (!nextToken(&t2, &t2pos))
@@ -1598,19 +1611,7 @@ Evaluator *Parser::parseThing() {
             pushback(t2, t2pos);
             return new Variable(tpos, t);
         }
-    } else if (t == "(") {
-        Evaluator *ev = parseExpr(context == CTX_TOP ? CTX_VALUE : context);
-        if (ev == NULL)
-            return NULL;
-        std::string t2;
-        int t2pos;
-        if (!nextToken(&t2, &t2pos) || t2 != ")") {
-            delete ev;
-            return NULL;
-        }
-        return new Identity(tpos, ev);
-    } else
-        return NULL;
+    }
 }
 
 std::vector<Evaluator *> *Parser::parseExprList(int nargs, bool isIF) {
@@ -1674,14 +1675,6 @@ bool Parser::nextToken(std::string *tok, int *tpos) {
 void Parser::pushback(std::string o, int p) {
     pb = o;
     pbpos = p;
-}
-
-/* static */ bool Parser::isOperator(const std::string &s) {
-    fprintf(stderr, "isOperator(\"%s\")\n", s.c_str());
-    // TODO: This doesn't handle 42S-style multiplication and
-    // TODO: division yet, nor any relational operators.
-    // TODO: Before fixing this... what is this for, again?
-    return s.find_first_of("+-*/^():") != std::string::npos;
 }
 
 #if 0

@@ -2523,7 +2523,7 @@ static void serialize_list(textbuf *tb, vartype_list *list, int indent) {
                     vartype_equation *eq = (vartype_equation *) elem;
                     text = eq->data->text;
                     length = eq->data->length;
-                    d = '\'';
+                    d = eq->data->compatMode ? '`' : '\'';
                 }
                 tb_indent(tb, indent);
                 tb_write(tb, &d, 1);
@@ -2534,8 +2534,9 @@ static void serialize_list(textbuf *tb, vartype_list *list, int indent) {
                         c = 138;
                     else if (c >= 130 && c != 138)
                         c &= 127;
-                    if (c == '"') {
-                        tb_write(tb, "\\\"", 2);
+                    if (c == d) {
+                        tb_write(tb, "\\", 1);
+                        tb_write(tb, &d, 1);
                     } else if (c == '\\') {
                         tb_write(tb, "\\\\", 2);
                     } else {
@@ -4108,8 +4109,11 @@ static char *parse_string(const char *buf, int len, int *slen) {
     if (s == NULL)
         return NULL;
     int sl = 0;
+    char d = buf[0];
     for (int i = 1; i < len - 1; i++) {
         char c = buf[i];
+        if (c == d)
+            break;
         if (c == '\\')
             c = buf[++i];
         s[sl++] = c;
@@ -4231,7 +4235,7 @@ static vartype *deserialize_list(const char *buf, int *pos) {
             tlen = get_token(buf, pos, &tstart);
             if (tlen != 1 || buf[tstart] != ']')
                 goto failure;
-        } else if (buf[tstart] == '"' || buf[tstart] == '\'') {
+        } else if (buf[tstart] == '"' || buf[tstart] == '\'' || buf[tstart] == '`') {
             int slen;
             char *s = parse_string(buf + tstart, tlen, &slen);
             if (s == NULL)
@@ -4241,7 +4245,7 @@ static vartype *deserialize_list(const char *buf, int *pos) {
                 v = new_string(s, slen);
             } else {
                 int errpos;
-                v = new_equation(s, slen, &errpos);
+                v = new_equation(s, slen, buf[tstart] == '`', &errpos);
             }
             free(s);
             if (v == NULL)

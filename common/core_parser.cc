@@ -4,6 +4,7 @@
 #include <float.h>
 
 #include "core_parser.h"
+#include "core_variables.h"
 
 ////////////////////////////////
 /////  class declarations  /////
@@ -1008,7 +1009,11 @@ void Tan::printRpn(OutputStream *os) {
 //////////////////////
 
 double Variable::eval(Context *c) {
-    return c->getVariable(name);
+    vartype *v = recall_var(name.c_str(), name.length());
+    if (v == NULL || v->type != TYPE_REAL)
+        return 0;
+    else
+        return ((vartype_real *) v)->x;
 }
 
 void Variable::printAlg(OutputStream *os) {
@@ -1055,17 +1060,32 @@ class Lexer {
 
     std::string text;
     int pos, prevpos;
+    bool compatMode;
 
     public:
 
-    Lexer(std::string text) {
+    Lexer(std::string text, bool compatMode) {
         this->text = text;
+        this->compatMode = compatMode;
         pos = 0;
         prevpos = 0;
     }
 
     int lpos() {
         return prevpos;
+    }
+    
+    bool isIdentifierStartChar(char c) {
+        return c != '+' && c != '-' && c != '\1' && c != '\0'
+                && c != '^' && c != '(' && c != ')' && c != '<'
+                && c != '>' && c != '=' && c != ':'
+                && (compatMode
+                        || c != '*' && c != '/' && c != '[' && c != ']' && c != '!');
+    }
+    
+    bool isIdentifierContinuationChar(char c) {
+        return c >= '0' && c <= '9' || c == '.' || c == ','
+                || isIdentifierStartChar(c);
     }
 
     bool nextToken(std::string *tok, int *tpos) {
@@ -1079,6 +1099,13 @@ class Lexer {
         int start = pos;
         *tpos = start;
         char c = text[pos++];
+        // Identifiers
+        if (isIdentifierStartChar(c)) {
+            while (isIdentifierContinuationChar(text[pos]))
+                pos++;
+            *tok = text.substr(start, pos - start);
+            return true;
+        }
         // Compound symbols
         if (c == '<' || c == '>') {
             if (pos < text.length()) {
@@ -1092,7 +1119,7 @@ class Lexer {
             *tok = text.substr(start, 1);
             return true;
         }
-        if (c == '!') {
+        if (!compatMode && c == '!') {
             if (pos < text.length() && text[pos] == '=') {
                 pos++;
                 *tok = std::string("<>");
@@ -1100,9 +1127,9 @@ class Lexer {
             }
         }
         // One-character symbols
-        if (c == '+' || c == '-' || c == '*' || c == '/'
-                || c == '(' || c == ')' || c == '[' || c == ']'
-                || c == '^' || c == ':' || c == '=') {
+        if (c == '+' || c == '-' || c == '(' || c == ')'
+                || c == '^' || c == ':' || c == '='
+                || !compatMode && (c == '*' || c == '/' || c == '[' || c == ']')) {
             *tok = text.substr(start, 1);
             return true;
         }
@@ -1113,10 +1140,10 @@ class Lexer {
             case '\13': *tok = std::string(">="); return true;
             case '\14': *tok = std::string("<>"); return true;
         }
-        // What's left at this point is numbers and names.
+        // What's left at this point is numbers or garbage.
         // Which one we're currently looking at depends on its
         // first character; if that's a digit or a decimal,
-        // it's a number; anything else, it's a name.
+        // it's a number; anything else, it's garbage.
         bool multi_dot = false;
         if (c == '.' || c == ',' || c >= '0' && c <= '9') {
             int state = c == '.' || c == ',' ? 1 : 0;
@@ -1177,17 +1204,9 @@ class Lexer {
             *tok = text.substr(start, pos - start);
             return true;
         } else {
-            while (pos < text.length()) {
-                char c = text[pos];
-                if (c == '+' || c == '-' || c == '*' || c == '/'
-                        || c == '(' || c == ')' || c == '[' || c == ']'
-                        || c == '^' || c == ':' || c == '='
-                        || c == '\0' || c == '\1' || c == '\11' || c == '\13' || c == '\14'
-                        || c == '<' || c == '>' || c == ' ')
-                    break;
-                pos++;
-            }
-            *tok = text.substr(start, pos - start);
+            // Garbage; return just the one character.
+            // Parsing will fail at this point so no need to do anything clever.
+            *tok = text.substr(start, 1);
             return true;
         }
     }
@@ -1201,8 +1220,8 @@ class Lexer {
 #define CTX_VALUE 1
 #define CTX_BOOLEAN 2
 
-/* static */ Evaluator *Parser::parse(std::string expr, int *errpos) {
-    Parser pz(expr);
+/* static */ Evaluator *Parser::parse(std::string expr, bool compatMode, int *errpos) {
+    Parser pz(expr, compatMode);
     Evaluator *ev = pz.parseExpr(CTX_TOP);
     if (ev == NULL) {
         fail:
@@ -1226,8 +1245,8 @@ class Lexer {
     }
 }
 
-Parser::Parser(std::string expr) : text(expr), pbpos(-1) {
-    lex = new Lexer(expr);
+Parser::Parser(std::string expr, bool compatMode) : text(expr), pbpos(-1) {
+    lex = new Lexer(expr, compatMode);
 }
 
 Parser::~Parser() {
@@ -1500,6 +1519,17 @@ Evaluator *Parser::parseFactor() {
     }
 }
 
+bool Parser::isIdentifier(const std::string &s) {
+    if (s.length() == 0)
+        return false;
+    if (!lex->isIdentifierStartChar(s[0]))
+        return false;
+    for (int i = 1; i < s.length(); i++)
+        if (!lex->isIdentifierContinuationChar(s[i]))
+            return false;
+    return true;
+}
+
 Evaluator *Parser::parseThing() {
     std::string t;
     int tpos;
@@ -1532,7 +1562,7 @@ Evaluator *Parser::parseThing() {
             return NULL;
         }
         return new Identity(tpos, ev);
-    } else {
+    } else if (isIdentifier(t)) {
         // t should be a valid identifier at this point.
         // TODO: Does this need to be checked?
         std::string t2;
@@ -1611,10 +1641,16 @@ Evaluator *Parser::parseThing() {
             pushback(t2, t2pos);
             return new Variable(tpos, t);
         }
+    } else {
+        return NULL;
     }
 }
 
-std::vector<Evaluator *> *Parser::parseExprList(int nargs, bool isIF) {
+#define EXPR_LIST_EXPR 0
+#define EXPR_LIST_BOOLEAN 1
+#define EXPR_LIST_NAME 2
+
+std::vector<Evaluator *> *Parser::parseExprList(int nargs, int mode) {
     std::string t;
     int tpos;
     if (!nextToken(&t, &tpos) || t == "")
@@ -1636,14 +1672,23 @@ std::vector<Evaluator *> *Parser::parseExprList(int nargs, bool isIF) {
     }
 
     while (true) {
-        Evaluator *ev = parseExpr(isIF ? CTX_BOOLEAN : CTX_VALUE);
-        if (ev == NULL)
-            goto fail;
-        if (isIF != ev->isBool()) {
-            delete ev;
-            goto fail;
+        Evaluator *ev;
+        if (mode == EXPR_LIST_NAME) {
+            if (!nextToken(&t, &tpos) || t == "")
+                goto fail;
+            if (!isIdentifier(t))
+                goto fail;
+        } else {
+            bool wantBool = mode == EXPR_LIST_BOOLEAN;
+            ev = parseExpr(wantBool ? CTX_BOOLEAN : CTX_VALUE);
+            if (ev == NULL)
+                goto fail;
+            if (wantBool != ev->isBool()) {
+                delete ev;
+                goto fail;
+            }
         }
-        isIF = false;
+        mode = EXPR_LIST_EXPR;
         evs->push_back(ev);
         if (!nextToken(&t, &tpos))
             goto fail;

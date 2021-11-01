@@ -913,10 +913,14 @@ void keydown_command_entry(int shift, int key) {
             } else if (catsect == CATSECT_EXT_2) {
                 switch (menukey) {
                     case 0:
-                        set_cat_section(CATSECT_EXT_DIR);
+                        set_cat_section(CATSECT_EXT_EQN);
                         move_cat_row(0);
                         break;
                     case 1:
+                        set_cat_section(CATSECT_EXT_DIR);
+                        move_cat_row(0);
+                        break;
+                    case 2:
                         set_cat_section(CATSECT_EXT_MISC);
                         move_cat_row(0);
                         break;
@@ -1015,7 +1019,8 @@ void keydown_command_entry(int shift, int key) {
                     || catsect == CATSECT_EXT_STK) {
                 set_cat_section(CATSECT_EXT_1);
                 redisplay();
-            } else if (catsect == CATSECT_EXT_DIR
+            } else if (catsect == CATSECT_EXT_EQN
+                    || catsect == CATSECT_EXT_DIR
                     || catsect == CATSECT_EXT_MISC) {
                 set_cat_section(CATSECT_EXT_2);
                 redisplay();
@@ -1563,7 +1568,8 @@ void keydown_command_entry(int shift, int key) {
                     set_catalog_menu(CATSECT_EXT_1);
                     redisplay();
                 } else if (mode_commandmenu == MENU_CATALOG
-                        && ((catsect = get_cat_section()) == CATSECT_EXT_DIR
+                        && ((catsect = get_cat_section()) == CATSECT_EXT_EQN
+                                || catsect == CATSECT_EXT_DIR
                                 || catsect == CATSECT_EXT_MISC)) {
                     set_catalog_menu(CATSECT_EXT_2);
                     redisplay();
@@ -1657,6 +1663,7 @@ void keydown_command_entry(int shift, int key) {
                             && catsect != CATSECT_EXT_PRGM
                             && catsect != CATSECT_EXT_STR
                             && catsect != CATSECT_EXT_STK
+                            && catsect != CATSECT_EXT_EQN
                             && catsect != CATSECT_EXT_DIR
                             && catsect != CATSECT_EXT_MISC
                             && catsect != CATSECT_EXT_0_CMP
@@ -2344,8 +2351,9 @@ void keydown_normal_mode(int shift, int key) {
                     return;
                 } else if (catsect == CATSECT_EXT_2) {
                     switch (menukey) {
-                        case 0: set_cat_section(CATSECT_EXT_DIR); break;
-                        case 1: set_cat_section(CATSECT_EXT_MISC); break;
+                        case 0: set_cat_section(CATSECT_EXT_EQN); break;
+                        case 1: set_cat_section(CATSECT_EXT_DIR); break;
+                        case 2: set_cat_section(CATSECT_EXT_MISC); break;
                         default:
                             squeak();
                             return;
@@ -2574,7 +2582,7 @@ void keydown_normal_mode(int shift, int key) {
                 else if (catsect >= CATSECT_EXT_TIME
                         && catsect <= CATSECT_EXT_STK)
                     set_cat_section(CATSECT_EXT_1);
-                else if (catsect >= CATSECT_EXT_DIR
+                else if (catsect >= CATSECT_EXT_EQN
                         && catsect <= CATSECT_EXT_MISC)
                     set_cat_section(CATSECT_EXT_2);
                 else if (catsect == CATSECT_EXT_0_CMP

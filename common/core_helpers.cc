@@ -503,7 +503,8 @@ bool vartype_equals(const vartype *v1, const vartype *v2) {
         case TYPE_EQUATION: {
             const vartype_equation *x = (const vartype_equation *) v1;
             const vartype_equation *y = (const vartype_equation *) v2;
-            return string_equals(x->data->text, x->data->length, y->data->text, y->data->length);
+            return x->data->compatMode == y->data->compatMode
+                && string_equals(x->data->text, x->data->length, y->data->text, y->data->length);
         }
         default:
             /* Looks like someone added a type that we're not handling yet! */
@@ -1669,10 +1670,11 @@ int vartype2string(const vartype *v, char *buf, int buflen, int max_mant_digits)
             vartype_equation *eq = (vartype_equation *) v;
             int i;
             int chars_so_far = 0;
-            char2buf(buf, buflen, &chars_so_far, '\'');
+            char d = eq->data->compatMode ? '`' : '\'';
+            char2buf(buf, buflen, &chars_so_far, d);
             for (i = 0; i < eq->data->length; i++)
                 char2buf(buf, buflen, &chars_so_far, eq->data->text[i]);
-            char2buf(buf, buflen, &chars_so_far, '\'');
+            char2buf(buf, buflen, &chars_so_far, d);
             return chars_so_far;
         }
 

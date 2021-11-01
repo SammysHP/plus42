@@ -290,7 +290,7 @@ typedef union {
         char two_line_message;
         char prgm_mode;
         char VIRTUAL_input;
-        char f54;
+        char eqn_compat; /* HP-17B compatibility for equations */
         char printer_exists;
         char lin_fit;
         char log_fit;
@@ -455,10 +455,11 @@ extern int4 incomplete_saved_highlight_row;
 #define CATSECT_EXT_STR 18
 #define CATSECT_EXT_STK 19
 #define CATSECT_EXT_2 20
-#define CATSECT_EXT_DIR 21
-#define CATSECT_EXT_MISC 22
-#define CATSECT_EXT_0_CMP 23
-#define CATSECT_EXT_X_CMP 24
+#define CATSECT_EXT_EQN 21
+#define CATSECT_EXT_DIR 22
+#define CATSECT_EXT_MISC 23
+#define CATSECT_EXT_0_CMP 24
+#define CATSECT_EXT_X_CMP 25
 
 /* Command line handling temporaries */
 extern char cmdline[100];

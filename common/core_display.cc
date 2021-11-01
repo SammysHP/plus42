@@ -1657,14 +1657,18 @@ static int ext_str_cat[] = {
     CMD_REV,    CMD_SUBSTR,  CMD_S_TO_N, CMD_XASTO,  CMD_NULL,   CMD_NULL
 };
 
-static int ext_dir_cat[] = {
-    CMD_NOP, CMD_NULL, CMD_NULL, CMD_NULL, CMD_NULL, CMD_NULL
-};
-
 static int ext_stk_cat[] = {
     CMD_4STK,   CMD_DEPTH, CMD_DROP, CMD_DROPN, CMD_DUP,  CMD_DUPN,
     CMD_L4STK,  CMD_LNSTK, CMD_NSTK, CMD_PICK,  CMD_RUPN, CMD_RDNN,
     CMD_UNPICK, CMD_NULL,  CMD_NULL, CMD_NULL,  CMD_NULL, CMD_NULL
+};
+
+static int ext_eqn_cat[] = {
+    CMD_EQEXT, CMD_EQSTD, CMD_EQN_T, CMD_EVAL, CMD_PARSE, CMD_UNPARSE
+};
+
+static int ext_dir_cat[] = {
+    CMD_NOP, CMD_NULL, CMD_NULL, CMD_NULL, CMD_NULL, CMD_NULL
 };
 
 #if defined(ANDROID) || defined(IPHONE)
@@ -1728,9 +1732,9 @@ static void draw_catalog() {
         mode_updown = true;
         shell_annunciators(1, -1, -1, -1, -1, -1);
     } else if (catsect == CATSECT_EXT_2) {
-        draw_key(0, 0, 0, "DIR", 3);
-        draw_key(1, 0, 0, "MISC", 4);
-        draw_key(2, 0, 0, "", 0);
+        draw_key(0, 0, 0, "EQN", 3);
+        draw_key(1, 0, 0, "DIR", 3);
+        draw_key(2, 0, 0, "MISC", 4);
         draw_key(3, 0, 0, "", 0);
         draw_key(4, 0, 0, "", 0);
         draw_key(5, 0, 0, "", 0);
@@ -1811,6 +1815,7 @@ static void draw_catalog() {
             case CATSECT_EXT_PRGM: subcat = ext_prgm_cat; subcat_rows = 3; break;
             case CATSECT_EXT_STR: subcat = ext_str_cat; subcat_rows = 3; break;
             case CATSECT_EXT_STK: subcat = ext_stk_cat; subcat_rows = 3; break;
+            case CATSECT_EXT_EQN: subcat = ext_eqn_cat; subcat_rows = 1; break;
             case CATSECT_EXT_DIR: subcat = ext_dir_cat; subcat_rows = 1; break;
             case CATSECT_EXT_MISC: subcat = ext_misc_cat; subcat_rows = MISC_CAT_ROWS; break;
             case CATSECT_EXT_0_CMP: subcat = ext_0_cmp_cat; subcat_rows = 1; break;
@@ -2290,6 +2295,12 @@ void redisplay() {
                             break;
                         case CMD_MIXED:
                             is_flag = !mode_menu_caps;
+                            break;
+                        case CMD_EQEXT:
+                            is_flag = !flags.f.eqn_compat;
+                            break;
+                        case CMD_EQSTD:
+                            is_flag = flags.f.eqn_compat;
                             break;
                         case CMD_PON:
                             is_flag = flags.f.printer_exists;
@@ -2873,6 +2884,7 @@ void set_catalog_menu(int section) {
         case CATSECT_EXT_STR:
         case CATSECT_EXT_STK:
         case CATSECT_EXT_2:
+        case CATSECT_EXT_EQN:
         case CATSECT_EXT_DIR:
         case CATSECT_EXT_MISC:
         case CATSECT_EXT_0_CMP:
@@ -2998,6 +3010,7 @@ void update_catalog() {
         case CATSECT_EXT_STR:
         case CATSECT_EXT_STK:
         case CATSECT_EXT_2:
+        case CATSECT_EXT_EQN:
         case CATSECT_EXT_DIR:
         case CATSECT_EXT_MISC:
         case CATSECT_EXT_0_CMP:

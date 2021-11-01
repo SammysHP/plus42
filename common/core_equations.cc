@@ -1412,7 +1412,7 @@ static int keydown_list(int key, bool shift, int *repeat) {
             if (namelen == len || eq[namelen] != ':')
                 namelen = 0;
             int errpos;
-            Evaluator *ev = Parser::parse(std::string(eq + namelen, len - namelen), &errpos);
+            Evaluator *ev = Parser::parse(std::string(eq + namelen, len - namelen), false, &errpos);
             if (ev == NULL) {
                 squeak();
                 show_error(ERR_INVALID_EQUATION);

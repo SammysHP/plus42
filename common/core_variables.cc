@@ -184,7 +184,7 @@ vartype *new_list(int4 size) {
     return (vartype *) list;
 }
 
-vartype *new_equation(const char *text, int4 len, int *errpos) {
+vartype *new_equation(const char *text, int4 len, bool compat_mode, int *errpos) {
     *errpos = -1;
     vartype_equation *eq = (vartype_equation *) malloc(sizeof(vartype_equation));
     if (eq == NULL)
@@ -203,13 +203,14 @@ vartype *new_equation(const char *text, int4 len, int *errpos) {
         return NULL;
     }
     memcpy(eq->data->text, text, len);
-    eq->data->ev = Parser::parse(std::string(text, len), errpos);
+    eq->data->ev = Parser::parse(std::string(text, len), compat_mode, errpos);
     if (eq->data->ev == NULL) {
         free(eq->data->text);
         free(eq->data);
         free(eq);
         return NULL;
     }
+    eq->data->compatMode = compat_mode;
     eq->data->refcount = 1;
     return (vartype *) eq;
 }

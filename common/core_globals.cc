@@ -275,8 +275,8 @@ const menu_spec menus[] = {
                         { 0x2000 + CMD_NSTK,    0, "" },
                         { 0x2000 + CMD_CAPS,    0, "" },
                         { 0x2000 + CMD_MIXED,   0, "" },
-                        { 0x1000 + CMD_NULL,    0, "" },
-                        { 0x1000 + CMD_NULL,    0, "" } } },
+                        { 0x2000 + CMD_EQEXT,   0, "" },
+                        { 0x2000 + CMD_EQSTD,   0, "" } } },
     { /* MENU_DISP */ MENU_NONE, MENU_NONE, MENU_NONE,
                       { { 0x2000 + CMD_FIX,      0, "" },
                         { 0x2000 + CMD_SCI,      0, "" },
@@ -1079,7 +1079,8 @@ static bool persist_vartype(vartype *v) {
             if (must_write) {
                 int4 len = eq->data->length;
                 return write_int4(len)
-                    && fwrite(eq->data->text, 1, len, gfile) == len;
+                    && fwrite(eq->data->text, 1, len, gfile) == len
+                    && write_bool(eq->data->compatMode);
             }
             return true;
         }
@@ -1379,8 +1380,11 @@ static bool unpersist_vartype(vartype **v, bool padded) {
                     free(buf);
                     return false;
                 }
+                bool compatMode;
+                if (!read_bool(&compatMode))
+                    return false;
                 int errpos;
-                *v = new_equation(buf, len, &errpos);
+                *v = new_equation(buf, len, compatMode, &errpos);
                 free(buf);
                 if (*v == NULL)
                     return false;
@@ -4798,7 +4802,7 @@ void hard_reset(int reason) {
     flags.f.two_line_message = 0;
     flags.f.prgm_mode = 0;
     /* flags.f.VIRTUAL_input = 0; */
-    flags.f.f54 = 0;
+    flags.f.eqn_compat = 0;
     flags.f.printer_exists = 0;
     flags.f.lin_fit = 1;
     flags.f.log_fit = 0;

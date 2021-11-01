@@ -622,11 +622,11 @@ class Parser {
 
     public:
 
-    static Evaluator *parse(std::string expr, int *errpos);
+    static Evaluator *parse(std::string expr, bool compatMode, int *errpos);
 
     private:
 
-    Parser(std::string expr);
+    Parser(std::string expr, bool compatMode);
     ~Parser();
     Evaluator *parseExpr(int context);
     Evaluator *parseExpr2();
@@ -637,7 +637,8 @@ class Parser {
     Evaluator *parseTerm();
     Evaluator *parseFactor();
     Evaluator *parseThing();
-    std::vector<Evaluator *> *parseExprList(int nargs, bool isIF);
+    std::vector<Evaluator *> *parseExprList(int nargs, int mode);
+    bool isIdentifier(const std::string &s);
     bool nextToken(std::string *tok, int *tpos);
     void pushback(std::string o, int p);
     static bool isOperator(const std::string &s);

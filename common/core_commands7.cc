@@ -1964,7 +1964,7 @@ int docmd_newstr(arg_struct *arg) {
 int docmd_parse(arg_struct *arg) {
     vartype_string *s = (vartype_string *) stack[sp];
     int errpos;
-    vartype *eq = new_equation(s->txt(), s->length, &errpos);
+    vartype *eq = new_equation(s->txt(), s->length, flags.f.eqn_compat, &errpos);
     if (eq == NULL)
         return errpos == -1 ? ERR_INSUFFICIENT_MEMORY : ERR_PARSE_ERROR;
     unary_result(eq);
@@ -1995,4 +1995,14 @@ int docmd_eval(arg_struct *arg) {
 
 int docmd_eqn_t(arg_struct *arg) {
     return stack[sp]->type == TYPE_EQUATION ? ERR_YES : ERR_NO;
+}
+
+int docmd_eqext(arg_struct *arg) {
+    flags.f.eqn_compat = 0;
+    return ERR_NONE;
+}
+
+int docmd_eqstd(arg_struct *arg) {
+    flags.f.eqn_compat = 1;
+    return ERR_NONE;
 }

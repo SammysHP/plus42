@@ -1590,9 +1590,10 @@ class Lexer {
 
     std::string text;
     int pos, prevpos;
-    bool compatMode;
 
     public:
+
+    bool compatMode;
 
     Lexer(std::string text, bool compatMode) {
         this->text = text;
@@ -1619,6 +1620,7 @@ class Lexer {
     }
 
     bool nextToken(std::string *tok, int *tpos) {
+        prevpos = pos;
         while (pos < text.length() && text[pos] == ' ')
             pos++;
         if (pos == text.length()) {
@@ -2112,12 +2114,10 @@ std::vector<Evaluator *> *Parser::parseExprList(int nargs, int mode) {
                 goto fail;
         } else {
             pushback(t, tpos);
-            if (t == ")") {
-                if (nargs == -1 || nargs == evs->size())
-                    return evs;
-                else
-                    goto fail;
-            }
+            if (t == ")" && (nargs == -1 || nargs == evs->size()))
+                return evs;
+            else
+                goto fail;
         }
     }
 }
@@ -2155,8 +2155,6 @@ Evaluator *Parser::parseThing() {
         }
         return new Identity(tpos, ev);
     } else if (isIdentifier(t)) {
-        // t should be a valid identifier at this point.
-        // TODO: Does this need to be checked?
         std::string t2;
         int t2pos;
         if (!nextToken(&t2, &t2pos))
@@ -2274,6 +2272,15 @@ Evaluator *Parser::parseThing() {
                 return new Sigma(tpos, n, from, to, step, ev);
             } else
                 return new Call(tpos, t, evs);
+        } else if (!lex->compatMode && t2 == "[") {
+            Evaluator *ev = parseExpr(CTX_VALUE);
+            if (ev == NULL)
+                return NULL;
+            if (!nextToken(&t2, &t2pos) || t2 != "]") {
+                delete ev;
+                return NULL;
+            }
+            return new Item(tpos, t, ev);
         } else {
             pushback(t2, t2pos);
             return new Variable(tpos, t);

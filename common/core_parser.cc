@@ -51,1004 +51,1534 @@ void FileOutputStream::write(std::string text) {
         fflush(file);
 }
 
-/////////////////////
-/////  Context  /////
-/////////////////////
-
-Context::~Context() {
-    for (std::map<std::string, Function *>::iterator it = functions.begin(); it != functions.end(); it++)
-        delete it->second;
-    for (int i = 0; i < parameters.size(); i++)
-        delete parameters[i];
-}
-
-void Context::setVariable(std::string name, double value) {
-    variables[name] = value;
-}
-
-double Context::getVariable(std::string name) {
-    for (int i = parameters.size() - 1; i >= 0; i--) {
-        std::map<std::string, double> *m = parameters[i];
-        std::map<std::string, double>::iterator t = m->find(name);
-        if (t != m->end())
-            return (*m)[name];
-    }
-    std::map<std::string, double>::iterator t = variables.find(name);
-    if (t != variables.end())
-        return t->second;
-    else
-        return 0;
-}
-
-void Context::setFunction(std::string name, Function *function) {
-    std::map<std::string, Function *>::iterator it = functions.find(name);
-    if (it != functions.end())
-        delete it->second;
-    functions[name] = function;
-}
-
-Function *Context::getFunction(std::string name) {
-    return functions[name];
-}
-
-void Context::push(std::vector<std::string> &names, std::vector<double> &values) {
-    std::map<std::string, double> *h = new std::map<std::string, double>;
-    for (int i = 0; i < names.size(); i++)
-        (*h)[names[i]] = values[i];
-    parameters.push_back(h);
-}
-
-void Context::pop() {
-    int n = parameters.size() - 1;
-    delete parameters[n];
-    parameters.erase(parameters.begin() + n);
-}
-
-void Context::dump(OutputStream *os, bool alg) {
-    for (std::map<std::string, double>::iterator it = variables.begin(); it != variables.end(); it++) {
-        os->write(it->first);
-        os->write("=");
-        os->write(it->second);
-        os->newline();
-    }
-    for (std::map<std::string, Function *>::iterator it = functions.begin(); it != functions.end(); it++) {
-        os->write(it->first);
-        os->write(alg ? "=" : ":");
-        if (alg)
-            it->second->printAlg(os);
-        else
-            it->second->printRpn(os);
-        os->newline();
-    }
-}
-
 /////////////////
 /////  Abs  /////
 /////////////////
 
-Abs::~Abs() {
-    delete ev;
-}
+class Abs : public Evaluator {
 
-double Abs::eval(Context *c) {
-    return fabs(ev->eval(c));
-}
+    private:
 
-void Abs::printAlg(OutputStream *os) {
-    os->write("ABS(");
-    ev->printAlg(os);
-    os->write(")");
-}
+    Evaluator *ev;
 
-void Abs::printRpn(OutputStream *os) {
-    ev->printRpn(os);
-    os->write(" ABS");
-}
+    public:
+
+    Abs(int pos, Evaluator *ev) : Evaluator(pos), ev(ev) {}
+
+    ~Abs() {
+        delete ev;
+    }
+
+    double eval() {
+        return fabs(ev->eval());
+    }
+
+    void printAlg(OutputStream *os) {
+        os->write("ABS(");
+        ev->printAlg(os);
+        os->write(")");
+    }
+
+    void printRpn(OutputStream *os) {
+        ev->printRpn(os);
+        os->write(" ABS");
+    }
+};
 
 //////////////////
 /////  Acos  /////
 //////////////////
 
-Acos::~Acos() {
-    delete ev;
-}
+class Acos : public Evaluator {
 
-double Acos::eval(Context *c) {
-    return acos(ev->eval(c));
-}
+    private:
 
-void Acos::printAlg(OutputStream *os) {
-    os->write("ACOS(");
-    ev->printAlg(os);
-    os->write(")");
-}
+    Evaluator *ev;
 
-void Acos::printRpn(OutputStream *os) {
-    ev->printRpn(os);
-    os->write(" ACOS");
-}
+    public:
+
+    Acos(int pos, Evaluator *ev) : Evaluator(pos), ev(ev) {}
+
+    ~Acos() {
+        delete ev;
+    }
+
+    double eval() {
+        return acos(ev->eval());
+    }
+
+    void printAlg(OutputStream *os) {
+        os->write("ACOS(");
+        ev->printAlg(os);
+        os->write(")");
+    }
+
+    void printRpn(OutputStream *os) {
+        ev->printRpn(os);
+        os->write(" ACOS");
+    }
+};
 
 /////////////////
 /////  And  /////
 /////////////////
 
-And::~And() {
-    delete left;
-    delete right;
-}
+class And : public Evaluator {
 
-double And::eval(Context *c) {
-    return left->eval(c) != 0 && right->eval(c) != 0;
-}
+    private:
 
-void And::printAlg(OutputStream *os) {
-    left->printAlg(os);
-    os->write(" AND ");
-    right->printAlg(os);
-}
+    Evaluator *left, *right;
 
-void And::printRpn(OutputStream *os) {
-    left->printRpn(os);
-    os->write(" ");
-    right->printRpn(os);
-    os->write(" AND");
-}
+    public:
+
+    And(int pos, Evaluator *left, Evaluator *right) : Evaluator(pos), left(left), right(right) {}
+
+    ~And() {
+        delete left;
+        delete right;
+    }
+
+    bool isBool() { return true; }
+
+    double eval() {
+        return left->eval() != 0 && right->eval() != 0;
+    }
+
+    void printAlg(OutputStream *os) {
+        left->printAlg(os);
+        os->write(" AND ");
+        right->printAlg(os);
+    }
+
+    void printRpn(OutputStream *os) {
+        left->printRpn(os);
+        os->write(" ");
+        right->printRpn(os);
+        os->write(" AND");
+    }
+};
 
 //////////////////
 /////  Asin  /////
 //////////////////
 
-Asin::~Asin() {
-    delete ev;
-}
+class Asin : public Evaluator {
 
-double Asin::eval(Context *c) {
-    return asin(ev->eval(c));
-}
+    private:
 
-void Asin::printAlg(OutputStream *os) {
-    os->write("ASIN(");
-    ev->printAlg(os);
-    os->write(")");
-}
+    Evaluator *ev;
 
-void Asin::printRpn(OutputStream *os) {
-    ev->printRpn(os);
-    os->write(" ASIN");
-}
+    public:
+
+    Asin(int pos, Evaluator *ev) : Evaluator(pos), ev(ev) {}
+
+    ~Asin() {
+        delete ev;
+    }
+
+    double eval() {
+        return asin(ev->eval());
+    }
+
+    void printAlg(OutputStream *os) {
+        os->write("ASIN(");
+        ev->printAlg(os);
+        os->write(")");
+    }
+
+    void printRpn(OutputStream *os) {
+        ev->printRpn(os);
+        os->write(" ASIN");
+    }
+};
 
 //////////////////
 /////  Atan  /////
 //////////////////
 
-Atan::~Atan() {
-    delete ev;
-}
+class Atan : public Evaluator {
 
-double Atan::eval(Context *c) {
-    return atan(ev->eval(c));
-}
+    private:
 
-void Atan::printAlg(OutputStream *os) {
-    os->write("ATAN(");
-    ev->printAlg(os);
-    os->write(")");
-}
+    Evaluator *ev;
 
-void Atan::printRpn(OutputStream *os) {
-    ev->printRpn(os);
-    os->write(" ATAN");
-}
+    public:
+
+    Atan(int pos, Evaluator *ev) : Evaluator(pos), ev(ev) {}
+
+    ~Atan() {
+        delete ev;
+    }
+
+    double eval() {
+        return atan(ev->eval());
+    }
+
+    void printAlg(OutputStream *os) {
+        os->write("ATAN(");
+        ev->printAlg(os);
+        os->write(")");
+    }
+
+    void printRpn(OutputStream *os) {
+        ev->printRpn(os);
+        os->write(" ATAN");
+    }
+};
 
 //////////////////
 /////  Call  /////
 //////////////////
 
-Call::~Call() {
-    for (int i = 0; i < evs->size(); i++)
-        delete (*evs)[i];
-    delete evs;
-}
+class Call : public Evaluator {
 
-double Call::eval(Context *c) {
-    int n = evs->size();
-    std::vector<double> values(n);
-    for (int i = 0; i < n; i++)
-        values[i] = (*evs)[i]->eval(c);
-    Function *f = c->getFunction(name);
-    double res = f->eval(values, c);
-    return res;
-}
+    private:
 
-void Call::printAlg(OutputStream *os) {
-    os->write(name);
-    os->write("(");
-    for (int i = 0; i < evs->size(); i++) {
-        if (i != 0)
-            os->write(",");
-        (*evs)[i]->printAlg(os);
+    std::string name;
+    std::vector<Evaluator *> *evs;
+
+    public:
+
+    Call(int pos, std::string name, std::vector<Evaluator *> *evs) : Evaluator(pos), name(name), evs(evs) {}
+
+    ~Call() {
+        for (int i = 0; i < evs->size(); i++)
+            delete (*evs)[i];
+        delete evs;
     }
-    os->write(")");
-}
 
-void Call::printRpn(OutputStream *os) {
-    for (int i = 0; i < evs->size(); i++) {
-        (*evs)[i]->printRpn(os);
-        os->write(" ");
+    double eval() {
+        // TODO: Not yet implemented. This is where it get interesting...
+        return 0;
     }
-    os->write(name);
-}
+
+    void printAlg(OutputStream *os) {
+        os->write(name);
+        os->write("(");
+        for (int i = 0; i < evs->size(); i++) {
+            if (i != 0)
+                os->write(":");
+            (*evs)[i]->printAlg(os);
+        }
+        os->write(")");
+    }
+
+    void printRpn(OutputStream *os) {
+        for (int i = 0; i < evs->size(); i++) {
+            (*evs)[i]->printRpn(os);
+            os->write(" ");
+        }
+        os->write(name);
+    }
+};
 
 ///////////////////////
 /////  CompareEQ  /////
 ///////////////////////
 
-CompareEQ::~CompareEQ() {
-    delete left;
-    delete right;
-}
+class CompareEQ : public Evaluator {
 
-double CompareEQ::eval(Context *c) {
-    return left->eval(c) == right->eval(c);
-}
+    private:
 
-void CompareEQ::printAlg(OutputStream *os) {
-    left->printAlg(os);
-    os->write("=");
-    right->printAlg(os);
-}
+    Evaluator *left, *right;
 
-void CompareEQ::printRpn(OutputStream *os) {
-    left->printRpn(os);
-    os->write(" ");
-    right->printRpn(os);
-    os->write(" =");
-}
+    public:
 
-////////////////////////
+    CompareEQ(int pos, Evaluator *left, Evaluator *right) : Evaluator(pos), left(left), right(right) {}
+
+    ~CompareEQ() {
+        delete left;
+        delete right;
+    }
+
+    bool isBool() { return true; }
+
+    double eval() {
+        return left->eval() == right->eval();
+    }
+
+    void printAlg(OutputStream *os) {
+        left->printAlg(os);
+        os->write("=");
+        right->printAlg(os);
+    }
+
+    void printRpn(OutputStream *os) {
+        left->printRpn(os);
+        os->write(" ");
+        right->printRpn(os);
+        os->write(" =");
+    }
+};
+
+///////////////////////
 /////  CompareNE  /////
-////////////////////////
+///////////////////////
 
-CompareNE::~CompareNE() {
-    delete left;
-    delete right;
-}
+class CompareNE : public Evaluator {
 
-double CompareNE::eval(Context *c) {
-    return left->eval(c) != right->eval(c);
-}
+    private:
 
-void CompareNE::printAlg(OutputStream *os) {
-    left->printAlg(os);
-    os->write("<>");
-    right->printAlg(os);
-}
+    Evaluator *left, *right;
 
-void CompareNE::printRpn(OutputStream *os) {
-    left->printRpn(os);
-    os->write(" ");
-    right->printRpn(os);
-    os->write(" <>");
-}
+    public:
 
-////////////////////////
+    CompareNE(int pos, Evaluator *left, Evaluator *right) : Evaluator(pos), left(left), right(right) {}
+
+    ~CompareNE() {
+        delete left;
+        delete right;
+    }
+
+    bool isBool() { return true; }
+
+    double eval() {
+        return left->eval() != right->eval();
+    }
+
+    void printAlg(OutputStream *os) {
+        left->printAlg(os);
+        os->write("<>");
+        right->printAlg(os);
+    }
+
+    void printRpn(OutputStream *os) {
+        left->printRpn(os);
+        os->write(" ");
+        right->printRpn(os);
+        os->write(" <>");
+    }
+};
+
+///////////////////////
 /////  CompareLT  /////
-////////////////////////
+///////////////////////
 
-CompareLT::~CompareLT() {
-    delete left;
-    delete right;
-}
+class CompareLT : public Evaluator {
 
-double CompareLT::eval(Context *c) {
-    return left->eval(c) < right->eval(c);
-}
+    private:
 
-void CompareLT::printAlg(OutputStream *os) {
-    left->printAlg(os);
-    os->write("<");
-    right->printAlg(os);
-}
+    Evaluator *left, *right;
 
-void CompareLT::printRpn(OutputStream *os) {
-    left->printRpn(os);
-    os->write(" ");
-    right->printRpn(os);
-    os->write(" <");
-}
+    public:
 
-////////////////////////
+    CompareLT(int pos, Evaluator *left, Evaluator *right) : Evaluator(pos), left(left), right(right) {}
+
+    ~CompareLT() {
+        delete left;
+        delete right;
+    }
+
+    bool isBool() { return true; }
+
+    double eval() {
+        return left->eval() < right->eval();
+    }
+
+    void printAlg(OutputStream *os) {
+        left->printAlg(os);
+        os->write("<");
+        right->printAlg(os);
+    }
+
+    void printRpn(OutputStream *os) {
+        left->printRpn(os);
+        os->write(" ");
+        right->printRpn(os);
+        os->write(" <");
+    }
+};
+
+///////////////////////
 /////  CompareLE  /////
-////////////////////////
+///////////////////////
 
-CompareLE::~CompareLE() {
-    delete left;
-    delete right;
-}
+class CompareLE : public Evaluator {
 
-double CompareLE::eval(Context *c) {
-    return left->eval(c) <= right->eval(c);
-}
+    private:
 
-void CompareLE::printAlg(OutputStream *os) {
-    left->printAlg(os);
-    os->write("<=");
-    right->printAlg(os);
-}
+    Evaluator *left, *right;
 
-void CompareLE::printRpn(OutputStream *os) {
-    left->printRpn(os);
-    os->write(" ");
-    right->printRpn(os);
-    os->write(" <=");
-}
+    public:
 
-////////////////////////
+    CompareLE(int pos, Evaluator *left, Evaluator *right) : Evaluator(pos), left(left), right(right) {}
+
+    ~CompareLE() {
+        delete left;
+        delete right;
+    }
+
+    bool isBool() { return true; }
+
+    double eval() {
+        return left->eval() <= right->eval();
+    }
+
+    void printAlg(OutputStream *os) {
+        left->printAlg(os);
+        os->write("<=");
+        right->printAlg(os);
+    }
+
+    void printRpn(OutputStream *os) {
+        left->printRpn(os);
+        os->write(" ");
+        right->printRpn(os);
+        os->write(" <=");
+    }
+};
+
+///////////////////////
 /////  CompareGT  /////
-////////////////////////
+///////////////////////
 
-CompareGT::~CompareGT() {
-    delete left;
-    delete right;
-}
+class CompareGT : public Evaluator {
 
-double CompareGT::eval(Context *c) {
-    return left->eval(c) > right->eval(c);
-}
+    private:
 
-void CompareGT::printAlg(OutputStream *os) {
-    left->printAlg(os);
-    os->write(">");
-    right->printAlg(os);
-}
+    Evaluator *left, *right;
 
-void CompareGT::printRpn(OutputStream *os) {
-    left->printRpn(os);
-    os->write(" ");
-    right->printRpn(os);
-    os->write(" >");
-}
+    public:
 
-////////////////////////
+    CompareGT(int pos, Evaluator *left, Evaluator *right) : Evaluator(pos), left(left), right(right) {}
+
+    ~CompareGT() {
+        delete left;
+        delete right;
+    }
+
+    bool isBool() { return true; }
+
+    double eval() {
+        return left->eval() > right->eval();
+    }
+
+    void printAlg(OutputStream *os) {
+        left->printAlg(os);
+        os->write(">");
+        right->printAlg(os);
+    }
+
+    void printRpn(OutputStream *os) {
+        left->printRpn(os);
+        os->write(" ");
+        right->printRpn(os);
+        os->write(" >");
+    }
+};
+
+///////////////////////
 /////  CompareGE  /////
-////////////////////////
+///////////////////////
 
-CompareGE::~CompareGE() {
-    delete left;
-    delete right;
-}
+class CompareGE : public Evaluator {
 
-double CompareGE::eval(Context *c) {
-    return left->eval(c) >= right->eval(c);
-}
+    private:
 
-void CompareGE::printAlg(OutputStream *os) {
-    left->printAlg(os);
-    os->write(">=");
-    right->printAlg(os);
-}
+    Evaluator *left, *right;
 
-void CompareGE::printRpn(OutputStream *os) {
-    left->printRpn(os);
-    os->write(" ");
-    right->printRpn(os);
-    os->write(" >=");
-}
+    public:
+
+    CompareGE(int pos, Evaluator *left, Evaluator *right) : Evaluator(pos), left(left), right(right) {}
+
+    ~CompareGE() {
+        delete left;
+        delete right;
+    }
+
+    bool isBool() { return true; }
+
+    double eval() {
+        return left->eval() >= right->eval();
+    }
+
+    void printAlg(OutputStream *os) {
+        left->printAlg(os);
+        os->write(">=");
+        right->printAlg(os);
+    }
+
+    void printRpn(OutputStream *os) {
+        left->printRpn(os);
+        os->write(" ");
+        right->printRpn(os);
+        os->write(" >=");
+    }
+};
 
 /////////////////
 /////  Cos  /////
 /////////////////
 
-Cos::~Cos() {
-    delete ev;
-}
+class Cos : public Evaluator {
 
-double Cos::eval(Context *c) {
-    return cos(ev->eval(c));
-}
+    private:
 
-void Cos::printAlg(OutputStream *os) {
-    os->write("COS(");
-    ev->printAlg(os);
-    os->write(")");
-}
+    Evaluator *ev;
 
-void Cos::printRpn(OutputStream *os) {
-    ev->printRpn(os);
-    os->write(" ");
-}
+    public:
+
+    Cos(int pos, Evaluator *ev) : Evaluator(pos), ev(ev) {}
+
+    ~Cos() {
+        delete ev;
+    }
+
+    double eval() {
+        return cos(ev->eval());
+    }
+
+    void printAlg(OutputStream *os) {
+        os->write("COS(");
+        ev->printAlg(os);
+        os->write(")");
+    }
+
+    void printRpn(OutputStream *os) {
+        ev->printRpn(os);
+        os->write(" ");
+    }
+};
 
 ////////////////////////
 /////  Difference  /////
 ////////////////////////
 
-Difference::~Difference() {
-    delete left;
-    delete right;
-}
+class Difference : public Evaluator {
 
-double Difference::eval(Context *c) {
-    return left->eval(c) - right->eval(c);
-}
+    private:
 
-void Difference::printAlg(OutputStream *os) {
-    left->printAlg(os);
-    os->write("-");
-    right->printAlg(os);
-}
+    Evaluator *left, *right;
 
-void Difference::printRpn(OutputStream *os) {
-    left->printRpn(os);
-    os->write(" ");
-    right->printRpn(os);
-    os->write(" -");
-}
+    public:
+
+    Difference(int pos, Evaluator *left, Evaluator *right) : Evaluator(pos), left(left), right(right) {}
+
+    ~Difference() {
+        delete left;
+        delete right;
+    }
+
+    double eval() {
+        return left->eval() - right->eval();
+    }
+
+    void printAlg(OutputStream *os) {
+        left->printAlg(os);
+        os->write("-");
+        right->printAlg(os);
+    }
+
+    void printRpn(OutputStream *os) {
+        left->printRpn(os);
+        os->write(" ");
+        right->printRpn(os);
+        os->write(" -");
+    }
+};
+
+/////////////////
+/////  Ell  /////
+/////////////////
+
+class Ell : public Evaluator {
+
+    private:
+
+    std::string name;
+    Evaluator *ev;
+
+    public:
+
+    Ell(int pos, std::string name, Evaluator *ev) : Evaluator(pos), name(name), ev(ev) {}
+
+    ~Ell() {
+        delete ev;
+    }
+
+    double eval() {
+        double val = ev->eval();
+        vartype *v = new_real(val);
+        store_var(name.c_str(), name.length(), v);
+        return val;
+    }
+
+    void printAlg(OutputStream *os) {
+        os->write("L(");
+        os->write(name);
+        os->write(":");
+        ev->printAlg(os);
+        os->write(")");
+    }
+
+    void printRpn(OutputStream *os) {
+        ev->printRpn(os);
+        os->write(" ");
+        os->write(name);
+        os->write(" L");
+    }
+};
 
 //////////////////////
 /////  Equation  /////
 //////////////////////
 
-Equation::~Equation() {
-    delete left;
-    delete right;
-}
+class Equation : public Evaluator {
 
-double Equation::eval(Context *c) {
-    return left->eval(c) - right->eval(c);
-}
+    private:
 
-void Equation::printAlg(OutputStream *os) {
-    left->printAlg(os);
-    os->write("=");
-    right->printAlg(os);
-}
+    Evaluator *left, *right;
 
-void Equation::printRpn(OutputStream *os) {
-    left->printRpn(os);
-    os->write(" ");
-    right->printRpn(os);
-    os->write(" =");
-}
+    public:
+
+    Equation(int pos, Evaluator *left, Evaluator *right) : Evaluator(pos), left(left), right(right) {}
+
+    ~Equation() {
+        delete left;
+        delete right;
+    }
+
+    double eval() {
+        return left->eval() - right->eval();
+    }
+
+    void printAlg(OutputStream *os) {
+        left->printAlg(os);
+        os->write("=");
+        right->printAlg(os);
+    }
+
+    void printRpn(OutputStream *os) {
+        left->printRpn(os);
+        os->write(" ");
+        right->printRpn(os);
+        os->write(" =");
+    }
+};
+
+/////////////////
+/////  Ess  /////
+/////////////////
+
+class Ess : public Evaluator {
+
+    private:
+
+    std::string name;
+
+    public:
+
+    Ess(int pos, std::string name) : Evaluator(pos), name(name) {}
+
+    double eval() {
+        // TODO: Should return whether this is the variable being solved for
+        return 0;
+    }
+
+    void printAlg(OutputStream *os) {
+        os->write("S(");
+        os->write(name);
+        os->write(")");
+    }
+
+    void printRpn(OutputStream *os) {
+        os->write(name);
+        os->write(" S");
+    }
+};
 
 /////////////////
 /////  Exp  /////
 /////////////////
 
-Exp::~Exp() {
-    delete ev;
-}
+class Exp : public Evaluator {
 
-double Exp::eval(Context *c) {
-    return exp(ev->eval(c));
-}
+    private:
 
-void Exp::printAlg(OutputStream *os) {
-    os->write("EXP(");
-    ev->printAlg(os);
-    os->write(")");
-}
+    Evaluator *ev;
 
-void Exp::printRpn(OutputStream *os) {
-    ev->printRpn(os);
-    os->write(" EXP");
-}
+    public:
 
-//////////////////////
-/////  Function  /////
-//////////////////////
+    Exp(int pos, Evaluator *ev) : Evaluator(pos), ev(ev) {}
 
-Function::~Function() {
-    delete evaluator;
-}
-
-double Function::eval(std::vector<double> params, Context *c) {
-    c->push(paramNames, params);
-    double ret = evaluator->eval(c);
-    c->pop();
-    return ret;
-}
-
-void Function::printAlg(OutputStream *os) {
-    os->write("(");
-    for (int i = 0; i < paramNames.size(); i++) {
-        if (i != 0)
-            os->write(",");
-        os->write(paramNames[i]);
+    ~Exp() {
+        delete ev;
     }
-    os->write(")=>");
-    evaluator->printAlg(os);
-}
 
-void Function::printRpn(OutputStream *os) {
-    for (int i = 0; i < paramNames.size(); i++) {
-        os->write(paramNames[i]);
-        os->write(" ");
+    double eval() {
+        return exp(ev->eval());
     }
-    evaluator->printRpn(os);
-}
+
+    void printAlg(OutputStream *os) {
+        os->write("EXP(");
+        ev->printAlg(os);
+        os->write(")");
+    }
+
+    void printRpn(OutputStream *os) {
+        ev->printRpn(os);
+        os->write(" EXP");
+    }
+};
+
+/////////////////
+/////  Gee  /////
+/////////////////
+
+class Gee : public Evaluator {
+
+    private:
+
+    std::string name;
+
+    public:
+
+    Gee(int pos, std::string name) : Evaluator(pos), name(name) {}
+
+    double eval() {
+        vartype *v = recall_var(name.c_str(), name.length());
+        if (v == NULL || v->type != TYPE_REAL)
+            return 0;
+        else
+            return ((vartype_real *) v)->x;
+    }
+
+    void printAlg(OutputStream *os) {
+        os->write("G(");
+        os->write(name);
+        os->write(")");
+    }
+
+    void printRpn(OutputStream *os) {
+        os->write(name);
+        os->write(" G");
+    }
+};
 
 //////////////////////
 /////  Identity  /////
 //////////////////////
 
-Identity::~Identity() {
-    delete ev;
-}
+class Identity : public Evaluator {
 
-double Identity::eval(Context *c) {
-    return ev->eval(c);
-}
+    private:
 
-void Identity::printAlg(OutputStream *os) {
-    os->write("(");
-    ev->printAlg(os);
-    os->write(")");
-}
+    Evaluator *ev;
 
-void Identity::printRpn(OutputStream *os) {
-    ev->printRpn(os);
-}
+    public:
+
+    Identity(int pos, Evaluator *ev) : Evaluator(pos), ev(ev) {}
+
+    ~Identity() {
+        delete ev;
+    }
+
+    double eval() {
+        return ev->eval();
+    }
+
+    void printAlg(OutputStream *os) {
+        os->write("(");
+        ev->printAlg(os);
+        os->write(")");
+    }
+
+    void printRpn(OutputStream *os) {
+        ev->printRpn(os);
+    }
+};
 
 ////////////////
 /////  If  /////
 ////////////////
 
-If::~If() {
-    delete condition;
-    delete trueEv;
-    delete falseEv;
-}
+class If : public Evaluator {
 
-double If::eval(Context *c) {
-    return condition->eval(c) != 0 ? trueEv->eval(c) : falseEv->eval(c);
-}
+    private:
 
-void If::printAlg(OutputStream *os) {
-    os->write("IF(");
-    condition->printAlg(os);
-    os->write(":");
-    trueEv->printAlg(os);
-    os->write(":");
-    falseEv->printAlg(os);
-    os->write(")");
-}
+    Evaluator *condition, *trueEv, *falseEv;
 
-void If::printRpn(OutputStream *os) {
-    condition->printRpn(os);
-    os->write(" ");
-    trueEv->printRpn(os);
-    os->write(" ");
-    falseEv->printRpn(os);
-    os->write(" IF");
-}
+    public:
+
+    If(int pos, Evaluator *condition, Evaluator *trueEv, Evaluator *falseEv)
+            : Evaluator(pos), condition(condition), trueEv(trueEv), falseEv(falseEv) {}
+
+    ~If() {
+        delete condition;
+        delete trueEv;
+        delete falseEv;
+    }
+
+    double eval() {
+        return condition->eval() != 0 ? trueEv->eval() : falseEv->eval();
+    }
+
+    void printAlg(OutputStream *os) {
+        os->write("IF(");
+        condition->printAlg(os);
+        os->write(":");
+        trueEv->printAlg(os);
+        os->write(":");
+        falseEv->printAlg(os);
+        os->write(")");
+    }
+
+    void printRpn(OutputStream *os) {
+        condition->printRpn(os);
+        os->write(" ");
+        trueEv->printRpn(os);
+        os->write(" ");
+        falseEv->printRpn(os);
+        os->write(" IF");
+    }
+};
+
+//////////////////
+/////  Item  /////
+//////////////////
+
+class Item : public Evaluator {
+
+    private:
+
+    std::string name;
+    Evaluator *ev;
+
+    public:
+
+    Item(int pos, std::string name, Evaluator *ev) : Evaluator(pos), name(name), ev(ev) {}
+
+    ~Item() {
+        delete ev;
+    }
+
+    double eval() {
+        vartype *v = recall_var(name.c_str(), name.length());
+        if (v == NULL || (v->type != TYPE_REALMATRIX && v->type != TYPE_COMPLEXMATRIX))
+            return 0;
+        double di = ev->eval();
+        if (di < 0 || di >= 2147483648.0)
+            return 0;
+        int4 index = (int4) di;
+        if (v->type == TYPE_REALMATRIX) {
+            vartype_realmatrix *rm = (vartype_realmatrix *) v;
+            if (index >= rm->rows * rm->columns)
+                return 0;
+            else
+                return rm->array->data[index];
+        } else {
+            // Complex: not handling that yet
+            return 0;
+        }
+    }
+
+    void printAlg(OutputStream *os) {
+        os->write("ITEM(");
+        os->write(name);
+        os->write(":");
+        ev->printAlg(os);
+        os->write(")");
+    }
+
+    void printRpn(OutputStream *os) {
+        os->write(name);
+        os->write(" ");
+        ev->printRpn(os);
+        os->write(" ITEM");
+    }
+};
 
 /////////////////////
 /////  Literal  /////
 /////////////////////
 
-double Literal::eval(Context *c) {
-    return value;
-}
+class Literal : public Evaluator {
 
-void Literal::printAlg(OutputStream *os) {
-    os->write(value);
-}
+    private:
 
-void Literal::printRpn(OutputStream *os) {
-    os->write(value);
-}
+    double value;
+
+    public:
+
+    Literal(int pos, double value) : Evaluator(pos), value(value) {}
+
+    double eval() {
+        return value;
+    }
+
+    void printAlg(OutputStream *os) {
+        os->write(value);
+    }
+
+    void printRpn(OutputStream *os) {
+        os->write(value);
+    }
+};
 
 /////////////////
 /////  Log  /////
 /////////////////
 
-Log::~Log() {
-    delete ev;
-}
+class Log : public Evaluator {
 
-double Log::eval(Context *c) {
-    return log(ev->eval(c));
-}
+    private:
 
-void Log::printAlg(OutputStream *os) {
-    os->write("LOG(");
-    ev->printAlg(os);
-    os->write(")");
-}
+    Evaluator *ev;
 
-void Log::printRpn(OutputStream *os) {
-    ev->printRpn(os);
-    os->write(" LOG");
-}
+    public:
+
+    Log(int pos, Evaluator *ev) : Evaluator(pos), ev(ev) {}
+
+    ~Log() {
+        delete ev;
+    }
+
+    double eval() {
+        return log(ev->eval());
+    }
+
+    void printAlg(OutputStream *os) {
+        os->write("LOG(");
+        ev->printAlg(os);
+        os->write(")");
+    }
+
+    void printRpn(OutputStream *os) {
+        ev->printRpn(os);
+        os->write(" LOG");
+    }
+};
 
 /////////////////
 /////  Max  /////
 /////////////////
 
-Max::~Max() {
-    for (int i = 0; i < evs->size(); i++)
-        delete (*evs)[i];
-    delete evs;
-}
+class Max : public Evaluator {
 
-double Max::eval(Context *c) {
-    double res = -std::numeric_limits<double>::infinity();
-    for (int i = 0; i < evs->size(); i++) {
-        double x = (*evs)[i]->eval(c);
-        if (x > res)
-            res = x;
-    }
-    return res;
-}
+    private:
 
-void Max::printAlg(OutputStream *os) {
-    os->write("MAX(");
-    for (int i = 0; i < evs->size(); i++) {
-        if (i != 0)
-            os->write(",");
-        (*evs)[i]->printAlg(os);
-    }
-    os->write(")");
-}
+    std::vector<Evaluator *> *evs;
 
-void Max::printRpn(OutputStream *os) {
-    for (int i = 0; i < evs->size(); i++) {
-        (*evs)[i]->printRpn(os);
-        os->write(" ");
+    public:
+
+    Max(int pos, std::vector<Evaluator *> *evs) : Evaluator(pos), evs(evs) {}
+
+    ~Max() {
+        for (int i = 0; i < evs->size(); i++)
+            delete (*evs)[i];
+        delete evs;
     }
-    os->write((double) evs->size());
-    os->write(" MAX");
-}
+
+    double eval() {
+        double res = -std::numeric_limits<double>::infinity();
+        for (int i = 0; i < evs->size(); i++) {
+            double x = (*evs)[i]->eval();
+            if (x > res)
+                res = x;
+        }
+        return res;
+    }
+
+    void printAlg(OutputStream *os) {
+        os->write("MAX(");
+        for (int i = 0; i < evs->size(); i++) {
+            if (i != 0)
+                os->write(":");
+            (*evs)[i]->printAlg(os);
+        }
+        os->write(")");
+    }
+
+    void printRpn(OutputStream *os) {
+        for (int i = 0; i < evs->size(); i++) {
+            (*evs)[i]->printRpn(os);
+            os->write(" ");
+        }
+        os->write((double) evs->size());
+        os->write(" MAX");
+    }
+};
 
 /////////////////
 /////  Min  /////
 /////////////////
 
-Min::~Min() {
-    for (int i = 0; i < evs->size(); i++)
-        delete (*evs)[i];
-    delete evs;
-}
+class Min : public Evaluator {
 
-double Min::eval(Context *c) {
-    double res = std::numeric_limits<double>::infinity();
-    for (int i = 0; i < evs->size(); i++) {
-        double x = (*evs)[i]->eval(c);
-        if (x < res)
-            res = x;
+    private:
+
+    std::vector<Evaluator *> *evs;
+
+    public:
+
+    Min(int pos, std::vector<Evaluator *> *evs) : Evaluator(pos), evs(evs) {}
+
+    ~Min() {
+        for (int i = 0; i < evs->size(); i++)
+            delete (*evs)[i];
+        delete evs;
     }
-    return res;
-}
 
-void Min::printAlg(OutputStream *os) {
-    os->write("MIN(");
-    for (int i = 0; i < evs->size(); i++) {
-        if (i != 0)
-            os->write(",");
-        (*evs)[i]->printAlg(os);
+    double eval() {
+        double res = std::numeric_limits<double>::infinity();
+        for (int i = 0; i < evs->size(); i++) {
+            double x = (*evs)[i]->eval();
+            if (x < res)
+                res = x;
+        }
+        return res;
     }
-    os->write(")");
-}
 
-void Min::printRpn(OutputStream *os) {
-    for (int i = 0; i < evs->size(); i++) {
-        (*evs)[i]->printRpn(os);
-        os->write(" ");
+    void printAlg(OutputStream *os) {
+        os->write("MIN(");
+        for (int i = 0; i < evs->size(); i++) {
+            if (i != 0)
+                os->write(":");
+            (*evs)[i]->printAlg(os);
+        }
+        os->write(")");
     }
-    os->write((double) evs->size());
-    os->write(" MIN");
-}
 
-/////////////////
-/////  Not  /////
-/////////////////
-
-Not::~Not() {
-    delete ev;
-}
-
-double Not::eval(Context *c) {
-    return ev->eval(c) == 0;
-}
-
-void Not::printAlg(OutputStream *os) {
-    os->write(" NOT ");
-    ev->printAlg(os);
-}
-
-void Not::printRpn(OutputStream *os) {
-    ev->printRpn(os);
-    os->write(" NOT");
-}
-
-////////////////
-/////  Or  /////
-////////////////
-
-Or::~Or() {
-    delete left;
-    delete right;
-}
-
-double Or::eval(Context *c) {
-    return left->eval(c) != 0 || right->eval(c) != 0;
-}
-
-void Or::printAlg(OutputStream *os) {
-    left->printAlg(os);
-    os->write(" OR ");
-    right->printAlg(os);
-}
-
-void Or::printRpn(OutputStream *os) {
-    left->printRpn(os);
-    os->write(" ");
-    right->printRpn(os);
-    os->write(" OR");
-}
+    void printRpn(OutputStream *os) {
+        for (int i = 0; i < evs->size(); i++) {
+            (*evs)[i]->printRpn(os);
+            os->write(" ");
+        }
+        os->write((double) evs->size());
+        os->write(" MIN");
+    }
+};
 
 //////////////////////
 /////  Negative  /////
 //////////////////////
 
-Negative::~Negative() {
-    delete ev;
-}
+class Negative : public Evaluator {
 
-double Negative::eval(Context *c) {
-    return -ev->eval(c);
-}
+    private:
 
-void Negative::printAlg(OutputStream *os) {
-    os->write("-");
-    ev->printAlg(os);
-}
+    Evaluator *ev;
 
-void Negative::printRpn(OutputStream *os) {
-    ev->printRpn(os);
-    os->write(" +/-");
-}
+    public:
+
+    Negative(int pos, Evaluator *ev) : Evaluator(pos), ev(ev) {}
+
+    ~Negative() {
+        delete ev;
+    }
+
+    double eval() {
+        return -ev->eval();
+    }
+
+    void printAlg(OutputStream *os) {
+        os->write("-");
+        ev->printAlg(os);
+    }
+
+    void printRpn(OutputStream *os) {
+        ev->printRpn(os);
+        os->write(" +/-");
+    }
+};
+
+/////////////////
+/////  Not  /////
+/////////////////
+
+class Not : public Evaluator {
+
+    private:
+
+    Evaluator *ev;
+
+    public:
+
+    Not(int pos, Evaluator *ev) : Evaluator(pos), ev(ev) {}
+
+    ~Not() {
+        delete ev;
+    }
+
+    bool isBool() { return true; }
+
+    double eval() {
+        return ev->eval() == 0;
+    }
+
+    void printAlg(OutputStream *os) {
+        os->write(" NOT ");
+        ev->printAlg(os);
+    }
+
+    void printRpn(OutputStream *os) {
+        ev->printRpn(os);
+        os->write(" NOT");
+    }
+};
+
+////////////////
+/////  Or  /////
+////////////////
+
+class Or : public Evaluator {
+
+    private:
+
+    Evaluator *left, *right;
+
+    public:
+
+    Or(int pos, Evaluator *left, Evaluator *right) : Evaluator(pos), left(left), right(right) {}
+
+    ~Or() {
+        delete left;
+        delete right;
+    }
+
+    bool isBool() { return true; }
+
+    double eval() {
+        return left->eval() != 0 || right->eval() != 0;
+    }
+
+    void printAlg(OutputStream *os) {
+        left->printAlg(os);
+        os->write(" OR ");
+        right->printAlg(os);
+    }
+
+    void printRpn(OutputStream *os) {
+        left->printRpn(os);
+        os->write(" ");
+        right->printRpn(os);
+        os->write(" OR");
+    }
+};
 
 //////////////////////
 /////  Positive  /////
 //////////////////////
 
-Positive::~Positive() {
-    delete ev;
-}
+class Positive : public Evaluator {
 
-double Positive::eval(Context *c) {
-    return ev->eval(c);
-}
+    private:
 
-void Positive::printAlg(OutputStream *os) {
-    os->write("+");
-    ev->printAlg(os);
-}
+    Evaluator *ev;
 
-void Positive::printRpn(OutputStream *os) {
-    ev->printRpn(os);
-    os->write(" NOP");
-}
+    public:
+
+    Positive(int pos, Evaluator *ev) : Evaluator(pos), ev(ev) {}
+
+    ~Positive() {
+        delete ev;
+    }
+
+    double eval() {
+        return ev->eval();
+    }
+
+    void printAlg(OutputStream *os) {
+        os->write("+");
+        ev->printAlg(os);
+    }
+
+    void printRpn(OutputStream *os) {
+        ev->printRpn(os);
+        os->write(" NOP");
+    }
+};
 
 ///////////////////
 /////  Power  /////
 ///////////////////
 
-Power::~Power() {
-    delete left;
-    delete right;
-}
+class Power : public Evaluator {
 
-double Power::eval(Context *c) {
-    return pow(left->eval(c), right->eval(c));
-}
+    private:
 
-void Power::printAlg(OutputStream *os) {
-    left->printAlg(os);
-    os->write("^");
-    right->printAlg(os);
-}
+    Evaluator *left, *right;
 
-void Power::printRpn(OutputStream *os) {
-    left->printRpn(os);
-    os->write(" ");
-    right->printRpn(os);
-    os->write(" ^");
-}
+    public:
+
+    Power(int pos, Evaluator *left, Evaluator *right) : Evaluator(pos), left(left), right(right) {}
+
+    ~Power() {
+        delete left;
+        delete right;
+    }
+
+    double eval() {
+        return pow(left->eval(), right->eval());
+    }
+
+    void printAlg(OutputStream *os) {
+        left->printAlg(os);
+        os->write("^");
+        right->printAlg(os);
+    }
+
+    void printRpn(OutputStream *os) {
+        left->printRpn(os);
+        os->write(" ");
+        right->printRpn(os);
+        os->write(" ^");
+    }
+};
 
 /////////////////////
 /////  Product  /////
 /////////////////////
 
-Product::~Product() {
-    delete left;
-    delete right;
-}
+class Product : public Evaluator {
 
-double Product::eval(Context *c) {
-    return left->eval(c) * right->eval(c);
-}
+    private:
 
-void Product::printAlg(OutputStream *os) {
-    left->printAlg(os);
-    os->write("*");
-    right->printAlg(os);
-}
+    Evaluator *left, *right;
 
-void Product::printRpn(OutputStream *os) {
-    left->printRpn(os);
-    os->write(" ");
-    right->printRpn(os);
-    os->write(" *");
-}
+    public:
+
+    Product(int pos, Evaluator *left, Evaluator *right) : Evaluator(pos), left(left), right(right) {}
+
+    ~Product() {
+        delete left;
+        delete right;
+    }
+
+    double eval() {
+        return left->eval() * right->eval();
+    }
+
+    void printAlg(OutputStream *os) {
+        left->printAlg(os);
+        os->write("*");
+        right->printAlg(os);
+    }
+
+    void printRpn(OutputStream *os) {
+        left->printRpn(os);
+        os->write(" ");
+        right->printRpn(os);
+        os->write(" *");
+    }
+};
 
 //////////////////////
 /////  Quotient  /////
 //////////////////////
 
-Quotient::~Quotient() {
-    delete left;
-    delete right;
-}
+class Quotient : public Evaluator {
 
-double Quotient::eval(Context *c) {
-    return left->eval(c) / right->eval(c);
-}
+    private:
 
-void Quotient::printAlg(OutputStream *os) {
-    left->printAlg(os);
-    os->write("/");
-    right->printAlg(os);
-}
+    Evaluator *left, *right;
 
-void Quotient::printRpn(OutputStream *os) {
-    left->printRpn(os);
-    os->write(" ");
-    right->printRpn(os);
-    os->write(" /");
-}
+    public:
+
+    Quotient(int pos, Evaluator *left, Evaluator *right) : Evaluator(pos), left(left), right(right) {}
+
+    ~Quotient() {
+        delete left;
+        delete right;
+    }
+
+    double eval() {
+        return left->eval() / right->eval();
+    }
+
+    void printAlg(OutputStream *os) {
+        left->printAlg(os);
+        os->write("/");
+        right->printAlg(os);
+    }
+
+    void printRpn(OutputStream *os) {
+        left->printRpn(os);
+        os->write(" ");
+        right->printRpn(os);
+        os->write(" /");
+    }
+};
+
+///////////////////
+/////  Sigma  /////
+///////////////////
+
+class Sigma : public Evaluator {
+
+    private:
+
+    std::string name;
+    Evaluator *from;
+    Evaluator *to;
+    Evaluator *step;
+    Evaluator *ev;
+    
+    public:
+
+    Sigma(int pos, std::string name, Evaluator *from, Evaluator *to, Evaluator *step, Evaluator *ev)
+        : Evaluator(pos), name(name), from(from), to(to), step(step), ev(ev) {}
+
+    ~Sigma() {
+        delete from;
+        delete to;
+        delete step;
+        delete ev;
+    }
+
+    double eval() {
+        double f = from->eval();
+        double t = to->eval();
+        double s = step->eval();
+        double sum = 0;
+        do {
+            vartype *v = new_real(f);
+            store_var(name.c_str(), name.length(), v, true);
+            sum += ev->eval();
+            // TODO: What if step is not positive?
+            f += s;
+        } while (f <= t);
+        return sum;
+    }
+
+    void printAlg(OutputStream *os) {
+        os->write("Sigma(");
+        os->write(name);
+        os->write(":");
+        from->printAlg(os);
+        os->write(":");
+        to->printAlg(os);
+        os->write(":");
+        step->printAlg(os);
+        os->write(":");
+        ev->printAlg(os);
+        os->write(")");
+    }
+
+    void printRpn(OutputStream *os) {
+        os->write(name);
+        os->write(" ");
+        from->printRpn(os);
+        os->write(" ");
+        to->printRpn(os);
+        os->write(" ");
+        step->printRpn(os);
+        os->write(" ");
+        ev->printRpn(os);
+        os->write(" Sigma");
+    }
+};
 
 /////////////////
 /////  Sin  /////
 /////////////////
 
-Sin::~Sin() {
-    delete ev;
-}
+class Sin : public Evaluator {
 
-double Sin::eval(Context *c) {
-    return sin(ev->eval(c));
-}
+    private:
 
-void Sin::printAlg(OutputStream *os) {
-    os->write("SIN(");
-    ev->printAlg(os);
-    os->write(")");
-}
+    Evaluator *ev;
 
-void Sin::printRpn(OutputStream *os) {
-    ev->printRpn(os);
-    os->write(" SIN");
-}
+    public:
+
+    Sin(int pos, Evaluator *ev) : Evaluator(pos), ev(ev) {}
+
+    ~Sin() {
+        delete ev;
+    }
+
+    double eval() {
+        return sin(ev->eval());
+    }
+
+    void printAlg(OutputStream *os) {
+        os->write("SIN(");
+        ev->printAlg(os);
+        os->write(")");
+    }
+
+    void printRpn(OutputStream *os) {
+        ev->printRpn(os);
+        os->write(" SIN");
+    }
+};
 
 //////////////////
 /////  Sqrt  /////
 //////////////////
 
-Sqrt::~Sqrt() {
-    delete ev;
-}
+class Sqrt : public Evaluator {
 
-double Sqrt::eval(Context *c) {
-    return sqrt(ev->eval(c));
-}
+    private:
 
-void Sqrt::printAlg(OutputStream *os) {
-    os->write("SQRT(");
-    ev->printAlg(os);
-    os->write(")");
-}
+    Evaluator *ev;
 
-void Sqrt::printRpn(OutputStream *os) {
-    ev->printRpn(os);
-    os->write(" SQRT");
-}
+    public:
+
+    Sqrt(int pos, Evaluator *ev) : Evaluator(pos), ev(ev) {}
+
+    ~Sqrt() {
+        delete ev;
+    }
+
+    double eval() {
+        return sqrt(ev->eval());
+    }
+
+    void printAlg(OutputStream *os) {
+        os->write("SQRT(");
+        ev->printAlg(os);
+        os->write(")");
+    }
+
+    void printRpn(OutputStream *os) {
+        ev->printRpn(os);
+        os->write(" SQRT");
+    }
+};
 
 /////////////////
 /////  Sum  /////
 /////////////////
 
-Sum::~Sum() {
-    delete left;
-    delete right;
-}
+class Sum : public Evaluator {
 
-double Sum::eval(Context *c) {
-    return left->eval(c) + right->eval(c);
-}
+    private:
 
-void Sum::printAlg(OutputStream *os) {
-    left->printAlg(os);
-    os->write("+");
-    right->printAlg(os);
-}
+    Evaluator *left, *right;
 
-void Sum::printRpn(OutputStream *os) {
-    left->printRpn(os);
-    os->write(" ");
-    right->printRpn(os);
-    os->write(" +");
-}
+    public:
+
+    Sum(int pos, Evaluator *left, Evaluator *right) : Evaluator(pos), left(left), right(right) {}
+
+    ~Sum() {
+        delete left;
+        delete right;
+    }
+
+    double eval() {
+        return left->eval() + right->eval();
+    }
+
+    void printAlg(OutputStream *os) {
+        left->printAlg(os);
+        os->write("+");
+        right->printAlg(os);
+    }
+
+    void printRpn(OutputStream *os) {
+        left->printRpn(os);
+        os->write(" ");
+        right->printRpn(os);
+        os->write(" +");
+    }
+};
 
 /////////////////
 /////  Tan  /////
 /////////////////
 
-Tan::~Tan() {
-    delete ev;
-}
+class Tan : public Evaluator {
 
-double Tan::eval(Context *c) {
-    return tan(ev->eval(c));
-}
+    private:
 
-void Tan::printAlg(OutputStream *os) {
-    os->write("TAN(");
-    ev->printAlg(os);
-    os->write(")");
-}
+    Evaluator *ev;
 
-void Tan::printRpn(OutputStream *os) {
-    ev->printRpn(os);
-    os->write(" TAN");
-}
+    public:
+
+    Tan(int pos, Evaluator *ev) : Evaluator(pos), ev(ev) {}
+
+    ~Tan() {
+        delete ev;
+    }
+
+    double eval() {
+        return tan(ev->eval());
+    }
+
+    void printAlg(OutputStream *os) {
+        os->write("TAN(");
+        ev->printAlg(os);
+        os->write(")");
+    }
+
+    void printRpn(OutputStream *os) {
+        ev->printRpn(os);
+        os->write(" TAN");
+    }
+};
 
 //////////////////////
 /////  Variable  /////
 //////////////////////
 
-double Variable::eval(Context *c) {
-    vartype *v = recall_var(name.c_str(), name.length());
-    if (v == NULL || v->type != TYPE_REAL)
-        return 0;
-    else
-        return ((vartype_real *) v)->x;
-}
+class Variable : public Evaluator {
 
-void Variable::printAlg(OutputStream *os) {
-    os->write(name);
-}
+    private:
 
-void Variable::printRpn(OutputStream *os) {
-    os->write(name);
-}
+    std::string nam;
+
+    public:
+
+    Variable(int pos, std::string name) : Evaluator(pos), nam(name) {}
+    
+    std::string name() { return nam; }
+
+    double eval() {
+        vartype *v = recall_var(nam.c_str(), nam.length());
+        if (v == NULL || v->type != TYPE_REAL)
+            return 0;
+        else
+            return ((vartype_real *) v)->x;
+    }
+
+    void printAlg(OutputStream *os) {
+        os->write(nam);
+    }
+
+    void printRpn(OutputStream *os) {
+        os->write(nam);
+    }
+};
 
 /////////////////
 /////  Xor  /////
 /////////////////
 
-Xor::~Xor() {
-    delete left;
-    delete right;
-}
+class Xor : public Evaluator {
 
-double Xor::eval(Context *c) {
-    return (left->eval(c) != 0) != (right->eval(c) != 0);
-}
+    private:
 
-void Xor::printAlg(OutputStream *os) {
-    left->printAlg(os);
-    os->write(" XOR ");
-    right->printAlg(os);
-}
+    Evaluator *left, *right;
 
-void Xor::printRpn(OutputStream *os) {
-    left->printRpn(os);
-    os->write(" ");
-    right->printRpn(os);
-    os->write(" XOR");
-}
+    public:
+
+    Xor(int pos, Evaluator *left, Evaluator *right) : Evaluator(pos), left(left), right(right) {}
+
+    ~Xor() {
+        delete left;
+        delete right;
+    }
+
+    bool isBool() { return true; }
+
+    double eval() {
+        return (left->eval() != 0) != (right->eval() != 0);
+    }
+
+    void printAlg(OutputStream *os) {
+        left->printAlg(os);
+        os->write(" XOR ");
+        right->printAlg(os);
+    }
+
+    void printRpn(OutputStream *os) {
+        left->printRpn(os);
+        os->write(" ");
+        right->printRpn(os);
+        os->write(" XOR");
+    }
+};
 
 ///////////////////
 /////  Lexer  /////
@@ -1530,6 +2060,68 @@ bool Parser::isIdentifier(const std::string &s) {
     return true;
 }
 
+#define EXPR_LIST_EXPR 0
+#define EXPR_LIST_BOOLEAN 1
+#define EXPR_LIST_NAME 2
+
+std::vector<Evaluator *> *Parser::parseExprList(int nargs, int mode) {
+    std::string t;
+    int tpos;
+    if (!nextToken(&t, &tpos) || t == "")
+        return NULL;
+    pushback(t, tpos);
+    std::vector<Evaluator *> *evs = new std::vector<Evaluator *>;
+    if (t == ")") {
+        if (nargs == 0 || nargs == -1) {
+            return evs;
+        } else {
+            fail:
+            for (int i = 0; i < evs->size(); i++)
+                delete (*evs)[i];
+            delete evs;
+            return NULL;
+        }
+    } else {
+        pushback(t, tpos);
+    }
+
+    while (true) {
+        Evaluator *ev;
+        if (mode == EXPR_LIST_NAME) {
+            if (!nextToken(&t, &tpos) || t == "")
+                goto fail;
+            if (!isIdentifier(t))
+                goto fail;
+            ev = new Variable(tpos, t);
+        } else {
+            bool wantBool = mode == EXPR_LIST_BOOLEAN;
+            ev = parseExpr(wantBool ? CTX_BOOLEAN : CTX_VALUE);
+            if (ev == NULL)
+                goto fail;
+            if (wantBool != ev->isBool()) {
+                delete ev;
+                goto fail;
+            }
+        }
+        mode = EXPR_LIST_EXPR;
+        evs->push_back(ev);
+        if (!nextToken(&t, &tpos))
+            goto fail;
+        if (t == ":") {
+            if (evs->size() == nargs)
+                goto fail;
+        } else {
+            pushback(t, tpos);
+            if (t == ")") {
+                if (nargs == -1 || nargs == evs->size())
+                    return evs;
+                else
+                    goto fail;
+            }
+        }
+    }
+}
+
 Evaluator *Parser::parseThing() {
     std::string t;
     int tpos;
@@ -1571,24 +2163,33 @@ Evaluator *Parser::parseThing() {
             return NULL;
         if (t2 == "(") {
             int nargs;
-            bool isIF;
+            int mode;
             if (t == "SIN" || t == "COS" || t == "TAN"
                     || t == "ASIN" || t == "ACOS" || t == "ATAN"
                     || t == "LOG" || t == "EXP" || t == "SQRT"
                     || t == "ABS") {
                 nargs = 1;
-                isIF = false;
+                mode = EXPR_LIST_EXPR;
             } else if (t == "MIN" || t == "MAX") {
                 nargs = -1;
-                isIF = false;
+                mode = EXPR_LIST_EXPR;
             } else if (t == "IF") {
                 nargs = 3;
-                isIF = true;
+                mode = EXPR_LIST_BOOLEAN;
+            } else if (t == "G" || t == "S") {
+                nargs = 1;
+                mode = EXPR_LIST_NAME;
+            } else if (t == "L" || t == "ITEM") {
+                nargs = 2;
+                mode = EXPR_LIST_NAME;
+            } else if (t == "\5") {
+                nargs = 5;
+                mode = EXPR_LIST_NAME;
             } else {
                 nargs = -1;
-                isIF = false;
+                mode = EXPR_LIST_EXPR;
             }
-            std::vector<Evaluator *> *evs = parseExprList(nargs, isIF);
+            std::vector<Evaluator *> *evs = parseExprList(nargs, mode);
             if (evs == NULL)
                 return NULL;
             if (!nextToken(&t2, &t2pos) || t2 != ")") {
@@ -1635,6 +2236,42 @@ Evaluator *Parser::parseThing() {
                 Evaluator *falseEv = (*evs)[2];
                 delete evs;
                 return new If(tpos, condition, trueEv, falseEv);
+            } else if (t == "G") {
+                Evaluator *name = (*evs)[0];
+                delete evs;
+                std::string n = name->name();
+                delete name;
+                return new Gee(tpos, n);
+            } else if (t == "S") {
+                Evaluator *name = (*evs)[0];
+                delete evs;
+                std::string n = name->name();
+                delete name;
+                return new Ess(tpos, n);
+            } else if (t == "L") {
+                Evaluator *name = (*evs)[0];
+                Evaluator *ev = (*evs)[1];
+                delete evs;
+                std::string n = name->name();
+                delete name;
+                return new Ell(tpos, n, ev);
+            } else if (t == "ITEM") {
+                Evaluator *name = (*evs)[0];
+                Evaluator *ev = (*evs)[1];
+                delete evs;
+                std::string n = name->name();
+                delete name;
+                return new Item(tpos, n, ev);
+            } else if (t == "\5") {
+                Evaluator *name = (*evs)[0];
+                Evaluator *from = (*evs)[1];
+                Evaluator *to = (*evs)[2];
+                Evaluator *step = (*evs)[3];
+                Evaluator *ev = (*evs)[4];
+                delete evs;
+                std::string n = name->name();
+                delete name;
+                return new Sigma(tpos, n, from, to, step, ev);
             } else
                 return new Call(tpos, t, evs);
         } else {
@@ -1643,67 +2280,6 @@ Evaluator *Parser::parseThing() {
         }
     } else {
         return NULL;
-    }
-}
-
-#define EXPR_LIST_EXPR 0
-#define EXPR_LIST_BOOLEAN 1
-#define EXPR_LIST_NAME 2
-
-std::vector<Evaluator *> *Parser::parseExprList(int nargs, int mode) {
-    std::string t;
-    int tpos;
-    if (!nextToken(&t, &tpos) || t == "")
-        return NULL;
-    pushback(t, tpos);
-    std::vector<Evaluator *> *evs = new std::vector<Evaluator *>;
-    if (t == ")") {
-        if (nargs == 0 || nargs == -1) {
-            return evs;
-        } else {
-            fail:
-            for (int i = 0; i < evs->size(); i++)
-                delete (*evs)[i];
-            delete evs;
-            return NULL;
-        }
-    } else {
-        pushback(t, tpos);
-    }
-
-    while (true) {
-        Evaluator *ev;
-        if (mode == EXPR_LIST_NAME) {
-            if (!nextToken(&t, &tpos) || t == "")
-                goto fail;
-            if (!isIdentifier(t))
-                goto fail;
-        } else {
-            bool wantBool = mode == EXPR_LIST_BOOLEAN;
-            ev = parseExpr(wantBool ? CTX_BOOLEAN : CTX_VALUE);
-            if (ev == NULL)
-                goto fail;
-            if (wantBool != ev->isBool()) {
-                delete ev;
-                goto fail;
-            }
-        }
-        mode = EXPR_LIST_EXPR;
-        evs->push_back(ev);
-        if (!nextToken(&t, &tpos))
-            goto fail;
-        if (t == ":") {
-            if (evs->size() == nargs)
-                goto fail;
-        } else {
-            pushback(t, tpos);
-            if (t == ")") {
-                if (nargs == -1 || nargs == evs->size())
-                    return evs;
-                else
-                    goto fail;
-            }
-        }
     }
 }
 
@@ -1721,86 +2297,3 @@ void Parser::pushback(std::string o, int p) {
     pb = o;
     pbpos = p;
 }
-
-#if 0
-
-int main(int argc, char *argv[]) {
-    Context c;
-    char line[1024];
-    char *eqpos;
-    OutputStream *out = new FileOutputStream(stdout, true);
-
-    while (true) {
-        printf("> ");
-        fflush(stdout);
-        if (fgets(line, 1024, stdin) == NULL)
-            break;
-        //strcpy(line, "SIN(1.57)");
-        int linelen = strlen(line);
-        while (linelen > 0 && isspace(line[0]))
-            memmove(line, line + 1, linelen--);
-        while (linelen > 0 && isspace(line[linelen - 1]))
-            line[--linelen] = 0;
-        if (linelen == 0)
-            break;
-        if (strcmp(line, "exit") == 0) {
-            break;
-        } else if (strcmp(line, "dump") == 0 || strcmp(line, "dumpalg") == 0) {
-            c.dump(out, true);
-        } else if (strcmp(line, "dumprpn") == 0) {
-            c.dump(out, false);
-        } else if ((eqpos = strchr(line, '=')) != NULL) {
-            // Assignment
-            std::string left(line, eqpos - line);
-            std::string right(eqpos + 1);
-            int p1 = left.find('(');
-            std::string name = left.substr(0, p1);
-            if (p1 != std::string::npos) {
-                // Function definition
-                std::vector<std::string> paramNames;
-                while (++p1 < left.length()) {
-                    int p2 = left.find_first_of(",)", p1);
-                    if (p2 == std::string::npos) {
-                        paramNames.push_back(left.substr(p1));
-                        break;
-                    }
-                    paramNames.push_back(left.substr(p1, p2 - p1));
-                    p1 = p2;
-                }
-                int errpos;
-                Evaluator *ev = Parser::parse(right, &errpos);
-                if (ev == NULL) {
-                    fprintf(stderr, "Error at %d\n", errpos);
-                    continue;
-                }
-                Function *f = new Function(paramNames, ev);
-                c.setFunction(name, f);
-            } else {
-                // Variable assignment
-                int errpos;
-                Evaluator *ev = Parser::parse(right, &errpos);
-                if (ev == NULL) {
-                    fprintf(stderr, "Error at %d\n", errpos);
-                    continue;
-                }
-                c.setVariable(left, ev->eval(&c));
-                delete ev;
-            }
-        } else {
-            // Immediate evaluation
-            int errpos;
-            Evaluator *ev = Parser::parse(line, &errpos);
-            if (ev == NULL) {
-                fprintf(stderr, "Error at %d\n", errpos);
-                continue;
-            }
-            out->write(ev->eval(&c));
-            out->newline();
-            delete ev;
-        }
-    }
-    delete out;
-    return 0;
-}
-
-#endif

@@ -1983,11 +1983,7 @@ int docmd_unparse(arg_struct *arg) {
 int docmd_eval(arg_struct *arg) {
     vartype_equation *eq = (vartype_equation *) stack[sp];
     Evaluator *ev = eq->data->ev;
-    Context c;
-    c.setVariable(std::string("A"), 11);
-    c.setVariable(std::string("B"), 22);
-    c.setVariable(std::string("C"), 33);
-    double result = ev->eval(&c);
+    double result = ev->eval();
     vartype *v = new_real(result);
     unary_result(v);
     return ERR_NONE;

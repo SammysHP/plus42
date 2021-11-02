@@ -27,6 +27,7 @@
 #include "core_globals.h"
 #include "core_helpers.h"
 #include "core_main.h"
+#include "core_math1.h"
 #include "core_parser.h"
 #include "core_sto_rcl.h"
 #include "core_variables.h"
@@ -2004,13 +2005,58 @@ int docmd_eqstd(arg_struct *arg) {
 }
 
 int docmd_gtol(arg_struct *arg) {
-    return ERR_NOT_YET_IMPLEMENTED;
+    int running = program_running();
+    if (!running)
+        clear_all_rtns();
+
+    if (!running || arg->target == -1)
+        arg->target = line2pc(arg->val.num);
+    pc = arg->target;
+    prgm_highlight_row = 1;
+    return ERR_NONE;
 }
 
 int docmd_xeql(arg_struct *arg) {
-    return ERR_NOT_YET_IMPLEMENTED;
+    if (program_running()) {
+        int err = push_rtn_addr(current_prgm, pc);
+        if (err != ERR_NONE)
+            return err;
+        err = docmd_gtol(arg);
+        if (err != ERR_NONE) {
+            int dummy1;
+            int4 dummy2;
+            bool dummy3;
+            pop_rtn_addr(&dummy1, &dummy2, &dummy3);
+        }
+        return err;
+    } else {
+        int err = docmd_gtol(arg);
+        if (err != ERR_NONE)
+            return err;
+        clear_all_rtns();
+        return ERR_RUN;
+    }
 }
 
 int docmd_svar_t(arg_struct *arg) {
-    return ERR_NOT_YET_IMPLEMENTED;
+    bool ret = solve_active();
+    if (ret) {
+        vartype_string *s = (vartype_string *) stack[sp];
+        ret = is_solve_var(s->txt(), s->length);
+    }
+    if (!flags.f.big_stack) {
+        vartype *t = dup_vartype(stack[REG_T]);
+        if (t == NULL)
+            return ERR_INSUFFICIENT_MEMORY;
+        free_vartype(lastx);
+        lastx = stack[REG_X];
+        stack[REG_X] = stack[REG_Y];
+        stack[REG_Y] = stack[REG_Z];
+        stack[REG_Z] = t;
+    } else {
+        free_vartype(lastx);
+        lastx = stack[sp];
+        sp--;
+    }
+    return ret ? ERR_YES : ERR_NO;
 }

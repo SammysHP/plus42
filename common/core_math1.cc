@@ -1002,6 +1002,10 @@ int return_to_solve(int failure, bool stop) {
     }
 }
 
+bool is_solve_var(const char *name, int length) {
+    return string_equals(solve.var_name, solve.var_length, name, length);
+}
+
 static void reset_integ() {
     integ.prgm_length = 0;
     integ.active_prgm_length = 0;

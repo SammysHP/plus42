@@ -2398,7 +2398,8 @@ int get_command_length(int prgm_index, int4 pc) {
 
     if ((command == CMD_GTO || command == CMD_XEQ)
             && (argtype == ARGTYPE_NUM || argtype == ARGTYPE_STK
-                                       || argtype == ARGTYPE_LCLBL))
+                                       || argtype == ARGTYPE_LCLBL)
+            || command == CMD_GTOL || command == CMD_XEQL)
         pc2 += 4;
     switch (argtype) {
         case ARGTYPE_NUM:
@@ -2448,7 +2449,8 @@ void get_next_command(int4 *pc, int *command, arg_struct *arg, int find_target, 
     if ((*command == CMD_GTO || *command == CMD_XEQ)
             && (arg->type == ARGTYPE_NUM
                 || arg->type == ARGTYPE_LCLBL
-                || arg->type == ARGTYPE_STK)) {
+                || arg->type == ARGTYPE_STK)
+            || *command == CMD_GTOL || *command == CMD_XEQL) {
         if (find_target) {
             target_pc = 0;
             for (i = 0; i < 4; i++)
@@ -2544,7 +2546,10 @@ void get_next_command(int4 *pc, int *command, arg_struct *arg, int find_target, 
     }
     
     if (find_target) {
-        target_pc = find_local_label(arg);
+        if (*command == CMD_GTOL || *command == CMD_XEQL)
+            target_pc = line2pc(arg->val.num);
+        else
+            target_pc = find_local_label(arg);
         arg->target = target_pc;
         for (i = 5; i >= 2; i--) {
             prgm->text[orig_pc + i] = target_pc;
@@ -2626,7 +2631,8 @@ static void invalidate_lclbls(int prgm_index, bool force) {
             argtype &= 15;
             if ((command == CMD_GTO || command == CMD_XEQ)
                     && (argtype == ARGTYPE_NUM || argtype == ARGTYPE_STK
-                                               || argtype == ARGTYPE_LCLBL)) {
+                                               || argtype == ARGTYPE_LCLBL)
+                    || command == CMD_GTOL || command == CMD_XEQL) {
                 /* A dest_pc value of -1 signals 'unknown',
                  * -2 means 'nonexistent', and anything else is
                  * the pc where the destination label is found.
@@ -2829,7 +2835,8 @@ void store_command(int4 pc, int command, arg_struct *arg, const char *num_str) {
 
     if ((command == CMD_GTO || command == CMD_XEQ)
             && (arg->type == ARGTYPE_NUM || arg->type == ARGTYPE_STK 
-                                         || arg->type == ARGTYPE_LCLBL))
+                                         || arg->type == ARGTYPE_LCLBL)
+            || command == CMD_GTOL || command == CMD_XEQL)
         for (i = 0; i < 4; i++)
             buf[bufptr++] = 255;
     switch (arg->type) {

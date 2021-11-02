@@ -31,6 +31,7 @@ void remove_shadow(const char *name, int length);
 void set_solve_prgm(const char *name, int length);
 int start_solve(const char *name, int length, phloat x1, phloat x2);
 int return_to_solve(int failure, bool stop);
+bool is_solve_var(const char *name, int length);
 
 void set_integ_prgm(const char *name, int length);
 void get_integ_prgm(char *name, int *length);

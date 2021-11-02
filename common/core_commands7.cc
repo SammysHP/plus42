@@ -2060,3 +2060,7 @@ int docmd_svar_t(arg_struct *arg) {
     }
     return ret ? ERR_YES : ERR_NO;
 }
+
+int docmd_matitem(arg_struct *arg) {
+    return ERR_NOT_YET_IMPLEMENTED;
+}

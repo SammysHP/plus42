@@ -2062,5 +2062,95 @@ int docmd_svar_t(arg_struct *arg) {
 }
 
 int docmd_matitem(arg_struct *arg) {
-    return ERR_NOT_YET_IMPLEMENTED;
+    bool two_d;
+    if (stack[sp]->type == TYPE_STRING)
+        return ERR_ALPHA_DATA_IS_INVALID;
+    if (stack[sp]->type != TYPE_REAL)
+        return ERR_INVALID_TYPE;
+    if (stack[sp - 1]->type == TYPE_REALMATRIX
+            || stack[sp - 1]->type == TYPE_COMPLEXMATRIX
+            || stack[sp - 1]->type == TYPE_LIST)
+        two_d = false;
+    else if (stack[sp - 1]->type == TYPE_STRING)
+        return ERR_ALPHA_DATA_IS_INVALID;
+    else if (stack[sp - 1]->type != TYPE_REAL)
+        return ERR_INVALID_TYPE;
+    else {
+        two_d = true;
+        if (sp < 2)
+            return ERR_TOO_FEW_ARGUMENTS;
+        if (stack[sp - 2]->type == TYPE_STRING)
+            return ERR_ALPHA_DATA_IS_INVALID;
+        if (stack[sp - 2]->type != TYPE_REALMATRIX && stack[sp - 2]->type != TYPE_COMPLEXMATRIX)
+            return ERR_INVALID_TYPE;
+    }
+
+    phloat d = ((vartype_real *) stack[sp])->x;
+    if (d <= -2147483648.0 || d >= 2147483648.0)
+        return ERR_DIMENSION_ERROR;
+    int4 n = to_int4(d);
+    if (n < 0)
+        n = -n;
+    if (n == 0)
+        return ERR_DIMENSION_ERROR;
+    n--;
+    vartype *v;
+    if (two_d) {
+        v = stack[sp - 2];
+        d = ((vartype_real *) stack[sp - 1])->x;
+        if (d <= -2147483648.0 || d >= 2147483648.0)
+            return ERR_DIMENSION_ERROR;
+        int4 m = to_int4(d);
+        if (m < 0)
+            m = -m;
+        if (m == 0)
+            return ERR_DIMENSION_ERROR;
+        m--;
+        int4 cols = v->type == TYPE_REALMATRIX
+                ? ((vartype_realmatrix *) v)->columns
+                : ((vartype_complexmatrix *) v)->columns;
+        if (n >= cols)
+            return ERR_DIMENSION_ERROR;
+        n += m * cols;
+    } else {
+        v = stack[sp - 1];
+    }
+
+    switch (v->type) {
+        case TYPE_REALMATRIX: {
+            vartype_realmatrix *rm = (vartype_realmatrix *) v;
+            if (n >= rm->rows * rm->columns)
+                return ERR_DIMENSION_ERROR;
+            if (rm->array->is_string[n]) {
+                const char *text;
+                int4 len;
+                get_matrix_string(rm, n, &text, &len);
+                v = new_string(text, len);
+            } else {
+                v = new_real(rm->array->data[n]);
+            }
+            break;
+        }
+        case TYPE_COMPLEXMATRIX: {
+            vartype_complexmatrix *cm = (vartype_complexmatrix *) v;
+            if (n >= cm->rows * cm->columns)
+                return ERR_DIMENSION_ERROR;
+            v = new_complex(cm->array->data[2 * n], cm->array->data[2 * n + 1]);
+            break;
+        }
+        case TYPE_LIST: {
+            vartype_list *list = (vartype_list *) v;
+            if (n >= list->size)
+                return ERR_DIMENSION_ERROR;
+            v = dup_vartype(list->array->data[n]);
+            break;
+        }
+    }
+
+    if (v == NULL)
+        return ERR_INSUFFICIENT_MEMORY;
+    if (two_d)
+        return ternary_result(v);
+    else
+        return binary_result(v);
 }

@@ -50,10 +50,14 @@
  */
 #define UNIM 0x00
 
+/* Dummy value, to be used for Plus42-specific functions.
+ */
+#define PL42 0x00
+
 // Note about XROM numbers:
 // The Free42/Plus42 extensions use
 // XROM 31,01-63 (a7c1-a7ff) (Data Logger ROM, entire range)
-// XROM 30,37-38 (a7a5-a7a6) (Card Reader, unused codes only)
+// XROM 30,37-39 (a7a5-a7a7) (Card Reader, unused codes only)
 
 const command_spec cmd_array[] =
 {
@@ -539,7 +543,10 @@ const command_spec cmd_array[] =
     { /* EVAL */       docmd_eval,        "EVAL",                0x00, 0x00, 0xa7, 0xfe,  4, ARG_NONE,   1, 0x40 },
     { /* EQN_T */      docmd_eqn_t,       "EQN?",                0x00, 0x00, 0xa7, 0xff,  4, ARG_NONE,   1, ALLT },
     { /* EQEXT */      docmd_eqext,       "EQEXT",               0x00, 0x00, 0xa7, 0xa5,  5, ARG_NONE,   0, NA_T },
-    { /* EQSTD */      docmd_eqstd,       "EQSTD",               0x00, 0x00, 0xa7, 0xa6,  5, ARG_NONE,   0, NA_T }
+    { /* EQSTD */      docmd_eqstd,       "EQSTD",               0x00, 0x00, 0xa7, 0xa6,  5, ARG_NONE,   0, NA_T },
+    { /* GTOL */       docmd_gtol,        "GTOL",                0x20, 0x00, 0x00, 0x00,  4, ARG_COUNT,  0, NA_T },
+    { /* XEQL */       docmd_xeql,        "XEQL",                0x20, 0x00, 0x00, 0x00,  4, ARG_COUNT,  0, NA_T },
+    { /* SVAR_T */     docmd_svar_t,      "SVAR?",               0x00, 0x00, 0xa7, 0xa7,  5, ARG_NONE,   1, 0x10 }
 };
 
 /*

@@ -120,5 +120,8 @@ int docmd_eval(arg_struct *arg);
 int docmd_eqn_t(arg_struct *arg);
 int docmd_eqext(arg_struct *arg);
 int docmd_eqstd(arg_struct *arg);
+int docmd_gtol(arg_struct *arg);
+int docmd_xeql(arg_struct *arg);
+int docmd_svar_t(arg_struct *arg);
 
 #endif

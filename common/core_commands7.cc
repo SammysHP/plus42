@@ -2002,3 +2002,15 @@ int docmd_eqstd(arg_struct *arg) {
     flags.f.eqn_compat = 1;
     return ERR_NONE;
 }
+
+int docmd_gtol(arg_struct *arg) {
+    return ERR_NOT_YET_IMPLEMENTED;
+}
+
+int docmd_xeql(arg_struct *arg) {
+    return ERR_NOT_YET_IMPLEMENTED;
+}
+
+int docmd_svar_t(arg_struct *arg) {
+    return ERR_NOT_YET_IMPLEMENTED;
+}

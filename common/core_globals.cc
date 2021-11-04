@@ -3010,7 +3010,7 @@ int x2line() {
     }
 }
 
-int a2line() {
+int a2line(bool append) {
     if (reg_alpha_length == 0) {
         squeak();
         return ERR_NONE;
@@ -3020,11 +3020,20 @@ int a2line() {
     const char *p = reg_alpha;
     int len = reg_alpha_length;
     int maxlen = 15;
+
+    arg_struct arg;
+    if (append) {
+        maxlen = 14;
+    } else if (p[0] == 0x7f || (p[0] & 128) != 0) {
+        arg.type = ARGTYPE_NONE;
+        store_command_after(&pc, CMD_CLA, &arg, NULL);
+        maxlen = 14;
+    }
+
     while (len > 0) {
         int len2 = len;
         if (len2 > maxlen)
             len2 = maxlen;
-        arg_struct arg;
         arg.type = ARGTYPE_STR;
         if (maxlen == 15) {
             arg.length = len2;

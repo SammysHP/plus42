@@ -3614,7 +3614,7 @@ static void paste_programs(const char *buf) {
         if (lineno_start != -1 && hppos == prev_hppos)
             // No space following line number? Not acceptable.
             goto line_done;
-        if (hppos < hpend - 1 && hpbuf[hppos] == 127 && hpbuf[hppos + 1] == '"') {
+        if (hppos < hpend - 1 && (hpbuf[hppos] == 127 || hpbuf[hppos] == '+') && hpbuf[hppos + 1] == '"') {
             // Appended string
             hpbuf[hppos + 1] = 127;
             goto do_string;
@@ -4840,6 +4840,7 @@ static synonym_spec hp41_synonyms[] =
     { "0#?",    false, 3, CMD_0_NE_NN },
     { "0<=?",   false, 4, CMD_0_LE_NN },
     { "0>=?",   false, 4, CMD_0_GE_NN },
+    { {'A','2','+','L','I','N','E'},false, 7, CMD_A2PLINE },
     { "",       true,  0, CMD_NONE    }
 };
 

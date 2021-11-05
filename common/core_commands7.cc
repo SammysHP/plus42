@@ -1987,11 +1987,19 @@ int docmd_unparse(arg_struct *arg) {
 
 int docmd_eval(arg_struct *arg) {
     vartype_equation *eq = (vartype_equation *) stack[sp];
-    Evaluator *ev = eq->data->ev;
-    double result = ev->eval();
-    vartype *v = new_real(result);
-    unary_result(v);
-    return ERR_NONE;
+    if (program_running()) {
+        int err = push_rtn_addr(current_prgm, pc);
+        if (err != ERR_NONE)
+            return err;
+        current_prgm = eq->data->prgm_index;
+        pc = 0;
+        return ERR_NONE;
+    } else {
+        clear_all_rtns();
+        current_prgm = eq->data->prgm_index;
+        pc = 0;
+        return ERR_STOP;
+    }
 }
 
 int docmd_eqn_t(arg_struct *arg) {

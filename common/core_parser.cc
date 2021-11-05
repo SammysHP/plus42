@@ -4,6 +4,7 @@
 #include <float.h>
 
 #include "core_parser.h"
+#include "core_tables.h"
 #include "core_variables.h"
 
 ////////////////////////////////
@@ -51,6 +52,125 @@ void FileOutputStream::write(std::string text) {
         fflush(file);
 }
 
+//////////////////////////////
+/////  GeneratorContext  /////
+//////////////////////////////
+
+struct Line {
+    int cmd;
+    std::string *s;
+    int n;
+    phloat d;
+};
+
+class GeneratorContext {
+    private:
+
+    std::vector<Line *> *lines;
+    int lbl;
+
+    public:
+
+    GeneratorContext() {
+        lines = new std::vector<Line *>;
+        lbl = 0;
+        addLine(CMD_LNSTK);
+    }
+
+    ~GeneratorContext() {
+        for (int i = 0; i < lines->size(); i++)
+            delete (*lines)[i];
+        delete lines;
+    }
+
+    void addLine(int cmd) {
+        Line *line = new Line;
+        line->cmd = cmd;
+        lines->push_back(line);
+    }
+
+    void addLine(int cmd, const std::string &arg) {
+        Line *line = new Line;
+        line->cmd = cmd;
+        line->s = new std::string(arg);
+        lines->push_back(line);
+    }
+
+    void addLine(int cmd, int lbl) {
+        Line *line = new Line;
+        line->cmd = cmd;
+        line->n = lbl;
+        lines->push_back(line);
+    }
+
+    void addLine(int cmd, phloat d) {
+        Line *line = new Line;
+        line->cmd = cmd;
+        line->d = d;
+        lines->push_back(line);
+    }
+
+    int nextLabel() {
+        return ++lbl;
+    }
+
+    void store(prgm_struct *prgm) {
+        // First, resolve labels
+        std::map<int, int> label2line;
+        int lineno = 1;
+        for (int i = 0; i < lines->size(); i++) {
+            Line *line = (*lines)[i];
+            if (line->cmd == CMD_LBL)
+                label2line[line->n] = lineno;
+            else
+                lineno++;
+        }
+        for (int i = 0; i < lines->size(); i++) {
+            Line *line = (*lines)[i];
+            if (line->cmd == CMD_GTOL || line->cmd == CMD_XEQL)
+                line->n = label2line[line->n];
+        }
+        // Label resolution done
+        int saved_prgm = current_prgm;
+        current_prgm = prgm->eq->data->prgm_index;
+        prgm->text = NULL;
+        prgm->size = 0;
+        prgm->capacity = 0;
+        // First, the end. Doing this before anything else prevents the program count from being bumped.
+        arg_struct arg;
+        arg.type = ARGTYPE_NONE;
+        store_command(0, CMD_END, &arg, NULL);
+        // Then, the rest...
+        int4 pc = -1;
+        for (int i = 0; i < lines->size(); i++) {
+            Line *line = (*lines)[i];
+            if (line->cmd == CMD_STO
+                    || line->cmd == CMD_RCL
+                    || line->cmd == CMD_SVAR_T) {
+                arg.type = ARGTYPE_STR;
+                arg.length = line->s->size();
+                if (arg.length > 7)
+                    arg.length = 7;
+                memcpy(arg.val.text, line->s->c_str(), arg.length);
+            } else if (line->cmd == CMD_NUMBER) {
+                arg.type = ARGTYPE_DOUBLE;
+                arg.val_d = line->d;
+            } else if (line->cmd == CMD_LBL) {
+                continue;
+            } else if (line->cmd == CMD_GTOL
+                    || line->cmd == CMD_XEQL
+                    || line->cmd == CMD_DROPN) {
+                arg.type = ARGTYPE_NUM;
+                arg.val.num = line->n;
+            } else {
+                arg.type = ARGTYPE_NONE;
+            }
+            store_command_after(&pc, line->cmd, &arg, NULL);
+        }
+        current_prgm = saved_prgm;
+    }
+};
+
 /////////////////
 /////  Abs  /////
 /////////////////
@@ -69,10 +189,6 @@ class Abs : public Evaluator {
         delete ev;
     }
 
-    double eval() {
-        return fabs(ev->eval());
-    }
-
     void printAlg(OutputStream *os) {
         os->write("ABS(");
         ev->printAlg(os);
@@ -82,6 +198,11 @@ class Abs : public Evaluator {
     void printRpn(OutputStream *os) {
         ev->printRpn(os);
         os->write(" ABS");
+    }
+
+    void generateCode(GeneratorContext *ctx) {
+        ev->generateCode(ctx);
+        ctx->addLine(CMD_ABS);
     }
 };
 
@@ -103,10 +224,6 @@ class Acos : public Evaluator {
         delete ev;
     }
 
-    double eval() {
-        return acos(ev->eval());
-    }
-
     void printAlg(OutputStream *os) {
         os->write("ACOS(");
         ev->printAlg(os);
@@ -116,6 +233,46 @@ class Acos : public Evaluator {
     void printRpn(OutputStream *os) {
         ev->printRpn(os);
         os->write(" ACOS");
+    }
+
+    void generateCode(GeneratorContext *ctx) {
+        ev->generateCode(ctx);
+        ctx->addLine(CMD_ACOS);
+    }
+};
+
+//////////////////
+/////  Alog  /////
+////////////./////
+
+class Alog : public Evaluator {
+
+    private:
+
+    Evaluator *ev;
+
+    public:
+
+    Alog(int pos, Evaluator *ev) : Evaluator(pos), ev(ev) {}
+
+    ~Alog() {
+        delete ev;
+    }
+
+    void printAlg(OutputStream *os) {
+        os->write("ALOG(");
+        ev->printAlg(os);
+        os->write(")");
+    }
+
+    void printRpn(OutputStream *os) {
+        ev->printRpn(os);
+        os->write(" ALOG");
+    }
+
+    void generateCode(GeneratorContext *ctx) {
+        ev->generateCode(ctx);
+        ctx->addLine(CMD_10_POW_X);
     }
 };
 
@@ -140,10 +297,6 @@ class And : public Evaluator {
 
     bool isBool() { return true; }
 
-    double eval() {
-        return left->eval() != 0 && right->eval() != 0;
-    }
-
     void printAlg(OutputStream *os) {
         left->printAlg(os);
         os->write(" AND ");
@@ -155,6 +308,12 @@ class And : public Evaluator {
         os->write(" ");
         right->printRpn(os);
         os->write(" AND");
+    }
+
+    void generateCode(GeneratorContext *ctx) {
+        left->generateCode(ctx);
+        right->generateCode(ctx);
+        ctx->addLine(CMD_AND);
     }
 };
 
@@ -176,10 +335,6 @@ class Asin : public Evaluator {
         delete ev;
     }
 
-    double eval() {
-        return asin(ev->eval());
-    }
-
     void printAlg(OutputStream *os) {
         os->write("ASIN(");
         ev->printAlg(os);
@@ -189,6 +344,11 @@ class Asin : public Evaluator {
     void printRpn(OutputStream *os) {
         ev->printRpn(os);
         os->write(" ASIN");
+    }
+
+    void generateCode(GeneratorContext *ctx) {
+        ev->generateCode(ctx);
+        ctx->addLine(CMD_ASIN);
     }
 };
 
@@ -210,10 +370,6 @@ class Atan : public Evaluator {
         delete ev;
     }
 
-    double eval() {
-        return atan(ev->eval());
-    }
-
     void printAlg(OutputStream *os) {
         os->write("ATAN(");
         ev->printAlg(os);
@@ -223,6 +379,11 @@ class Atan : public Evaluator {
     void printRpn(OutputStream *os) {
         ev->printRpn(os);
         os->write(" ATAN");
+    }
+
+    void generateCode(GeneratorContext *ctx) {
+        ev->generateCode(ctx);
+        ctx->addLine(CMD_ATAN);
     }
 };
 
@@ -247,10 +408,12 @@ class Call : public Evaluator {
         delete evs;
     }
 
+#if 0
     double eval() {
         // TODO: Not yet implemented. This is where it get interesting...
         return 0;
     }
+#endif
 
     void printAlg(OutputStream *os) {
         os->write(name);
@@ -269,6 +432,10 @@ class Call : public Evaluator {
             os->write(" ");
         }
         os->write(name);
+    }
+    
+    void generateCode(GeneratorContext *ctx) {
+        // TODO
     }
 };
 
@@ -293,10 +460,6 @@ class CompareEQ : public Evaluator {
 
     bool isBool() { return true; }
 
-    double eval() {
-        return left->eval() == right->eval();
-    }
-
     void printAlg(OutputStream *os) {
         left->printAlg(os);
         os->write("=");
@@ -308,6 +471,22 @@ class CompareEQ : public Evaluator {
         os->write(" ");
         right->printRpn(os);
         os->write(" =");
+    }
+
+    void generateCode(GeneratorContext *ctx) {
+        left->generateCode(ctx);
+        right->generateCode(ctx);
+        int lbl1 = ctx->nextLabel();
+        int lbl2 = ctx->nextLabel();
+        ctx->addLine(CMD_X_EQ_Y);
+        ctx->addLine(CMD_GTOL, lbl1);
+        ctx->addLine(CMD_DROPN, 2);
+        ctx->addLine(CMD_NUMBER, (phloat) 0);
+        ctx->addLine(CMD_GTOL, lbl2);
+        ctx->addLine(CMD_LBL, lbl1);
+        ctx->addLine(CMD_DROPN, 2);
+        ctx->addLine(CMD_NUMBER, (phloat) 1);
+        ctx->addLine(CMD_LBL, lbl2);
     }
 };
 
@@ -332,10 +511,6 @@ class CompareNE : public Evaluator {
 
     bool isBool() { return true; }
 
-    double eval() {
-        return left->eval() != right->eval();
-    }
-
     void printAlg(OutputStream *os) {
         left->printAlg(os);
         os->write("<>");
@@ -347,6 +522,22 @@ class CompareNE : public Evaluator {
         os->write(" ");
         right->printRpn(os);
         os->write(" <>");
+    }
+
+    void generateCode(GeneratorContext *ctx) {
+        left->generateCode(ctx);
+        right->generateCode(ctx);
+        int lbl1 = ctx->nextLabel();
+        int lbl2 = ctx->nextLabel();
+        ctx->addLine(CMD_X_NE_Y);
+        ctx->addLine(CMD_GTOL, lbl1);
+        ctx->addLine(CMD_DROPN, 2);
+        ctx->addLine(CMD_NUMBER, (phloat) 0);
+        ctx->addLine(CMD_GTOL, lbl2);
+        ctx->addLine(CMD_LBL, lbl1);
+        ctx->addLine(CMD_DROPN, 2);
+        ctx->addLine(CMD_NUMBER, (phloat) 1);
+        ctx->addLine(CMD_LBL, lbl2);
     }
 };
 
@@ -371,10 +562,6 @@ class CompareLT : public Evaluator {
 
     bool isBool() { return true; }
 
-    double eval() {
-        return left->eval() < right->eval();
-    }
-
     void printAlg(OutputStream *os) {
         left->printAlg(os);
         os->write("<");
@@ -386,6 +573,22 @@ class CompareLT : public Evaluator {
         os->write(" ");
         right->printRpn(os);
         os->write(" <");
+    }
+
+    void generateCode(GeneratorContext *ctx) {
+        left->generateCode(ctx);
+        right->generateCode(ctx);
+        int lbl1 = ctx->nextLabel();
+        int lbl2 = ctx->nextLabel();
+        ctx->addLine(CMD_X_GT_Y);
+        ctx->addLine(CMD_GTOL, lbl1);
+        ctx->addLine(CMD_DROPN, 2);
+        ctx->addLine(CMD_NUMBER, (phloat) 0);
+        ctx->addLine(CMD_GTOL, lbl2);
+        ctx->addLine(CMD_LBL, lbl1);
+        ctx->addLine(CMD_DROPN, 2);
+        ctx->addLine(CMD_NUMBER, (phloat) 1);
+        ctx->addLine(CMD_LBL, lbl2);
     }
 };
 
@@ -410,10 +613,6 @@ class CompareLE : public Evaluator {
 
     bool isBool() { return true; }
 
-    double eval() {
-        return left->eval() <= right->eval();
-    }
-
     void printAlg(OutputStream *os) {
         left->printAlg(os);
         os->write("<=");
@@ -425,6 +624,22 @@ class CompareLE : public Evaluator {
         os->write(" ");
         right->printRpn(os);
         os->write(" <=");
+    }
+
+    void generateCode(GeneratorContext *ctx) {
+        left->generateCode(ctx);
+        right->generateCode(ctx);
+        int lbl1 = ctx->nextLabel();
+        int lbl2 = ctx->nextLabel();
+        ctx->addLine(CMD_X_GE_Y);
+        ctx->addLine(CMD_GTOL, lbl1);
+        ctx->addLine(CMD_DROPN, 2);
+        ctx->addLine(CMD_NUMBER, (phloat) 0);
+        ctx->addLine(CMD_GTOL, lbl2);
+        ctx->addLine(CMD_LBL, lbl1);
+        ctx->addLine(CMD_DROPN, 2);
+        ctx->addLine(CMD_NUMBER, (phloat) 1);
+        ctx->addLine(CMD_LBL, lbl2);
     }
 };
 
@@ -449,10 +664,6 @@ class CompareGT : public Evaluator {
 
     bool isBool() { return true; }
 
-    double eval() {
-        return left->eval() > right->eval();
-    }
-
     void printAlg(OutputStream *os) {
         left->printAlg(os);
         os->write(">");
@@ -464,6 +675,22 @@ class CompareGT : public Evaluator {
         os->write(" ");
         right->printRpn(os);
         os->write(" >");
+    }
+
+    void generateCode(GeneratorContext *ctx) {
+        left->generateCode(ctx);
+        right->generateCode(ctx);
+        int lbl1 = ctx->nextLabel();
+        int lbl2 = ctx->nextLabel();
+        ctx->addLine(CMD_X_LT_Y);
+        ctx->addLine(CMD_GTOL, lbl1);
+        ctx->addLine(CMD_DROPN, 2);
+        ctx->addLine(CMD_NUMBER, (phloat) 0);
+        ctx->addLine(CMD_GTOL, lbl2);
+        ctx->addLine(CMD_LBL, lbl1);
+        ctx->addLine(CMD_DROPN, 2);
+        ctx->addLine(CMD_NUMBER, (phloat) 1);
+        ctx->addLine(CMD_LBL, lbl2);
     }
 };
 
@@ -488,10 +715,6 @@ class CompareGE : public Evaluator {
 
     bool isBool() { return true; }
 
-    double eval() {
-        return left->eval() >= right->eval();
-    }
-
     void printAlg(OutputStream *os) {
         left->printAlg(os);
         os->write(">=");
@@ -503,6 +726,22 @@ class CompareGE : public Evaluator {
         os->write(" ");
         right->printRpn(os);
         os->write(" >=");
+    }
+
+    void generateCode(GeneratorContext *ctx) {
+        left->generateCode(ctx);
+        right->generateCode(ctx);
+        int lbl1 = ctx->nextLabel();
+        int lbl2 = ctx->nextLabel();
+        ctx->addLine(CMD_X_LE_Y);
+        ctx->addLine(CMD_GTOL, lbl1);
+        ctx->addLine(CMD_DROPN, 2);
+        ctx->addLine(CMD_NUMBER, (phloat) 0);
+        ctx->addLine(CMD_GTOL, lbl2);
+        ctx->addLine(CMD_LBL, lbl1);
+        ctx->addLine(CMD_DROPN, 2);
+        ctx->addLine(CMD_NUMBER, (phloat) 1);
+        ctx->addLine(CMD_LBL, lbl2);
     }
 };
 
@@ -524,10 +763,6 @@ class Cos : public Evaluator {
         delete ev;
     }
 
-    double eval() {
-        return cos(ev->eval());
-    }
-
     void printAlg(OutputStream *os) {
         os->write("COS(");
         ev->printAlg(os);
@@ -537,6 +772,11 @@ class Cos : public Evaluator {
     void printRpn(OutputStream *os) {
         ev->printRpn(os);
         os->write(" ");
+    }
+
+    void generateCode(GeneratorContext *ctx) {
+        ev->generateCode(ctx);
+        ctx->addLine(CMD_COS);
     }
 };
 
@@ -559,10 +799,6 @@ class Difference : public Evaluator {
         delete right;
     }
 
-    double eval() {
-        return left->eval() - right->eval();
-    }
-
     void printAlg(OutputStream *os) {
         left->printAlg(os);
         os->write("-");
@@ -574,6 +810,12 @@ class Difference : public Evaluator {
         os->write(" ");
         right->printRpn(os);
         os->write(" -");
+    }
+
+    void generateCode(GeneratorContext *ctx) {
+        left->generateCode(ctx);
+        right->generateCode(ctx);
+        ctx->addLine(CMD_SUB);
     }
 };
 
@@ -596,13 +838,6 @@ class Ell : public Evaluator {
         delete ev;
     }
 
-    double eval() {
-        double val = ev->eval();
-        vartype *v = new_real(val);
-        store_var(name.c_str(), name.length(), v);
-        return val;
-    }
-
     void printAlg(OutputStream *os) {
         os->write("L(");
         os->write(name);
@@ -616,6 +851,11 @@ class Ell : public Evaluator {
         os->write(" ");
         os->write(name);
         os->write(" L");
+    }
+
+    void generateCode(GeneratorContext *ctx) {
+        ev->generateCode(ctx);
+        ctx->addLine(CMD_STO, name);
     }
 };
 
@@ -638,10 +878,6 @@ class Equation : public Evaluator {
         delete right;
     }
 
-    double eval() {
-        return left->eval() - right->eval();
-    }
-
     void printAlg(OutputStream *os) {
         left->printAlg(os);
         os->write("=");
@@ -653,6 +889,12 @@ class Equation : public Evaluator {
         os->write(" ");
         right->printRpn(os);
         os->write(" =");
+    }
+
+    void generateCode(GeneratorContext *ctx) {
+        left->generateCode(ctx);
+        right->generateCode(ctx);
+        ctx->addLine(CMD_SUB);
     }
 };
 
@@ -670,11 +912,6 @@ class Ess : public Evaluator {
 
     Ess(int pos, std::string name) : Evaluator(pos), name(name) {}
 
-    double eval() {
-        // TODO: Should return whether this is the variable being solved for
-        return 0;
-    }
-
     void printAlg(OutputStream *os) {
         os->write("S(");
         os->write(name);
@@ -684,6 +921,12 @@ class Ess : public Evaluator {
     void printRpn(OutputStream *os) {
         os->write(name);
         os->write(" S");
+    }
+
+    void generateCode(GeneratorContext *ctx) {
+        ctx->addLine(CMD_NUMBER, (phloat) 0);
+        ctx->addLine(CMD_SVAR_T, name);
+        ctx->addLine(CMD_SIGN);
     }
 };
 
@@ -705,10 +948,6 @@ class Exp : public Evaluator {
         delete ev;
     }
 
-    double eval() {
-        return exp(ev->eval());
-    }
-
     void printAlg(OutputStream *os) {
         os->write("EXP(");
         ev->printAlg(os);
@@ -718,6 +957,11 @@ class Exp : public Evaluator {
     void printRpn(OutputStream *os) {
         ev->printRpn(os);
         os->write(" EXP");
+    }
+
+    void generateCode(GeneratorContext *ctx) {
+        ev->generateCode(ctx);
+        ctx->addLine(CMD_E_POW_X);
     }
 };
 
@@ -735,14 +979,6 @@ class Gee : public Evaluator {
 
     Gee(int pos, std::string name) : Evaluator(pos), name(name) {}
 
-    double eval() {
-        vartype *v = recall_var(name.c_str(), name.length());
-        if (v == NULL || v->type != TYPE_REAL)
-            return 0;
-        else
-            return ((vartype_real *) v)->x;
-    }
-
     void printAlg(OutputStream *os) {
         os->write("G(");
         os->write(name);
@@ -752,6 +988,10 @@ class Gee : public Evaluator {
     void printRpn(OutputStream *os) {
         os->write(name);
         os->write(" G");
+    }
+
+    void generateCode(GeneratorContext *ctx) {
+        ctx->addLine(CMD_RCL, name);
     }
 };
 
@@ -773,10 +1013,6 @@ class Identity : public Evaluator {
         delete ev;
     }
 
-    double eval() {
-        return ev->eval();
-    }
-
     void printAlg(OutputStream *os) {
         os->write("(");
         ev->printAlg(os);
@@ -785,6 +1021,10 @@ class Identity : public Evaluator {
 
     void printRpn(OutputStream *os) {
         ev->printRpn(os);
+    }
+
+    void generateCode(GeneratorContext *ctx) {
+        ev->generateCode(ctx);
     }
 };
 
@@ -809,10 +1049,6 @@ class If : public Evaluator {
         delete falseEv;
     }
 
-    double eval() {
-        return condition->eval() != 0 ? trueEv->eval() : falseEv->eval();
-    }
-
     void printAlg(OutputStream *os) {
         os->write("IF(");
         condition->printAlg(os);
@@ -830,6 +1066,21 @@ class If : public Evaluator {
         os->write(" ");
         falseEv->printRpn(os);
         os->write(" IF");
+    }
+
+    void generateCode(GeneratorContext *ctx) {
+        condition->generateCode(ctx);
+        int lbl1 = ctx->nextLabel();
+        int lbl2 = ctx->nextLabel();
+        ctx->addLine(CMD_X_EQ_0);
+        ctx->addLine(CMD_GTOL, lbl1);
+        ctx->addLine(CMD_DROP);
+        trueEv->generateCode(ctx);
+        ctx->addLine(CMD_GTOL, lbl2);
+        ctx->addLine(CMD_LBL, lbl1);
+        ctx->addLine(CMD_DROP);
+        falseEv->generateCode(ctx);
+        ctx->addLine(CMD_LBL, lbl2);
     }
 };
 
@@ -852,26 +1103,6 @@ class Item : public Evaluator {
         delete ev;
     }
 
-    double eval() {
-        vartype *v = recall_var(name.c_str(), name.length());
-        if (v == NULL || (v->type != TYPE_REALMATRIX && v->type != TYPE_COMPLEXMATRIX))
-            return 0;
-        double di = ev->eval();
-        if (di < 0 || di >= 2147483648.0)
-            return 0;
-        int4 index = (int4) di;
-        if (v->type == TYPE_REALMATRIX) {
-            vartype_realmatrix *rm = (vartype_realmatrix *) v;
-            if (index >= rm->rows * rm->columns)
-                return 0;
-            else
-                return rm->array->data[index];
-        } else {
-            // Complex: not handling that yet
-            return 0;
-        }
-    }
-
     void printAlg(OutputStream *os) {
         os->write("ITEM(");
         os->write(name);
@@ -886,6 +1117,12 @@ class Item : public Evaluator {
         ev->printRpn(os);
         os->write(" ITEM");
     }
+
+    void generateCode(GeneratorContext *ctx) {
+        ctx->addLine(CMD_RCL, name);
+        ev->generateCode(ctx);
+        ctx->addLine(CMD_MATITEM);
+    }
 };
 
 /////////////////////
@@ -896,15 +1133,11 @@ class Literal : public Evaluator {
 
     private:
 
-    double value;
+    phloat value;
 
     public:
 
-    Literal(int pos, double value) : Evaluator(pos), value(value) {}
-
-    double eval() {
-        return value;
-    }
+    Literal(int pos, phloat value) : Evaluator(pos), value(value) {}
 
     void printAlg(OutputStream *os) {
         os->write(value);
@@ -912,6 +1145,45 @@ class Literal : public Evaluator {
 
     void printRpn(OutputStream *os) {
         os->write(value);
+    }
+
+    void generateCode(GeneratorContext *ctx) {
+        ctx->addLine(CMD_NUMBER, value);
+    }
+};
+
+////////////////
+/////  Ln  /////
+////////////////
+
+class Ln : public Evaluator {
+
+    private:
+
+    Evaluator *ev;
+
+    public:
+
+    Ln(int pos, Evaluator *ev) : Evaluator(pos), ev(ev) {}
+
+    ~Ln() {
+        delete ev;
+    }
+
+    void printAlg(OutputStream *os) {
+        os->write("LN(");
+        ev->printAlg(os);
+        os->write(")");
+    }
+
+    void printRpn(OutputStream *os) {
+        ev->printRpn(os);
+        os->write(" LN");
+    }
+
+    void generateCode(GeneratorContext *ctx) {
+        ev->generateCode(ctx);
+        ctx->addLine(CMD_LN);
     }
 };
 
@@ -933,10 +1205,6 @@ class Log : public Evaluator {
         delete ev;
     }
 
-    double eval() {
-        return log(ev->eval());
-    }
-
     void printAlg(OutputStream *os) {
         os->write("LOG(");
         ev->printAlg(os);
@@ -946,6 +1214,11 @@ class Log : public Evaluator {
     void printRpn(OutputStream *os) {
         ev->printRpn(os);
         os->write(" LOG");
+    }
+
+    void generateCode(GeneratorContext *ctx) {
+        ev->generateCode(ctx);
+        ctx->addLine(CMD_LOG);
     }
 };
 
@@ -969,16 +1242,6 @@ class Max : public Evaluator {
         delete evs;
     }
 
-    double eval() {
-        double res = -std::numeric_limits<double>::infinity();
-        for (int i = 0; i < evs->size(); i++) {
-            double x = (*evs)[i]->eval();
-            if (x > res)
-                res = x;
-        }
-        return res;
-    }
-
     void printAlg(OutputStream *os) {
         os->write("MAX(");
         for (int i = 0; i < evs->size(); i++) {
@@ -996,6 +1259,22 @@ class Max : public Evaluator {
         }
         os->write((double) evs->size());
         os->write(" MAX");
+    }
+
+    void generateCode(GeneratorContext *ctx) {
+        if (evs->size() == 0) {
+            ctx->addLine(CMD_NUMBER, (phloat) -1);
+            ctx->addLine(CMD_NUMBER, (phloat) 0);
+            ctx->addLine(CMD_DIV);
+        } else {
+            (*evs)[0]->generateCode(ctx);
+            for (int i = 1; i < evs->size(); i++) {
+                (*evs)[i]->generateCode(ctx);
+                ctx->addLine(CMD_X_GT_Y);
+                ctx->addLine(CMD_SWAP);
+                ctx->addLine(CMD_DROP);
+            }
+        }
     }
 };
 
@@ -1019,16 +1298,6 @@ class Min : public Evaluator {
         delete evs;
     }
 
-    double eval() {
-        double res = std::numeric_limits<double>::infinity();
-        for (int i = 0; i < evs->size(); i++) {
-            double x = (*evs)[i]->eval();
-            if (x < res)
-                res = x;
-        }
-        return res;
-    }
-
     void printAlg(OutputStream *os) {
         os->write("MIN(");
         for (int i = 0; i < evs->size(); i++) {
@@ -1046,6 +1315,22 @@ class Min : public Evaluator {
         }
         os->write((double) evs->size());
         os->write(" MIN");
+    }
+
+    void generateCode(GeneratorContext *ctx) {
+        if (evs->size() == 0) {
+            ctx->addLine(CMD_NUMBER, (phloat) 1);
+            ctx->addLine(CMD_NUMBER, (phloat) 0);
+            ctx->addLine(CMD_DIV);
+        } else {
+            (*evs)[0]->generateCode(ctx);
+            for (int i = 1; i < evs->size(); i++) {
+                (*evs)[i]->generateCode(ctx);
+                ctx->addLine(CMD_X_LT_Y);
+                ctx->addLine(CMD_SWAP);
+                ctx->addLine(CMD_DROP);
+            }
+        }
     }
 };
 
@@ -1067,10 +1352,6 @@ class Negative : public Evaluator {
         delete ev;
     }
 
-    double eval() {
-        return -ev->eval();
-    }
-
     void printAlg(OutputStream *os) {
         os->write("-");
         ev->printAlg(os);
@@ -1079,6 +1360,11 @@ class Negative : public Evaluator {
     void printRpn(OutputStream *os) {
         ev->printRpn(os);
         os->write(" +/-");
+    }
+
+    void generateCode(GeneratorContext *ctx) {
+        ev->generateCode(ctx);
+        ctx->addLine(CMD_CHS);
     }
 };
 
@@ -1102,10 +1388,6 @@ class Not : public Evaluator {
 
     bool isBool() { return true; }
 
-    double eval() {
-        return ev->eval() == 0;
-    }
-
     void printAlg(OutputStream *os) {
         os->write(" NOT ");
         ev->printAlg(os);
@@ -1114,6 +1396,12 @@ class Not : public Evaluator {
     void printRpn(OutputStream *os) {
         ev->printRpn(os);
         os->write(" NOT");
+    }
+
+    void generateCode(GeneratorContext *ctx) {
+        ev->generateCode(ctx);
+        ctx->addLine(CMD_NUMBER, (phloat) 1);
+        ctx->addLine(CMD_XOR);
     }
 };
 
@@ -1138,10 +1426,6 @@ class Or : public Evaluator {
 
     bool isBool() { return true; }
 
-    double eval() {
-        return left->eval() != 0 || right->eval() != 0;
-    }
-
     void printAlg(OutputStream *os) {
         left->printAlg(os);
         os->write(" OR ");
@@ -1153,6 +1437,12 @@ class Or : public Evaluator {
         os->write(" ");
         right->printRpn(os);
         os->write(" OR");
+    }
+
+    void generateCode(GeneratorContext *ctx) {
+        left->generateCode(ctx);
+        right->generateCode(ctx);
+        ctx->addLine(CMD_OR);
     }
 };
 
@@ -1174,10 +1464,6 @@ class Positive : public Evaluator {
         delete ev;
     }
 
-    double eval() {
-        return ev->eval();
-    }
-
     void printAlg(OutputStream *os) {
         os->write("+");
         ev->printAlg(os);
@@ -1186,6 +1472,10 @@ class Positive : public Evaluator {
     void printRpn(OutputStream *os) {
         ev->printRpn(os);
         os->write(" NOP");
+    }
+
+    void generateCode(GeneratorContext *ctx) {
+        ev->generateCode(ctx);
     }
 };
 
@@ -1208,10 +1498,6 @@ class Power : public Evaluator {
         delete right;
     }
 
-    double eval() {
-        return pow(left->eval(), right->eval());
-    }
-
     void printAlg(OutputStream *os) {
         left->printAlg(os);
         os->write("^");
@@ -1223,6 +1509,12 @@ class Power : public Evaluator {
         os->write(" ");
         right->printRpn(os);
         os->write(" ^");
+    }
+
+    void generateCode(GeneratorContext *ctx) {
+        left->generateCode(ctx);
+        right->generateCode(ctx);
+        ctx->addLine(CMD_Y_POW_X);
     }
 };
 
@@ -1245,10 +1537,6 @@ class Product : public Evaluator {
         delete right;
     }
 
-    double eval() {
-        return left->eval() * right->eval();
-    }
-
     void printAlg(OutputStream *os) {
         left->printAlg(os);
         os->write("*");
@@ -1260,6 +1548,12 @@ class Product : public Evaluator {
         os->write(" ");
         right->printRpn(os);
         os->write(" *");
+    }
+
+    void generateCode(GeneratorContext *ctx) {
+        left->generateCode(ctx);
+        right->generateCode(ctx);
+        ctx->addLine(CMD_MUL);
     }
 };
 
@@ -1282,10 +1576,6 @@ class Quotient : public Evaluator {
         delete right;
     }
 
-    double eval() {
-        return left->eval() / right->eval();
-    }
-
     void printAlg(OutputStream *os) {
         left->printAlg(os);
         os->write("/");
@@ -1297,6 +1587,12 @@ class Quotient : public Evaluator {
         os->write(" ");
         right->printRpn(os);
         os->write(" /");
+    }
+
+    void generateCode(GeneratorContext *ctx) {
+        left->generateCode(ctx);
+        right->generateCode(ctx);
+        ctx->addLine(CMD_DIV);
     }
 };
 
@@ -1326,6 +1622,7 @@ class Sigma : public Evaluator {
         delete ev;
     }
 
+#if 0
     double eval() {
         double f = from->eval();
         double t = to->eval();
@@ -1340,6 +1637,7 @@ class Sigma : public Evaluator {
         } while (f <= t);
         return sum;
     }
+#endif
 
     void printAlg(OutputStream *os) {
         os->write("Sigma(");
@@ -1367,6 +1665,10 @@ class Sigma : public Evaluator {
         ev->printRpn(os);
         os->write(" Sigma");
     }
+
+    void generateCode(GeneratorContext *ctx) {
+        // TODO: This is where it gets tricky; need subroutine so the loop variable can be a local.
+    }
 };
 
 /////////////////
@@ -1387,10 +1689,6 @@ class Sin : public Evaluator {
         delete ev;
     }
 
-    double eval() {
-        return sin(ev->eval());
-    }
-
     void printAlg(OutputStream *os) {
         os->write("SIN(");
         ev->printAlg(os);
@@ -1400,6 +1698,11 @@ class Sin : public Evaluator {
     void printRpn(OutputStream *os) {
         ev->printRpn(os);
         os->write(" SIN");
+    }
+
+    void generateCode(GeneratorContext *ctx) {
+        ev->generateCode(ctx);
+        ctx->addLine(CMD_SIN);
     }
 };
 
@@ -1421,10 +1724,6 @@ class Sqrt : public Evaluator {
         delete ev;
     }
 
-    double eval() {
-        return sqrt(ev->eval());
-    }
-
     void printAlg(OutputStream *os) {
         os->write("SQRT(");
         ev->printAlg(os);
@@ -1434,6 +1733,11 @@ class Sqrt : public Evaluator {
     void printRpn(OutputStream *os) {
         ev->printRpn(os);
         os->write(" SQRT");
+    }
+
+    void generateCode(GeneratorContext *ctx) {
+        ev->generateCode(ctx);
+        ctx->addLine(CMD_SQRT);
     }
 };
 
@@ -1456,10 +1760,6 @@ class Sum : public Evaluator {
         delete right;
     }
 
-    double eval() {
-        return left->eval() + right->eval();
-    }
-
     void printAlg(OutputStream *os) {
         left->printAlg(os);
         os->write("+");
@@ -1471,6 +1771,12 @@ class Sum : public Evaluator {
         os->write(" ");
         right->printRpn(os);
         os->write(" +");
+    }
+
+    void generateCode(GeneratorContext *ctx) {
+        left->generateCode(ctx);
+        right->generateCode(ctx);
+        ctx->addLine(CMD_ADD);
     }
 };
 
@@ -1492,10 +1798,6 @@ class Tan : public Evaluator {
         delete ev;
     }
 
-    double eval() {
-        return tan(ev->eval());
-    }
-
     void printAlg(OutputStream *os) {
         os->write("TAN(");
         ev->printAlg(os);
@@ -1505,6 +1807,11 @@ class Tan : public Evaluator {
     void printRpn(OutputStream *os) {
         ev->printRpn(os);
         os->write(" TAN");
+    }
+
+    void generateCode(GeneratorContext *ctx) {
+        ev->generateCode(ctx);
+        ctx->addLine(CMD_TAN);
     }
 };
 
@@ -1524,20 +1831,16 @@ class Variable : public Evaluator {
     
     std::string name() { return nam; }
 
-    double eval() {
-        vartype *v = recall_var(nam.c_str(), nam.length());
-        if (v == NULL || v->type != TYPE_REAL)
-            return 0;
-        else
-            return ((vartype_real *) v)->x;
-    }
-
     void printAlg(OutputStream *os) {
         os->write(nam);
     }
 
     void printRpn(OutputStream *os) {
         os->write(nam);
+    }
+
+    void generateCode(GeneratorContext *ctx) {
+        ctx->addLine(CMD_RCL, nam);
     }
 };
 
@@ -1562,10 +1865,6 @@ class Xor : public Evaluator {
 
     bool isBool() { return true; }
 
-    double eval() {
-        return (left->eval() != 0) != (right->eval() != 0);
-    }
-
     void printAlg(OutputStream *os) {
         left->printAlg(os);
         os->write(" XOR ");
@@ -1577,6 +1876,12 @@ class Xor : public Evaluator {
         os->write(" ");
         right->printRpn(os);
         os->write(" XOR");
+    }
+
+    void generateCode(GeneratorContext *ctx) {
+        left->generateCode(ctx);
+        right->generateCode(ctx);
+        ctx->addLine(CMD_XOR);
     }
 };
 
@@ -1775,6 +2080,12 @@ class Lexer {
         *errpos = tpos;
         return NULL;
     }
+}
+
+/* static */ void Parser::generateCode(Evaluator *ev, prgm_struct *prgm) {
+    GeneratorContext ctx;
+    ev->generateCode(&ctx);
+    ctx.store(prgm);
 }
 
 Parser::Parser(std::string expr, bool compatMode) : text(expr), pbpos(-1) {
@@ -2199,8 +2510,8 @@ Evaluator *Parser::parseThing() {
             }
             if (t == "SIN" || t == "COS" || t == "TAN"
                     || t == "ASIN" || t == "ACOS" || t == "ATAN"
-                    || t == "LOG" || t == "EXP" || t == "SQRT"
-                    || t == "ABS") {
+                    || t == "LN" || t == "LOG" || t == "EXP"
+                    || t == "ALOG" || t == "SQRT" || t == "ABS") {
                 Evaluator *ev = (*evs)[0];
                 delete evs;
                 if (t == "SIN")
@@ -2215,10 +2526,14 @@ Evaluator *Parser::parseThing() {
                     return new Acos(tpos, ev);
                 else if (t == "ATAN")
                     return new Atan(tpos, ev);
+                else if (t == "LN")
+                    return new Ln(tpos, ev);
                 else if (t == "LOG")
                     return new Log(tpos, ev);
                 else if (t == "EXP")
                     return new Exp(tpos, ev);
+                else if (t == "ALOG")
+                    return new Alog(tpos, ev);
                 else if (t == "SQRT")
                     return new Sqrt(tpos, ev);
                 else // t == "ABS"

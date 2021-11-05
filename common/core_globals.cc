@@ -1715,8 +1715,6 @@ static bool persist_globals() {
         goto done;
     if (!write_int(prgms_count))
         goto done;
-    if (!write_int(prgms_and_eqns_count))
-        goto done;
     for (i = 0; i < prgms_count; i++)
         core_export_programs(1, &i, NULL);
     if (!write_int(current_prgm))

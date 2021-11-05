@@ -2,6 +2,8 @@
 #include <string>
 #include <vector>
 
+#include "core_globals.h"
+
 ////////////////////////////////
 /////  class declarations  /////
 ////////////////////////////////
@@ -15,6 +17,8 @@ class OutputStream {
     virtual void write(double d);
     virtual void newline();
 };
+
+class GeneratorContext;
 
 class Evaluator {
 
@@ -31,9 +35,9 @@ class Evaluator {
 
     int pos() { return tpos; }
 
-    virtual double eval() = 0;
     virtual void printAlg(OutputStream *os) = 0;
     virtual void printRpn(OutputStream *os) = 0;
+    virtual void generateCode(GeneratorContext *ctx) = 0;
 };
 
 class Lexer;
@@ -51,6 +55,7 @@ class Parser {
     public:
 
     static Evaluator *parse(std::string expr, bool compatMode, int *errpos);
+    static void generateCode(Evaluator *ev, prgm_struct *prgm);
 
     private:
 

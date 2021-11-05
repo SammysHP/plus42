@@ -233,7 +233,8 @@ vartype *new_equation(const char *text, int4 len, bool compat_mode, int *errpos)
     eq->data->refcount = 1;
     eq->data->prgm_index = prgm_index;
     prgms[prgm_index].eq = eq;
-    // TODO: Generate code!
+    Parser::generateCode(eq->data->ev, prgms + prgm_index);
+    // TODO: Error handling. Have generateCode() signal failure by setting 'text' to NULL or something.
     prgms_and_eqns_count = new_prgms_and_eqns_count;
     return (vartype *) eq;
 }
@@ -302,6 +303,7 @@ void free_vartype(vartype *v) {
             vartype_equation *eq = (vartype_equation *) v;
             if (--(eq->data->refcount) == 0) {
                 prgms[eq->data->prgm_index].eq = NULL;
+                free(prgms[eq->data->prgm_index].text);
                 while (prgms_and_eqns_count > prgms_count && prgms[prgms_and_eqns_count - 1].eq == NULL)
                     prgms_and_eqns_count--;
                 free(eq->data->text);

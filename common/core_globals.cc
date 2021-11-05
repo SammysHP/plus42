@@ -1688,13 +1688,6 @@ static bool persist_globals() {
     shared_data = NULL;
     bool ret = false;
 
-    if (!write_int(sp))
-        goto done;
-    for (int i = 0; i <= sp; i++)
-        if (!persist_vartype(stack[i]))
-            goto done;
-    if (!persist_vartype(lastx))
-        goto done;
     if (!write_int(reg_alpha_length))
         goto done;
     if (fwrite(reg_alpha, 1, 44, gfile) != 44)
@@ -1717,6 +1710,13 @@ static bool persist_globals() {
         goto done;
     for (i = 0; i < prgms_count; i++)
         core_export_programs(1, &i, NULL);
+    if (!write_int(sp))
+        goto done;
+    for (int i = 0; i <= sp; i++)
+        if (!persist_vartype(stack[i]))
+            goto done;
+    if (!persist_vartype(lastx))
+        goto done;
     if (!write_int(current_prgm))
         goto done;
     if (!write_int4(pc2line(pc)))
@@ -1795,25 +1795,13 @@ static bool persist_globals() {
 
 bool loading_state = false;
 
-static bool unpersist_globals() {
-    int i;
-    shared_data_count = 0;
-    shared_data_capacity = 0;
-    shared_data = NULL;
-    bool ret = false;
-#ifdef WINDOWS
-    bool padded = ver < 18;
-#else
-    bool padded = false;
-#endif
-    char tmp_dmy = 2;
-
+static bool unpersist_stack(bool padded) {
     if (ver < 33) {
         sp = 3;
     } else {
         if (!read_int(&sp)) {
             sp = -1;
-            goto done;
+            return false;
         }
     }
     stack_capacity = sp + 1;
@@ -1823,7 +1811,7 @@ static bool unpersist_globals() {
     if (stack == NULL) {
         stack_capacity = 0;
         sp = -1;
-        goto done;
+        return false;
     }
     for (int i = 0; i <= sp; i++) {
         if (!unpersist_vartype(&stack[i], padded) || stack[i] == NULL) {
@@ -1833,7 +1821,7 @@ static bool unpersist_globals() {
             stack = NULL;
             sp = -1;
             stack_capacity = 0;
-            goto done;
+            return false;
         }
     }
     if (ver < 33) {
@@ -1847,7 +1835,28 @@ static bool unpersist_globals() {
 
     free_vartype(lastx);
     if (!unpersist_vartype(&lastx, padded))
-        goto done;
+        return false;
+
+    return true;
+}
+
+static bool unpersist_globals() {
+    int i;
+    shared_data_count = 0;
+    shared_data_capacity = 0;
+    shared_data = NULL;
+    bool ret = false;
+#ifdef WINDOWS
+    bool padded = ver < 18;
+#else
+    bool padded = false;
+#endif
+    char tmp_dmy = 2;
+
+    if (ver < 43) {
+        if (!unpersist_stack(padded))
+            goto done;
+    }
 
     if (ver >= 12 && ver < 20) {
         /* BIGSTACK -- obsolete */
@@ -2007,6 +2016,12 @@ static bool unpersist_globals() {
             }
         }
     }
+
+    if (ver >= 43) {
+        if (!unpersist_stack(padded))
+            goto done;
+    }
+
     if (!read_int(&current_prgm)) {
         current_prgm = 0;
         goto done;

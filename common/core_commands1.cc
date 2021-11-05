@@ -797,9 +797,8 @@ int docmd_clall(arg_struct *arg) {
     flags.f.prgm_mode = 0;
 
     /* Clear all programs and variables */
-    clear_all_prgms();
+    clear_rtns_vars_and_prgms();
     goto_dot_dot(false);
-    purge_all_vars();
     regs = new_realmatrix(25, 1);
     store_var("REGS", 4, regs);
 

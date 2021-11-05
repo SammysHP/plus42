@@ -185,6 +185,25 @@ vartype *new_list(int4 size) {
 }
 
 vartype *new_equation(const char *text, int4 len, bool compat_mode, int *errpos) {
+    int prgm_index = -1;
+    int new_prgms_and_eqns_count = prgms_and_eqns_count;
+    for (int i = prgms_count; i < prgms_and_eqns_count; i++)
+        if (prgms[i].eq == NULL) {
+            prgm_index = i;
+            break;
+        }
+    if (prgm_index == -1) {
+        if (prgms_and_eqns_count == prgms_capacity) {
+            int new_prgms_capacity = prgms_capacity + 10;
+            prgm_struct *new_prgms = (prgm_struct *) realloc(prgms, new_prgms_capacity * sizeof(prgm_struct));
+            if (new_prgms == NULL)
+                return NULL;
+            prgms = new_prgms;
+            prgms_capacity = new_prgms_capacity;
+        }
+        prgm_index = new_prgms_and_eqns_count++;
+    }
+
     *errpos = -1;
     vartype_equation *eq = (vartype_equation *) malloc(sizeof(vartype_equation));
     if (eq == NULL)
@@ -212,6 +231,10 @@ vartype *new_equation(const char *text, int4 len, bool compat_mode, int *errpos)
     }
     eq->data->compatMode = compat_mode;
     eq->data->refcount = 1;
+    eq->data->prgm_index = prgm_index;
+    prgms[prgm_index].eq = eq;
+    // TODO: Generate code!
+    prgms_and_eqns_count = new_prgms_and_eqns_count;
     return (vartype *) eq;
 }
 
@@ -278,6 +301,9 @@ void free_vartype(vartype *v) {
         case TYPE_EQUATION: {
             vartype_equation *eq = (vartype_equation *) v;
             if (--(eq->data->refcount) == 0) {
+                prgms[eq->data->prgm_index].eq = NULL;
+                while (prgms_and_eqns_count > prgms_count && prgms[prgms_and_eqns_count - 1].eq == NULL)
+                    prgms_and_eqns_count--;
                 free(eq->data->text);
                 delete eq->data->ev;
                 free(eq->data);
@@ -638,13 +664,6 @@ void purge_var(const char *name, int namelength) {
         vars[i] = vars[i + 1];
     vars_count--;
     update_catalog();
-}
-
-void purge_all_vars() {
-    int i;
-    for (i = 0; i < vars_count; i++)
-        free_vartype(vars[i].value);
-    vars_count = 0;
 }
 
 bool vars_exist(int section) {

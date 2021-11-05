@@ -589,6 +589,7 @@ var_struct *vars = NULL;
 /* Programs */
 int prgms_capacity = 0;
 int prgms_count = 0;
+int prgms_and_eqns_count = 0;
 prgm_struct *prgms = NULL;
 int labels_capacity = 0;
 int labels_count = 0;
@@ -1714,6 +1715,8 @@ static bool persist_globals() {
         goto done;
     if (!write_int(prgms_count))
         goto done;
+    if (!write_int(prgms_and_eqns_count))
+        goto done;
     for (i = 0; i < prgms_count; i++)
         core_export_programs(1, &i, NULL);
     if (!write_int(current_prgm))
@@ -1959,6 +1962,7 @@ static bool unpersist_globals() {
     }
 
     prgms_count = 0;
+    prgms_and_eqns_count = 0;
     prgms_capacity = 0;
     if (prgms != NULL) {
         free(prgms);
@@ -1980,22 +1984,27 @@ static bool unpersist_globals() {
             goto done;
         }
         for (i = 0; i < prgms_count; i++)
-            if (fread(prgms + i, 1, sizeof(prgm_struct_32bit), gfile) != sizeof(prgm_struct_32bit)) {
+            if (fread(prgms + i, 1, sizeof(prgm_struct_32bit), gfile) != sizeof(prgm_struct_32bit))
+                goto prgm_fail;
+        prgms_capacity = prgms_count;
+        for (i = 0; i < prgms_count; i++) {
+            prgms[i].capacity = prgms[i].size;
+            prgms[i].text = (unsigned char *) malloc(prgms[i].size);
+            if (prgms[i].text == NULL) {
+                for (int j = 0; j < i; j++)
+                    free(prgms[j].text);
+                prgm_fail:
                 free(prgms);
                 prgms = NULL;
                 prgms_count = 0;
                 goto done;
             }
-        prgms_capacity = prgms_count;
-        for (i = 0; i < prgms_count; i++) {
-            prgms[i].capacity = prgms[i].size;
-            prgms[i].text = (unsigned char *) malloc(prgms[i].size);
-            // TODO - handle memory allocation failure
+            prgms[i].eq = NULL;
         }
         for (i = 0; i < prgms_count; i++) {
             if (fread(prgms[i].text, 1, prgms[i].size, gfile)
                     != prgms[i].size) {
-                clear_all_prgms();
+                clear_rtns_vars_and_prgms();
                 goto done;
             }
         }
@@ -2182,7 +2191,7 @@ static bool unpersist_globals() {
         if (bin_dec_mode_switch()) {
             bool clear_stack;
             if (!convert_programs(&clear_stack)) {
-                clear_all_prgms();
+                clear_rtns_vars_and_prgms();
                 goto done;
             }
             if (clear_stack)
@@ -2207,17 +2216,30 @@ static bool unpersist_globals() {
     return ret;
 }
 
-void clear_all_prgms() {
-    if (prgms != NULL) {
-        int i;
-        for (i = 0; i < prgms_count; i++)
-            if (prgms[i].text != NULL)
-                free(prgms[i].text);
-        free(prgms);
-    }
+void clear_rtns_vars_and_prgms() {
+    clear_all_rtns();
+    
+    for (int i = 0; i < vars_count; i++)
+        free_vartype(vars[i].value);
+    free(vars);
+    vars = NULL;
+    vars_count = 0;
+    vars_capacity = 0;
+    
+    // At this point, no more equations exist, hence,
+    // prmgs_count == prgms_and_eqns_count
+    // Also, because the stack is clear, there won't be any
+    // pending returns into equation code.
+
+    for (int i = 0; i < prgms_count; i++)
+        if (prgms[i].text != NULL)
+            free(prgms[i].text);
+    free(prgms);
     prgms = NULL;
-    prgms_capacity = 0;
     prgms_count = 0;
+    prgms_and_eqns_count = 0;
+    prgms_capacity = 0;
+
     if (labels != NULL)
         free(labels);
     labels = NULL;
@@ -2258,9 +2280,12 @@ int clear_prgm_by_index(int prgm_index) {
     else if (current_prgm > prgm_index)
         current_prgm--;
     free(prgms[prgm_index].text);
-    for (i = prgm_index; i < prgms_count - 1; i++)
+    for (i = prgm_index; i < prgms_and_eqns_count - 1; i++)
         prgms[i] = prgms[i + 1];
+    for (i = prgms_count - 1; i < prgms_and_eqns_count - 1; i++)
+        prgms[i].eq->data->prgm_index = i;
     prgms_count--;
+    prgms_and_eqns_count--;
     i = j = 0;
     while (j < labels_count) {
         if (j > i)
@@ -2328,6 +2353,7 @@ void clear_prgm_lines(int4 count) {
 }
 
 void goto_dot_dot(bool force_new) {
+    clear_all_rtns();
     int command;
     arg_struct arg;
     if (prgms_count != 0 && !force_new) {
@@ -2340,7 +2366,7 @@ void goto_dot_dot(bool force_new) {
             return;
         }
     }
-    if (prgms_count == prgms_capacity) {
+    if (prgms_and_eqns_count == prgms_capacity) {
         prgm_struct *newprgms;
         int i;
         prgms_capacity += 10;
@@ -2348,6 +2374,8 @@ void goto_dot_dot(bool force_new) {
         // TODO - handle memory allocation failure
         for (i = 0; i < prgms_count; i++)
             newprgms[i] = prgms[i];
+        for (i = prgms_count; i < prgms_and_eqns_count; i++)
+            newprgms[i + 1] = prgms[i];
         if (prgms != NULL)
             free(prgms);
         prgms = newprgms;
@@ -2679,12 +2707,15 @@ void delete_command(int4 pc) {
         for (pos = 0; pos < nextprgm->size; pos++)
             prgm->text[prgm->size++] = nextprgm->text[pos];
         free(nextprgm->text);
-        for (pos = current_prgm + 1; pos < prgms_count - 1; pos++)
+        clear_all_rtns();
+        for (pos = current_prgm + 1; pos < prgms_and_eqns_count - 1; pos++)
             prgms[pos] = prgms[pos + 1];
         prgms_count--;
+        prgms_and_eqns_count--;
+        for (pos = prgms_count; pos < prgms_and_eqns_count; pos++)
+            prgms[pos].eq->data->prgm_index = pos;
         rebuild_label_table();
         invalidate_lclbls(current_prgm, true);
-        clear_all_rtns();
         draw_varmenu();
         return;
     }
@@ -2786,7 +2817,7 @@ void store_command(int4 pc, int command, arg_struct *arg, const char *num_str) {
      */
     if (command == CMD_END && prgm->size > 0) {
         prgm_struct *new_prgm;
-        if (prgms_count == prgms_capacity) {
+        if (prgms_and_eqns_count == prgms_capacity) {
             prgm_struct *new_prgms;
             int i;
             prgms_capacity += 10;
@@ -2795,8 +2826,10 @@ void store_command(int4 pc, int command, arg_struct *arg, const char *num_str) {
             // TODO - handle memory allocation failure
             for (i = 0; i <= current_prgm; i++)
                 new_prgms[i] = prgms[i];
-            for (i = current_prgm + 1; i < prgms_count; i++)
+            for (i = current_prgm + 1; i < prgms_and_eqns_count; i++)
                 new_prgms[i + 1] = prgms[i];
+            for (i = prgms_count; i < prgms_and_eqns_count; i++)
+                new_prgms[i + 1].eq->data->prgm_index = i + 1;
             free(prgms);
             prgms = new_prgms;
             prgm = prgms + current_prgm;
@@ -3194,6 +3227,8 @@ int push_rtn_addr(int prgm, int4 pc) {
         rtn_stack_capacity = new_rtn_stack_capacity;
         rtn_stack = new_rtn_stack;
     }
+    if (prgm >= prgms_count)
+        inc_eqn_refcount(prgm);
     rtn_stack[rtn_sp].set_prgm(prgm);
     rtn_stack[rtn_sp].pc = pc;
     rtn_sp++;
@@ -3804,6 +3839,8 @@ void pop_rtn_addr(int *prgm, int4 *pc, bool *stop) {
             validate_matedit();
         }
     } else {
+        if (*prgm >= prgms_count)
+            dec_eqn_refcount(*prgm);
         rtn_sp--;
         rtn_level--;
         *prgm = rtn_stack[rtn_sp].get_prgm();
@@ -3893,6 +3930,18 @@ void clear_all_rtns() {
         set_menu(MENULEVEL_PLAIN, MENU_NONE);
     if (varmenu_role == 3)
         varmenu_role = 0;
+    // Free empty equation slots
+    int e = prgms_count;
+    for (int i = prgms_count; i < prgms_and_eqns_count; i++) {
+        if (prgms[i].eq == NULL)
+            continue;
+        if (e < i) {
+            prgms[e] = prgms[i];
+            prgms[e].eq->data->prgm_index = e;
+        }
+        e++;
+    }
+    prgms_and_eqns_count = e;
 }
 
 int get_rtn_level() {
@@ -3915,6 +3964,17 @@ bool unwind_stack_until_solve() {
         pop_rtn_addr(&prgm, &pc, &stop);
     } while (prgm != -2);
     return stop;
+}
+
+void inc_eqn_refcount(int prgm_index) {
+    prgms[prgm_index].eq->data->refcount++;
+}
+
+void dec_eqn_refcount(int prgm_index) {
+    if (--prgms[prgm_index].eq->data->refcount == 0) {
+        free_vartype((vartype *) prgms[prgm_index].eq);
+        prgms[prgm_index].eq = NULL;
+    }
 }
 
 bool read_bool(bool *b) {
@@ -4736,12 +4796,14 @@ void hard_reset(int reason) {
     /* Clear alpha */
     reg_alpha_length = 0;
 
-    /* Clear variables */
-    purge_all_vars();
+    /* Clear RTN stack, variables, and programs */
+    clear_rtns_vars_and_prgms();
+    
+    /* Reinitialize variables */
     regs = new_realmatrix(25, 1);
     store_var("REGS", 4, regs);
 
-    /* Clear RTN stack */
+    /* Reinitialize RTN stack */
     if (rtn_stack != NULL)
         free(rtn_stack);
     rtn_stack_capacity = 16;
@@ -4752,19 +4814,7 @@ void hard_reset(int reason) {
     rtn_solve_active = false;
     rtn_integ_active = false;
 
-    /* Clear programs */
-    if (prgms != NULL) {
-        free(prgms);
-        prgms = NULL;
-        prgms_capacity = 0;
-        prgms_count = 0;
-    }
-    if (labels != NULL) {
-        free(labels);
-        labels = NULL;
-        labels_capacity = 0;
-        labels_count = 0;
-    }
+    /* Reinitialize programs */
     goto_dot_dot(false);
 
     pending_command = CMD_NONE;

@@ -120,6 +120,7 @@ struct equation_data {
     char *text;
     Evaluator *ev;
     bool compatMode;
+    int prgm_index;
 };
 
 struct vartype_equation {
@@ -148,7 +149,6 @@ vartype *recall_var(const char *name, int namelength);
 bool ensure_var_space(int n);
 int store_var(const char *name, int namelength, vartype *value, bool local = false);
 void purge_var(const char *name, int namelength);
-void purge_all_vars();
 bool vars_exist(int section);
 bool contains_strings(const vartype_realmatrix *rm);
 int matrix_copy(vartype *dst, const vartype *src);

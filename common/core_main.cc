@@ -163,8 +163,7 @@ void core_cleanup() {
     stack_capacity = 0;
     free_vartype(lastx);
     lastx = NULL;
-    purge_all_vars();
-    clear_all_prgms();
+    clear_rtns_vars_and_prgms();
     if (vars != NULL) {
         free(vars);
         vars = NULL;

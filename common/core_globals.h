@@ -349,6 +349,7 @@ struct prgm_struct {
     int4 size;
     int lclbl_invalid;
     unsigned char *text;
+    vartype_equation *eq;
 };
 struct prgm_struct_32bit {
     int4 capacity;
@@ -358,6 +359,7 @@ struct prgm_struct_32bit {
 };
 extern int prgms_capacity;
 extern int prgms_count;
+extern int prgms_and_eqns_count;
 extern prgm_struct *prgms;
 struct label_struct {
     unsigned char length;
@@ -516,7 +518,7 @@ extern bool no_keystrokes_yet;
 /* Utility functions */
 /*********************/
 
-void clear_all_prgms();
+void clear_rtns_vars_and_prgms();
 int clear_prgm(const arg_struct *arg);
 int clear_prgm_by_index(int prgm_index);
 void clear_prgm_lines(int4 count);
@@ -553,6 +555,8 @@ int get_rtn_level();
 bool solve_active();
 bool integ_active();
 bool unwind_stack_until_solve();
+void inc_eqn_refcount(int prgm_index);
+void dec_eqn_refcount(int prgm_index);
 
 extern bool state_is_portable;
 

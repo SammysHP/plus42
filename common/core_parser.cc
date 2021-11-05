@@ -67,6 +67,8 @@ class GeneratorContext {
     private:
 
     std::vector<Line *> *lines;
+    std::vector<std::vector<Line *> *> stack;
+    std::vector<std::vector<Line *> *> queue;
     int lbl;
 
     public:
@@ -115,8 +117,27 @@ class GeneratorContext {
     int nextLabel() {
         return ++lbl;
     }
+    
+    void pushSubroutine() {
+        stack.push_back(lines);
+        lines = new std::vector<Line *>;
+    }
+    
+    void popSubroutine() {
+        queue.push_back(lines);
+        lines = stack.back();
+        stack.pop_back();
+    }
 
     void store(prgm_struct *prgm) {
+        // Tack all the subroutines onto the main code
+        for (int i = 0; i < queue.size(); i++) {
+            addLine(CMD_RTN);
+            std::vector<Line *> *l = queue[i];
+            lines->insert(lines->end(), l->begin(), l->end());
+            delete l;
+        }
+        queue.clear();
         // First, resolve labels
         std::map<int, int> label2line;
         int lineno = 1;
@@ -148,6 +169,8 @@ class GeneratorContext {
             Line *line = (*lines)[i];
             if (line->cmd == CMD_STO
                     || line->cmd == CMD_RCL
+                    || line->cmd == CMD_LSTO
+                    || line->cmd == CMD_STO_ADD
                     || line->cmd == CMD_SVAR_T) {
                 arg.type = ARGTYPE_STR;
                 arg.length = line->s->size();
@@ -162,9 +185,14 @@ class GeneratorContext {
             } else if (line->cmd == CMD_GTOL
                     || line->cmd == CMD_XEQL
                     || line->cmd == CMD_FUNC
+                    || line->cmd == CMD_RDNN
                     || line->cmd == CMD_DROPN) {
                 arg.type = ARGTYPE_NUM;
                 arg.val.num = line->n;
+            } else if (line->cmd == CMD_RCL_ADD
+                    || line->cmd == CMD_X_GT_NN) {
+                arg.type = ARGTYPE_STK;
+                arg.val.stk = (char) line->n;
             } else {
                 arg.type = ARGTYPE_NONE;
             }
@@ -1607,7 +1635,33 @@ class Sigma : public Evaluator {
     }
 
     void generateCode(GeneratorContext *ctx) {
-        // TODO: This is where it gets tricky; need subroutine so the loop variable can be a local.
+        from->generateCode(ctx);
+        int lbl1 = ctx->nextLabel();
+        int lbl2 = ctx->nextLabel();
+        int lbl3 = ctx->nextLabel();
+        ctx->addLine(CMD_XEQL, lbl1);
+        ctx->pushSubroutine();
+        ctx->addLine(CMD_LBL, lbl1);
+        ctx->addLine(CMD_LSTO, name);
+        ctx->addLine(CMD_DROP);
+        to->generateCode(ctx);
+        step->generateCode(ctx);
+        ctx->addLine(CMD_NUMBER, 0);
+        ctx->addLine(CMD_LBL, lbl2);
+        ev->generateCode(ctx);
+        ctx->addLine(CMD_ADD);
+        ctx->addLine(CMD_RCL, name);
+        ctx->addLine(CMD_RCL_ADD, 'Z');
+        ctx->addLine(CMD_STO, name);
+        ctx->addLine(CMD_X_GT_NN, 'T');
+        ctx->addLine(CMD_GTOL, lbl3);
+        ctx->addLine(CMD_DROP);
+        ctx->addLine(CMD_GTOL, lbl2);
+        ctx->addLine(CMD_LBL, lbl3);
+        ctx->addLine(CMD_RDNN, 4);
+        ctx->addLine(CMD_RDNN, 4);
+        ctx->addLine(CMD_DROPN, 3);
+        ctx->popSubroutine();
     }
 };
 

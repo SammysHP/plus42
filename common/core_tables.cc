@@ -548,7 +548,18 @@ const command_spec cmd_array[] =
     { /* GTOL */       docmd_gtol,        "GTOL",                0x20, 0x00, 0x00, 0x00,  4, ARG_COUNT,  0, NA_T },
     { /* XEQL */       docmd_xeql,        "XEQL",                0x20, 0x00, 0x00, 0x00,  4, ARG_COUNT,  0, NA_T },
     { /* SVAR_T */     docmd_svar_t,      "SVAR?",               0x00, 0x00, 0xa7, 0xa7,  5, ARG_NONE,   1, 0x10 },
-    { /* MATITEM */    docmd_matitem,     "MATITEM",             0x00, 0x00, 0xa7, 0xa8,  7, ARG_NONE,   2, FUNC }
+    { /* MATITEM */    docmd_matitem,     "MATITEM",             0x00, 0x00, 0xa7, 0xa8,  7, ARG_NONE,   2, FUNC },
+    { /* GEN_EQ */     docmd_gen_eq,      "=",                   0x00, 0x00, 0xa7, 0xa9,  1, ARG_NONE,   2, ALLT },
+    { /* GEN_NE */     docmd_gen_ne,      "\014",                0x00, 0x00, 0xa7, 0xaa,  1, ARG_NONE,   2, ALLT },
+    { /* GEN_LT */     docmd_gen_lt,      "<",                   0x00, 0x00, 0xa7, 0xab,  1, ARG_NONE,   2, 0x01 },
+    { /* GEN_GT */     docmd_gen_gt,      ">",                   0x04, 0x00, 0xa7, 0xac,  1, ARG_NONE,   2, 0x01 },
+    { /* GEN_LE */     docmd_gen_le,      "\011",                0x00, 0x00, 0xa7, 0xad,  1, ARG_NONE,   2, 0x01 },
+    { /* GEN_GE */     docmd_gen_ge,      "\013",                0x00, 0x00, 0xa7, 0xae,  1, ARG_NONE,   2, 0x01 },
+    { /* GEN_AND */    docmd_gen_and,     "&&",                  0x00, 0x00, 0xa7, 0xaf,  2, ARG_NONE,   2, 0x01 },
+    { /* GEN_OR */     docmd_gen_or,      "||",                  0x00, 0x00, 0xa7, 0xb0,  2, ARG_NONE,   2, 0x01 },
+    { /* GEN_XOR */    docmd_gen_xor,     "^^",                  0x00, 0x00, 0xa7, 0xb1,  2, ARG_NONE,   2, 0x01 },
+    { /* GEN_NOT */    docmd_gen_not,     "!",                   0x00, 0x00, 0xa7, 0xb2,  1, ARG_NONE,   1, 0x01 },
+    { /* IF_T */       docmd_if_t,        "IF?",                 0x00, 0x00, 0xa7, 0xb3,  3, ARG_NONE,   1, 0x01 }
 };
 
 /*

@@ -35,6 +35,7 @@ int recall_result(vartype *v);
 int recall_two_results(vartype *x, vartype *y);
 void unary_result(vartype *x);
 int unary_two_results(vartype *x, vartype *y);
+int unary_no_result();
 int binary_result(vartype *x);
 void binary_two_results(vartype *x, vartype *y);
 int ternary_result(vartype *x);

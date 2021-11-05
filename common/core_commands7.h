@@ -125,5 +125,16 @@ int docmd_gtol(arg_struct *arg);
 int docmd_xeql(arg_struct *arg);
 int docmd_svar_t(arg_struct *arg);
 int docmd_matitem(arg_struct *arg);
+int docmd_gen_eq(arg_struct *arg);
+int docmd_gen_ne(arg_struct *arg);
+int docmd_gen_lt(arg_struct *arg);
+int docmd_gen_gt(arg_struct *arg);
+int docmd_gen_le(arg_struct *arg);
+int docmd_gen_ge(arg_struct *arg);
+int docmd_gen_and(arg_struct *arg);
+int docmd_gen_or(arg_struct *arg);
+int docmd_gen_xor(arg_struct *arg);
+int docmd_gen_not(arg_struct *arg);
+int docmd_if_t(arg_struct *arg);
 
 #endif

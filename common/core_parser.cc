@@ -316,7 +316,7 @@ class And : public Evaluator {
     void generateCode(GeneratorContext *ctx) {
         left->generateCode(ctx);
         right->generateCode(ctx);
-        ctx->addLine(CMD_AND);
+        ctx->addLine(CMD_GEN_AND);
     }
 };
 
@@ -479,17 +479,7 @@ class CompareEQ : public Evaluator {
     void generateCode(GeneratorContext *ctx) {
         left->generateCode(ctx);
         right->generateCode(ctx);
-        int lbl1 = ctx->nextLabel();
-        int lbl2 = ctx->nextLabel();
-        ctx->addLine(CMD_X_EQ_Y);
-        ctx->addLine(CMD_GTOL, lbl1);
-        ctx->addLine(CMD_DROPN, 2);
-        ctx->addLine(CMD_NUMBER, (phloat) 0);
-        ctx->addLine(CMD_GTOL, lbl2);
-        ctx->addLine(CMD_LBL, lbl1);
-        ctx->addLine(CMD_DROPN, 2);
-        ctx->addLine(CMD_NUMBER, (phloat) 1);
-        ctx->addLine(CMD_LBL, lbl2);
+        ctx->addLine(CMD_GEN_EQ);
     }
 };
 
@@ -530,17 +520,7 @@ class CompareNE : public Evaluator {
     void generateCode(GeneratorContext *ctx) {
         left->generateCode(ctx);
         right->generateCode(ctx);
-        int lbl1 = ctx->nextLabel();
-        int lbl2 = ctx->nextLabel();
-        ctx->addLine(CMD_X_NE_Y);
-        ctx->addLine(CMD_GTOL, lbl1);
-        ctx->addLine(CMD_DROPN, 2);
-        ctx->addLine(CMD_NUMBER, (phloat) 0);
-        ctx->addLine(CMD_GTOL, lbl2);
-        ctx->addLine(CMD_LBL, lbl1);
-        ctx->addLine(CMD_DROPN, 2);
-        ctx->addLine(CMD_NUMBER, (phloat) 1);
-        ctx->addLine(CMD_LBL, lbl2);
+        ctx->addLine(CMD_GEN_NE);
     }
 };
 
@@ -581,17 +561,7 @@ class CompareLT : public Evaluator {
     void generateCode(GeneratorContext *ctx) {
         left->generateCode(ctx);
         right->generateCode(ctx);
-        int lbl1 = ctx->nextLabel();
-        int lbl2 = ctx->nextLabel();
-        ctx->addLine(CMD_X_GT_Y);
-        ctx->addLine(CMD_GTOL, lbl1);
-        ctx->addLine(CMD_DROPN, 2);
-        ctx->addLine(CMD_NUMBER, (phloat) 0);
-        ctx->addLine(CMD_GTOL, lbl2);
-        ctx->addLine(CMD_LBL, lbl1);
-        ctx->addLine(CMD_DROPN, 2);
-        ctx->addLine(CMD_NUMBER, (phloat) 1);
-        ctx->addLine(CMD_LBL, lbl2);
+        ctx->addLine(CMD_GEN_LT);
     }
 };
 
@@ -632,17 +602,7 @@ class CompareLE : public Evaluator {
     void generateCode(GeneratorContext *ctx) {
         left->generateCode(ctx);
         right->generateCode(ctx);
-        int lbl1 = ctx->nextLabel();
-        int lbl2 = ctx->nextLabel();
-        ctx->addLine(CMD_X_GE_Y);
-        ctx->addLine(CMD_GTOL, lbl1);
-        ctx->addLine(CMD_DROPN, 2);
-        ctx->addLine(CMD_NUMBER, (phloat) 0);
-        ctx->addLine(CMD_GTOL, lbl2);
-        ctx->addLine(CMD_LBL, lbl1);
-        ctx->addLine(CMD_DROPN, 2);
-        ctx->addLine(CMD_NUMBER, (phloat) 1);
-        ctx->addLine(CMD_LBL, lbl2);
+        ctx->addLine(CMD_GEN_LE);
     }
 };
 
@@ -683,17 +643,7 @@ class CompareGT : public Evaluator {
     void generateCode(GeneratorContext *ctx) {
         left->generateCode(ctx);
         right->generateCode(ctx);
-        int lbl1 = ctx->nextLabel();
-        int lbl2 = ctx->nextLabel();
-        ctx->addLine(CMD_X_LT_Y);
-        ctx->addLine(CMD_GTOL, lbl1);
-        ctx->addLine(CMD_DROPN, 2);
-        ctx->addLine(CMD_NUMBER, (phloat) 0);
-        ctx->addLine(CMD_GTOL, lbl2);
-        ctx->addLine(CMD_LBL, lbl1);
-        ctx->addLine(CMD_DROPN, 2);
-        ctx->addLine(CMD_NUMBER, (phloat) 1);
-        ctx->addLine(CMD_LBL, lbl2);
+        ctx->addLine(CMD_GEN_GT);
     }
 };
 
@@ -734,17 +684,7 @@ class CompareGE : public Evaluator {
     void generateCode(GeneratorContext *ctx) {
         left->generateCode(ctx);
         right->generateCode(ctx);
-        int lbl1 = ctx->nextLabel();
-        int lbl2 = ctx->nextLabel();
-        ctx->addLine(CMD_X_LE_Y);
-        ctx->addLine(CMD_GTOL, lbl1);
-        ctx->addLine(CMD_DROPN, 2);
-        ctx->addLine(CMD_NUMBER, (phloat) 0);
-        ctx->addLine(CMD_GTOL, lbl2);
-        ctx->addLine(CMD_LBL, lbl1);
-        ctx->addLine(CMD_DROPN, 2);
-        ctx->addLine(CMD_NUMBER, (phloat) 1);
-        ctx->addLine(CMD_LBL, lbl2);
+        ctx->addLine(CMD_GEN_GE);
     }
 };
 
@@ -1075,14 +1015,12 @@ class If : public Evaluator {
         condition->generateCode(ctx);
         int lbl1 = ctx->nextLabel();
         int lbl2 = ctx->nextLabel();
-        ctx->addLine(CMD_X_EQ_0);
+        ctx->addLine(CMD_IF_T);
         ctx->addLine(CMD_GTOL, lbl1);
-        ctx->addLine(CMD_DROP);
-        trueEv->generateCode(ctx);
+        falseEv->generateCode(ctx);
         ctx->addLine(CMD_GTOL, lbl2);
         ctx->addLine(CMD_LBL, lbl1);
-        ctx->addLine(CMD_DROP);
-        falseEv->generateCode(ctx);
+        trueEv->generateCode(ctx);
         ctx->addLine(CMD_LBL, lbl2);
     }
 };
@@ -1403,8 +1341,7 @@ class Not : public Evaluator {
 
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
-        ctx->addLine(CMD_NUMBER, (phloat) 1);
-        ctx->addLine(CMD_XOR);
+        ctx->addLine(CMD_GEN_NOT);
     }
 };
 
@@ -1445,7 +1382,7 @@ class Or : public Evaluator {
     void generateCode(GeneratorContext *ctx) {
         left->generateCode(ctx);
         right->generateCode(ctx);
-        ctx->addLine(CMD_OR);
+        ctx->addLine(CMD_GEN_OR);
     }
 };
 
@@ -1884,7 +1821,7 @@ class Xor : public Evaluator {
     void generateCode(GeneratorContext *ctx) {
         left->generateCode(ctx);
         right->generateCode(ctx);
-        ctx->addLine(CMD_XOR);
+        ctx->addLine(CMD_GEN_XOR);
     }
 };
 

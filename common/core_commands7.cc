@@ -2056,21 +2056,8 @@ int docmd_svar_t(arg_struct *arg) {
         vartype_string *s = (vartype_string *) stack[sp];
         ret = is_solve_var(s->txt(), s->length);
     }
-    if (!flags.f.big_stack) {
-        vartype *t = dup_vartype(stack[REG_T]);
-        if (t == NULL)
-            return ERR_INSUFFICIENT_MEMORY;
-        free_vartype(lastx);
-        lastx = stack[REG_X];
-        stack[REG_X] = stack[REG_Y];
-        stack[REG_Y] = stack[REG_Z];
-        stack[REG_Z] = t;
-    } else {
-        free_vartype(lastx);
-        lastx = stack[sp];
-        sp--;
-    }
-    return ret ? ERR_YES : ERR_NO;
+    int err = unary_no_result();
+    return err != ERR_NONE ? err : ret ? ERR_YES : ERR_NO;
 }
 
 int docmd_matitem(arg_struct *arg) {
@@ -2165,4 +2152,70 @@ int docmd_matitem(arg_struct *arg) {
         return ternary_result(v);
     else
         return binary_result(v);
+}
+
+static int maybe_binary_result(vartype *v) {
+    if (v == NULL)
+        return ERR_INSUFFICIENT_MEMORY;
+    else
+        return binary_result(v);
+}
+
+int docmd_gen_eq(arg_struct *arg) {
+    vartype *v = new_real(vartype_equals(stack[sp - 1], stack[sp]));
+    return maybe_binary_result(v);
+}
+
+int docmd_gen_ne(arg_struct *arg) {
+    vartype *v = new_real(!vartype_equals(stack[sp - 1], stack[sp]));
+    return maybe_binary_result(v);
+}
+
+int docmd_gen_lt(arg_struct *arg) {
+    vartype *v = new_real(((vartype_real *) stack[sp - 1])->x < ((vartype_real *) stack[sp])->x);
+    return maybe_binary_result(v);
+}
+
+int docmd_gen_gt(arg_struct *arg) {
+    vartype *v = new_real(((vartype_real *) stack[sp - 1])->x > ((vartype_real *) stack[sp])->x);
+    return maybe_binary_result(v);
+}
+
+int docmd_gen_le(arg_struct *arg) {
+    vartype *v = new_real(((vartype_real *) stack[sp - 1])->x <= ((vartype_real *) stack[sp])->x);
+    return maybe_binary_result(v);
+}
+
+int docmd_gen_ge(arg_struct *arg) {
+    vartype *v = new_real(((vartype_real *) stack[sp - 1])->x >= ((vartype_real *) stack[sp])->x);
+    return maybe_binary_result(v);
+}
+
+int docmd_gen_and(arg_struct *arg) {
+    vartype *v = new_real(((vartype_real *) stack[sp - 1])->x != 0 && ((vartype_real *) stack[sp])->x != 0);
+    return maybe_binary_result(v);
+}
+
+int docmd_gen_or(arg_struct *arg) {
+    vartype *v = new_real(((vartype_real *) stack[sp - 1])->x != 0 || ((vartype_real *) stack[sp])->x != 0);
+    return maybe_binary_result(v);
+}
+
+int docmd_gen_xor(arg_struct *arg) {
+    vartype *v = new_real((((vartype_real *) stack[sp - 1])->x != 0) != (((vartype_real *) stack[sp])->x != 0));
+    return maybe_binary_result(v);
+}
+
+int docmd_gen_not(arg_struct *arg) {
+    vartype *v = new_real(((vartype_real *) stack[sp])->x == 0);
+    if (v == NULL)
+        return ERR_INSUFFICIENT_MEMORY;
+    unary_result(v);
+    return ERR_NONE;
+}
+
+int docmd_if_t(arg_struct *arg) {
+    int ret = ((vartype_real *) stack[sp])->x != 0 ? ERR_YES : ERR_NO;
+    int err = unary_no_result();
+    return err != ERR_NONE ? err : ret ? ERR_YES : ERR_NO;
 }

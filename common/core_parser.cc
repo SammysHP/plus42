@@ -74,6 +74,8 @@ class GeneratorContext {
     GeneratorContext() {
         lines = new std::vector<Line *>;
         lbl = 0;
+        // FUNC 11: 1 input, 1 output; the input being the equation itself
+        addLine(CMD_FUNC, 11);
         addLine(CMD_LNSTK);
     }
 
@@ -159,6 +161,7 @@ class GeneratorContext {
                 continue;
             } else if (line->cmd == CMD_GTOL
                     || line->cmd == CMD_XEQL
+                    || line->cmd == CMD_FUNC
                     || line->cmd == CMD_DROPN) {
                 arg.type = ARGTYPE_NUM;
                 arg.val.num = line->n;

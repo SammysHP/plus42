@@ -1998,7 +1998,7 @@ int docmd_eval(arg_struct *arg) {
         clear_all_rtns();
         current_prgm = eq->data->prgm_index;
         pc = 0;
-        return ERR_STOP;
+        return ERR_RUN;
     }
 }
 

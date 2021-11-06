@@ -512,8 +512,10 @@ int docmd_xeq(arg_struct *arg) {
         int err = push_rtn_addr(current_prgm, pc);
         if (err != ERR_NONE)
             return err;
+        inc_eqn_refcount(current_prgm);
         err = docmd_gto(arg);
         if (err != ERR_NONE) {
+            dec_eqn_refcount(current_prgm);
             int dummy1;
             int4 dummy2;
             bool dummy3;

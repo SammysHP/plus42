@@ -3953,7 +3953,6 @@ void clear_all_rtns() {
     }
     get_saved_stack_mode(&st_mode);
     pop_rtn_addr(&prgm, &dummy1, &dummy2);
-    dec_eqn_refcount(prgm);
     if (st_mode == 0) {
         arg_struct dummy_arg;
         docmd_4stk(&dummy_arg);
@@ -4004,11 +4003,13 @@ bool unwind_stack_until_solve() {
 }
 
 void inc_eqn_refcount(int prgm_index) {
+    //fprintf(stderr, "inc refcount %d\n", prgm_index);
     if (prgm_index >= prgms_count)
         prgms[prgm_index].eq->data->refcount++;
 }
 
 void dec_eqn_refcount(int prgm_index) {
+    //fprintf(stderr, "dec refcount %d\n", prgm_index);
     if (prgm_index == -2)
         dec_solve_caller_refcount();
     else if (prgm_index == -3)

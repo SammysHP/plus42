@@ -135,7 +135,7 @@ vartype *new_string(const char *s, int slen);
 vartype *new_realmatrix(int4 rows, int4 columns);
 vartype *new_complexmatrix(int4 rows, int4 columns);
 vartype *new_list(int4 size);
-vartype *new_equation(const char *text, int4 length, bool compat_mode, int *errpos);
+vartype *new_equation(const char *text, int4 length, bool compat_mode, int *errpos, int prgm_index = -1);
 void free_vartype(vartype *v);
 void clean_vartype_pools();
 void free_long_strings(char *is_string, phloat *data, int4 n);

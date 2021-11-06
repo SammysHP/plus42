@@ -1595,7 +1595,7 @@ int docmd_gto(arg_struct *arg) {
         int new_prgm;
         int4 new_pc;
         if (find_global_label(arg, &new_prgm, &new_pc)) {
-            current_prgm = new_prgm;
+            set_current_prgm_gto(new_prgm);
             pc = new_pc;
             prgm_highlight_row = 1;
             return ERR_NONE;
@@ -1621,7 +1621,7 @@ int docmd_gto(arg_struct *arg) {
             int newprgm;
             int4 newpc;
             if (find_global_label(arg, &newprgm, &newpc)) {
-                current_prgm = newprgm;
+                set_current_prgm_gto(newprgm);
                 pc = newpc;
                 prgm_highlight_row = 1;
                 return ERR_NONE;
@@ -1632,7 +1632,7 @@ int docmd_gto(arg_struct *arg) {
 
     if (arg->type == ARGTYPE_LBLINDEX) {
         int labelindex = arg->val.num;
-        current_prgm = labels[labelindex].prgm;
+        set_current_prgm_gto(labels[labelindex].prgm);
         pc = labels[labelindex].pc;
         prgm_highlight_row = 1;
         return ERR_NONE;
@@ -1682,7 +1682,7 @@ int docmd_gtodot(arg_struct *arg) {
         int new_prgm;
         int4 new_pc;
         if (find_global_label(arg, &new_prgm, &new_pc)) {
-            current_prgm = new_prgm;
+            set_current_prgm_gto(new_prgm);
             pc = new_pc;
             clear_all_rtns();
             prgm_highlight_row = 1;
@@ -1691,7 +1691,7 @@ int docmd_gtodot(arg_struct *arg) {
             return ERR_LABEL_NOT_FOUND;
     } else if (arg->type == ARGTYPE_LBLINDEX) {
         int labelindex = arg->val.num;
-        current_prgm = labels[labelindex].prgm;
+        set_current_prgm_gto(labels[labelindex].prgm);
         pc = labels[labelindex].pc;
         clear_all_rtns();
         prgm_highlight_row = 1;

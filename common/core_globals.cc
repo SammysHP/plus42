@@ -1078,6 +1078,8 @@ static bool persist_vartype(vartype *v) {
             if (!write_int(data_index))
                 return false;
             if (must_write) {
+                if (!write_int(eq->data->prgm_index))
+                    return false;
                 int4 len = eq->data->length;
                 return write_int4(len)
                     && fwrite(eq->data->text, 1, len, gfile) == len
@@ -1371,6 +1373,9 @@ static bool unpersist_vartype(vartype **v, bool padded) {
                         return true;
                     }
                 }
+                int prgm_index;
+                if (!read_int(&prgm_index))
+                    return false;
                 int4 len;
                 if (!read_int4(&len))
                     return false;
@@ -1385,7 +1390,7 @@ static bool unpersist_vartype(vartype **v, bool padded) {
                 if (!read_bool(&compatMode))
                     return false;
                 int errpos;
-                *v = new_equation(buf, len, compatMode, &errpos);
+                *v = new_equation(buf, len, compatMode, &errpos, prgm_index);
                 free(buf);
                 if (*v == NULL)
                     return false;
@@ -2016,6 +2021,7 @@ static bool unpersist_globals() {
             }
         }
     }
+    prgms_and_eqns_count = prgms_count;
 
     if (ver >= 43) {
         if (!unpersist_stack(padded))
@@ -2026,6 +2032,8 @@ static bool unpersist_globals() {
         current_prgm = 0;
         goto done;
     }
+    if (current_prgm >= prgms_count)
+        inc_eqn_refcount(current_prgm);
     if (!read_int4(&pc)) {
         pc = -1;
         goto done;
@@ -2144,6 +2152,8 @@ static bool unpersist_globals() {
                     int4 prgm, line;
                     if (!read_int4(&prgm) || !read_int4(&line))
                         goto done;
+                    if (prgm >= prgms_count)
+                        inc_eqn_refcount(prgm);
                     rtn_stack[i].prgm = prgm;
                     matrix_entry_follows = rtn_stack[i].has_matrix();
                     current_prgm = rtn_stack[i].get_prgm();
@@ -2296,7 +2306,8 @@ int clear_prgm_by_index(int prgm_index) {
     for (i = prgm_index; i < prgms_and_eqns_count - 1; i++)
         prgms[i] = prgms[i + 1];
     for (i = prgms_count - 1; i < prgms_and_eqns_count - 1; i++)
-        prgms[i].eq->data->prgm_index = i;
+        if (prgms[i].eq != NULL)
+            prgms[i].eq->data->prgm_index = i;
     prgms_count--;
     prgms_and_eqns_count--;
     i = j = 0;
@@ -2372,7 +2383,7 @@ void goto_dot_dot(bool force_new) {
     if (prgms_count != 0 && !force_new) {
         /* Check if last program is empty */
         pc = 0;
-        current_prgm = prgms_count - 1;
+        set_current_prgm_gto(prgms_count - 1);
         get_next_command(&pc, &command, &arg, 0, NULL);
         if (command == CMD_END) {
             pc = -1;
@@ -2387,13 +2398,23 @@ void goto_dot_dot(bool force_new) {
         // TODO - handle memory allocation failure
         for (i = 0; i < prgms_count; i++)
             newprgms[i] = prgms[i];
-        for (i = prgms_count; i < prgms_and_eqns_count; i++)
+        for (i = prgms_count; i < prgms_and_eqns_count; i++) {
             newprgms[i + 1] = prgms[i];
+            if (newprgms[i + 1].eq != NULL)
+                newprgms[i + 1].eq->data->prgm_index = i + 1;
+        }
         if (prgms != NULL)
             free(prgms);
         prgms = newprgms;
+    } else {
+        for (int i = prgms_and_eqns_count; i > prgms_count; i--) {
+            prgms[i] = prgms[i - 1];
+            if (prgms[i].eq != NULL)
+                prgms[i].eq->data->prgm_index = i;
+        }
     }
-    current_prgm = prgms_count++;
+    set_current_prgm_gto(prgms_count++);
+    prgms_and_eqns_count++;
     prgms[current_prgm].capacity = 0;
     prgms[current_prgm].size = 0;
     prgms[current_prgm].lclbl_invalid = 1;
@@ -2726,7 +2747,8 @@ void delete_command(int4 pc) {
         prgms_count--;
         prgms_and_eqns_count--;
         for (pos = prgms_count; pos < prgms_and_eqns_count; pos++)
-            prgms[pos].eq->data->prgm_index = pos;
+            if (prgms[pos].eq != NULL)
+                prgms[pos].eq->data->prgm_index = pos;
         rebuild_label_table();
         invalidate_lclbls(current_prgm, true);
         draw_varmenu();
@@ -2842,7 +2864,8 @@ void store_command(int4 pc, int command, arg_struct *arg, const char *num_str) {
             for (i = current_prgm + 1; i < prgms_and_eqns_count; i++)
                 new_prgms[i + 1] = prgms[i];
             for (i = prgms_count; i < prgms_and_eqns_count; i++)
-                new_prgms[i + 1].eq->data->prgm_index = i + 1;
+                if (new_prgms[i + 1].eq != NULL)
+                    new_prgms[i + 1].eq->data->prgm_index = i + 1;
             free(prgms);
             prgms = new_prgms;
             prgm = prgms + current_prgm;
@@ -3240,8 +3263,6 @@ int push_rtn_addr(int prgm, int4 pc) {
         rtn_stack_capacity = new_rtn_stack_capacity;
         rtn_stack = new_rtn_stack;
     }
-    if (prgm >= prgms_count)
-        inc_eqn_refcount(prgm);
     rtn_stack[rtn_sp].set_prgm(prgm);
     rtn_stack[rtn_sp].pc = pc;
     rtn_sp++;
@@ -3761,7 +3782,7 @@ int rtn(int err) {
             display_error(err, true);
         return ERR_STOP;
     } else {
-        current_prgm = newprgm;
+        set_current_prgm_rtn(newprgm);
         pc = newpc;
         if (err == ERR_NO) {
             int command;
@@ -3788,7 +3809,7 @@ int rtn_with_error(int err) {
     pop_rtn_addr(&newprgm, &newpc, &stop);
     if (newprgm >= 0) {
         // Stop on the calling XEQ, not the RTNERR
-        current_prgm = newprgm;
+        set_current_prgm_rtn(newprgm);
         int line = pc2line(newpc);
         set_old_pc(line2pc(line - 1));
     }
@@ -3852,8 +3873,6 @@ void pop_rtn_addr(int *prgm, int4 *pc, bool *stop) {
             validate_matedit();
         }
     } else {
-        if (*prgm >= prgms_count)
-            dec_eqn_refcount(*prgm);
         rtn_sp--;
         rtn_level--;
         *prgm = rtn_stack[rtn_sp].get_prgm();
@@ -3923,16 +3942,18 @@ static void get_saved_stack_mode(int *m) {
 }
 
 void clear_all_rtns() {
-    int dummy1;
-    int4 dummy2;
-    bool dummy3;
+    int prgm;
+    int4 dummy1;
+    bool dummy2;
     int st_mode = -1;
     while (rtn_level > 0) {
         get_saved_stack_mode(&st_mode);
-        pop_rtn_addr(&dummy1, &dummy2, &dummy3);
+        pop_rtn_addr(&prgm, &dummy1, &dummy2);
+        dec_eqn_refcount(prgm);
     }
     get_saved_stack_mode(&st_mode);
-    pop_rtn_addr(&dummy1, &dummy2, &dummy3);
+    pop_rtn_addr(&prgm, &dummy1, &dummy2);
+    dec_eqn_refcount(prgm);
     if (st_mode == 0) {
         arg_struct dummy_arg;
         docmd_4stk(&dummy_arg);
@@ -3973,21 +3994,49 @@ bool unwind_stack_until_solve() {
     int prgm;
     int4 pc;
     bool stop;
-    do {
+    while (true) {
         pop_rtn_addr(&prgm, &pc, &stop);
-    } while (prgm != -2);
+        if (prgm == -2)
+            break;
+        dec_eqn_refcount(prgm);
+    }
     return stop;
 }
 
 void inc_eqn_refcount(int prgm_index) {
-    prgms[prgm_index].eq->data->refcount++;
+    if (prgm_index >= prgms_count)
+        prgms[prgm_index].eq->data->refcount++;
 }
 
 void dec_eqn_refcount(int prgm_index) {
-    if (--prgms[prgm_index].eq->data->refcount == 0) {
+    if (prgm_index == -2)
+        dec_solve_caller_refcount();
+    else if (prgm_index == -3)
+        dec_integ_caller_refcount();
+    else if (prgm_index >= prgms_count && --prgms[prgm_index].eq->data->refcount == 0) {
         free_vartype((vartype *) prgms[prgm_index].eq);
         prgms[prgm_index].eq = NULL;
     }
+}
+
+void set_current_prgm_gto(int prgm_index) {
+    if (prgm_index >= prgms_count)
+        inc_eqn_refcount(prgm_index);
+    if (current_prgm >= prgms_count)
+        dec_eqn_refcount(current_prgm);
+    current_prgm = prgm_index;
+}
+
+void set_current_prgm_xeq(int prgm_index) {
+    if (prgm_index >= prgms_count)
+        inc_eqn_refcount(prgm_index);
+    current_prgm = prgm_index;
+}
+
+void set_current_prgm_rtn(int prgm_index) {
+    if (current_prgm >= prgms_count)
+        dec_eqn_refcount(current_prgm);
+    current_prgm = prgm_index;
 }
 
 bool read_bool(bool *b) {

@@ -1006,6 +1006,11 @@ bool is_solve_var(const char *name, int length) {
     return string_equals(solve.var_name, solve.var_length, name, length);
 }
 
+void dec_solve_caller_refcount() {
+    if (solve.prev_prgm >= prgms_count)
+        dec_eqn_refcount(solve.prev_prgm);
+}
+
 static void reset_integ() {
     integ.prgm_length = 0;
     integ.active_prgm_length = 0;
@@ -1245,4 +1250,9 @@ int return_to_integ(bool stop) {
     default:
         return ERR_INTERNAL_ERROR;
     }
+}
+
+void dec_integ_caller_refcount() {
+    if (integ.prev_prgm >= prgms_count)
+        dec_eqn_refcount(integ.prev_prgm);
 }

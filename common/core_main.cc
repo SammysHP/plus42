@@ -2012,6 +2012,7 @@ void core_import_programs(int num_progs, const char *raw_file_name) {
     }
 
     set_running(false);
+    clear_all_rtns();
 
     /* Set print mode to MAN during the import, to prevent store_command()
      * from printing programs as they load
@@ -2026,7 +2027,7 @@ void core_import_programs(int num_progs, const char *raw_file_name) {
         goto_dot_dot(true);
         pending_end = false;
     } else {
-        current_prgm = prgms_count - 1;
+        set_current_prgm_gto(prgms_count - 1);
         pc = prgms[current_prgm].size - 2;
         // No initial END needed if last program is empty
         pending_end = pc > 0;

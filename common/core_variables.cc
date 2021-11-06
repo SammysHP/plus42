@@ -184,24 +184,42 @@ vartype *new_list(int4 size) {
     return (vartype *) list;
 }
 
-vartype *new_equation(const char *text, int4 len, bool compat_mode, int *errpos) {
-    int prgm_index = -1;
+vartype *new_equation(const char *text, int4 len, bool compat_mode, int *errpos, int prgm_index) {
     int new_prgms_and_eqns_count = prgms_and_eqns_count;
-    for (int i = prgms_count; i < prgms_and_eqns_count; i++)
-        if (prgms[i].eq == NULL) {
-            prgm_index = i;
-            break;
-        }
     if (prgm_index == -1) {
-        if (prgms_and_eqns_count == prgms_capacity) {
-            int new_prgms_capacity = prgms_capacity + 10;
+        for (int i = prgms_count; i < prgms_and_eqns_count; i++)
+            if (prgms[i].eq == NULL) {
+                prgm_index = i;
+                break;
+            }
+        if (prgm_index == -1) {
+            if (prgms_and_eqns_count == prgms_capacity) {
+                int new_prgms_capacity = prgms_capacity + 10;
+                prgm_struct *new_prgms = (prgm_struct *) realloc(prgms, new_prgms_capacity * sizeof(prgm_struct));
+                if (new_prgms == NULL)
+                    return NULL;
+                prgms = new_prgms;
+                prgms_capacity = new_prgms_capacity;
+            }
+            prgm_index = new_prgms_and_eqns_count++;
+            prgms[prgm_index].eq = NULL;
+        }
+    } else {
+        // Loading an equation at a pre-determined program index
+        // This is used while reading the state file; we want to
+        // maintain program indexes here in order to be consistent
+        // with the RTN stack.
+        if (prgm_index >= prgms_and_eqns_count) {
+            int new_prgms_capacity = prgm_index + 10;
             prgm_struct *new_prgms = (prgm_struct *) realloc(prgms, new_prgms_capacity * sizeof(prgm_struct));
             if (new_prgms == NULL)
                 return NULL;
             prgms = new_prgms;
             prgms_capacity = new_prgms_capacity;
+            for (int i = prgms_and_eqns_count; i <= prgm_index; i++)
+                prgms[i].eq = NULL;
+            new_prgms_and_eqns_count = prgm_index + 1;
         }
-        prgm_index = new_prgms_and_eqns_count++;
     }
 
     *errpos = -1;

@@ -1991,12 +1991,12 @@ int docmd_eval(arg_struct *arg) {
         int err = push_rtn_addr(current_prgm, pc);
         if (err != ERR_NONE)
             return err;
-        current_prgm = eq->data->prgm_index;
+        set_current_prgm_xeq(eq->data->prgm_index);
         pc = 0;
         return ERR_NONE;
     } else {
         clear_all_rtns();
-        current_prgm = eq->data->prgm_index;
+        set_current_prgm_gto(eq->data->prgm_index);
         pc = 0;
         return ERR_RUN;
     }

@@ -555,8 +555,12 @@ int get_rtn_level();
 bool solve_active();
 bool integ_active();
 bool unwind_stack_until_solve();
+
 void inc_eqn_refcount(int prgm_index);
 void dec_eqn_refcount(int prgm_index);
+void set_current_prgm_gto(int prgm_index);
+void set_current_prgm_xeq(int prgm_index);
+void set_current_prgm_rtn(int prgm_index);
 
 extern bool state_is_portable;
 

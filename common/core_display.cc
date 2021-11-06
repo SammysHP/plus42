@@ -43,7 +43,7 @@
 #endif
 
 
-static const char bigchars[130][5] =
+static const char bigchars[131][5] =
     {
         { 0x08, 0x08, 0x2a, 0x08, 0x08 },
         { 0x22, 0x14, 0x08, 0x14, 0x22 },
@@ -174,7 +174,8 @@ static const char bigchars[130][5] =
         { 0x08, 0x04, 0x08, 0x10, 0x08 },
         { 0x7f, 0x08, 0x08, 0x08, 0x08 },
         { 0x28, 0x00, 0x00, 0x00, 0x00 },
-        { 0x04, 0x08, 0x70, 0x08, 0x04 }
+        { 0x04, 0x08, 0x70, 0x08, 0x04 },
+        { 0x7f, 0x41, 0x22, 0x14, 0x08 }
     };
 
 static const char smallchars[407] =
@@ -846,7 +847,7 @@ void fly_goose() {
     static uint4 lastgoosetime = 0;
     uint4 goosetime = shell_milliseconds();
     if (goosetime < lastgoosetime)
-        // shell_millisends() wrapped around
+        // shell_milliseconds() wrapped around
         lastgoosetime = 0;
     if (goosetime - 100 < lastgoosetime)
         /* No goose movements if the most recent one was less than 100 ms
@@ -917,7 +918,9 @@ void draw_char(int x, int y, char c) {
     unsigned char uc = (unsigned char) c;
     if (x < 0 || x >= 22 || y < 0 || y >= 2)
         return;
-    if (uc >= 130)
+    if (uc == 134)
+        uc = 130;
+    else if (uc >= 130)
         uc -= 128;
     X = x * 6;
     Y = y * 8;
@@ -957,7 +960,9 @@ void draw_block(int x, int y) {
 
 const char *get_char(char c) {
     unsigned char uc = (unsigned char) c;
-    if (uc >= 130)
+    if (uc == 134)
+        uc = 130;
+    else if (uc >= 130)
         uc -= 128;
     return bigchars[uc];
 }
@@ -1089,7 +1094,7 @@ static int prgmline2buf(char *buf, int len, int4 line, int highlight,
             char2buf(buf, len, &bufptr, '0');
         bufptr += int2string(line, buf + bufptr, len - bufptr);
         if (highlight)
-            char2buf(buf, len, &bufptr, 6);
+            char2buf(buf, len, &bufptr, current_prgm < prgms_count ? 6 : 134);
         else
             char2buf(buf, len, &bufptr, ' ');
     }
@@ -3135,18 +3140,30 @@ void do_prgm_menu_key(int keynum) {
                                                 &progmenu_arg[keynum]);
     oldprgm = current_prgm;
     oldpc = pc;
+    if (oldprgm >= prgms_count)
+        // In case it's an XEQ; we'll undo this if the docmd_gto() fails,
+        // if the operation is GTO, or if it's an XEQ but pushing the RTN
+        // address fails.
+        inc_eqn_refcount(oldprgm);
     set_running(true);
     progmenu_arg[keynum].target = -1; /* Force docmd_gto() to search */
     err = docmd_gto(&progmenu_arg[keynum]);
     if (err != ERR_NONE) {
+        if (oldprgm >= prgms_count)
+            dec_eqn_refcount(oldprgm);
         set_running(false);
         display_error(err, true);
         flush_display();
         return;
     }
-    if (!progmenu_is_gto[keynum]) {
+    if (progmenu_is_gto[keynum]) {
+        if (oldprgm >= prgms_count)
+            dec_eqn_refcount(oldprgm);
+    } else {
         err = push_rtn_addr(oldprgm, oldpc == -1 ? 0 : oldpc);
         if (err != ERR_NONE) {
+            if (oldprgm >= prgms_count)
+                dec_eqn_refcount(oldprgm);
             current_prgm = oldprgm;
             pc = oldpc;
             set_running(false);

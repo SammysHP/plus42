@@ -2033,15 +2033,9 @@ static bool unpersist_globals() {
         current_prgm = 0;
         goto done;
     }
-    if (current_prgm >= prgms_count)
-        inc_eqn_refcount(current_prgm);
     if (!read_int4(&pc)) {
         pc = -1;
         goto done;
-    }
-    if (state_is_portable) {
-        pc = line2pc(pc);
-        incomplete_saved_pc = line2pc(incomplete_saved_pc);
     }
     if (!read_int(&prgm_highlight_row)) {
         prgm_highlight_row = 0;
@@ -2092,7 +2086,14 @@ static bool unpersist_globals() {
         }
         vars_capacity = vars_count;
     }
-    
+
+    if (current_prgm >= prgms_count)
+        inc_eqn_refcount(current_prgm);
+    if (state_is_portable) {
+        pc = line2pc(pc);
+        incomplete_saved_pc = line2pc(incomplete_saved_pc);
+    }
+
     if (!read_int(&varmenu_length)) {
         varmenu_length = 0;
         goto done;

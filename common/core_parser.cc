@@ -1642,6 +1642,8 @@ class Sigma : public Evaluator {
     }
 
     void generateCode(GeneratorContext *ctx) {
+        to->generateCode(ctx);
+        step->generateCode(ctx);
         from->generateCode(ctx);
         int lbl1 = ctx->nextLabel();
         int lbl2 = ctx->nextLabel();
@@ -1651,9 +1653,7 @@ class Sigma : public Evaluator {
         ctx->addLine(CMD_LBL, lbl1);
         ctx->addLine(CMD_LSTO, name);
         ctx->addLine(CMD_DROP);
-        to->generateCode(ctx);
-        step->generateCode(ctx);
-        ctx->addLine(CMD_NUMBER, 0);
+        ctx->addLine(CMD_NUMBER, (phloat) 0);
         ctx->addLine(CMD_LBL, lbl2);
         ev->generateCode(ctx);
         ctx->addLine(CMD_ADD);

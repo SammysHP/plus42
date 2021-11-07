@@ -1119,9 +1119,10 @@ struct old_vartype_string {
 
 int bug_mode;
 
-// Using a global for 'ver' so we don't have to pass it around all the time
+// Using globals for 'ver' and 'plus' so we don't have to pass them around all the time
 
 int4 ver;
+bool plus;
 
 static bool unpersist_vartype(vartype **v, bool padded) {
     if (state_is_portable) {
@@ -1860,7 +1861,7 @@ static bool unpersist_globals() {
 #endif
     char tmp_dmy = 2;
 
-    if (ver < 43) {
+    if (!plus || ver < 43) {
         if (!unpersist_stack(padded))
             goto done;
     }
@@ -2023,7 +2024,7 @@ static bool unpersist_globals() {
     }
     prgms_and_eqns_count = prgms_count;
 
-    if (ver >= 43) {
+    if (plus && ver >= 43) {
         if (!unpersist_stack(padded))
             goto done;
     }
@@ -2420,7 +2421,10 @@ void goto_dot_dot(bool force_new) {
                 prgms[i].eq_data->prgm_index = i;
         }
     }
-    set_current_prgm_gto(prgms_count++);
+    if (loading_state)
+        current_prgm = prgms_count++;
+    else
+        set_current_prgm_gto(prgms_count++);
     prgms_and_eqns_count++;
     prgms[current_prgm].capacity = 0;
     prgms[current_prgm].size = 0;
@@ -4485,7 +4489,6 @@ bool write_arg(const arg_struct *arg) {
 static bool load_state2(bool *clear, bool *too_new) {
     int4 magic;
     int4 version;
-    bool plus;
     *clear = false;
     *too_new = false;
 

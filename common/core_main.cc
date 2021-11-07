@@ -155,6 +155,7 @@ void core_save_state(const char *state_file_name) {
 }
 
 void core_cleanup() {
+    clear_rtns_vars_and_prgms();
     for (int i = 0; i <= sp; i++)
         free_vartype(stack[i]);
     sp = -1;
@@ -163,12 +164,6 @@ void core_cleanup() {
     stack_capacity = 0;
     free_vartype(lastx);
     lastx = NULL;
-    clear_rtns_vars_and_prgms();
-    if (vars != NULL) {
-        free(vars);
-        vars = NULL;
-        vars_capacity = 0;
-    }
     clean_vartype_pools();
 }
 
@@ -5167,7 +5162,9 @@ void finish_xeq() {
     }
 }
 
-void start_alpha_prgm_line() {
+bool start_alpha_prgm_line() {
+    if (flags.f.prgm_mode && current_prgm >= prgms_count)
+        return false;
     incomplete_saved_pc = pc;
     incomplete_saved_highlight_row = prgm_highlight_row;
     if (pc == -1)
@@ -5179,6 +5176,7 @@ void start_alpha_prgm_line() {
         display_prgm_line(0, -1);
     entered_string_length = 0;
     mode_alpha_entry = true;
+    return true;
 }
 
 void finish_alpha_prgm_line() {

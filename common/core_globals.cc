@@ -17,6 +17,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <string>
 
 #include "core_globals.h"
 #include "core_commands2.h"
@@ -27,6 +28,7 @@
 #include "core_helpers.h"
 #include "core_main.h"
 #include "core_math1.h"
+#include "core_parser.h"
 #include "core_tables.h"
 #include "core_variables.h"
 #include "shell.h"
@@ -1985,9 +1987,7 @@ static bool unpersist_globals() {
         goto done;
     }
     if (state_is_portable) {
-        loading_state = true;
         core_import_programs(nprogs, NULL);
-        loading_state = false;
     } else {
         prgms_count = nprogs;
         prgms = (prgm_struct *) malloc(prgms_count * sizeof(prgm_struct));
@@ -2011,7 +2011,7 @@ static bool unpersist_globals() {
                 prgms_count = 0;
                 goto done;
             }
-            prgms[i].eq = NULL;
+            prgms[i].eq_data = NULL;
         }
         for (i = 0; i < prgms_count; i++) {
             if (fread(prgms[i].text, 1, prgms[i].size, gfile)
@@ -2276,8 +2276,10 @@ int clear_prgm(const arg_struct *arg) {
         prgm_index = labels[arg->val.num].prgm;
     else if (arg->type == ARGTYPE_STR) {
         if (arg->length == 0) {
-            if (current_prgm < 0 || current_prgm >= prgms_count)
+            if (current_prgm < 0)
                 return ERR_INTERNAL_ERROR;
+            if (current_prgm >= prgms_count)
+                return ERR_RESTRICTED_OPERATION;
             prgm_index = current_prgm;
         } else {
             int i;
@@ -2305,9 +2307,11 @@ int clear_prgm_by_index(int prgm_index) {
     free(prgms[prgm_index].text);
     for (i = prgm_index; i < prgms_and_eqns_count - 1; i++)
         prgms[i] = prgms[i + 1];
-    for (i = prgms_count - 1; i < prgms_and_eqns_count - 1; i++)
-        if (prgms[i].eq != NULL)
-            prgms[i].eq->data->prgm_index = i;
+    for (i = prgms_count - 1; i < prgms_and_eqns_count - 1; i++) {
+        fprintf(stderr, "renumbering %d to %d %s (%d)\n", i + 1, i, std::string(prgms[i].eq_data->text, prgms[i].eq_data->length).c_str(), prgms[i].eq_data->refcount);
+        if (prgms[i].eq_data != NULL)
+            prgms[i].eq_data->prgm_index = i;
+    }
     prgms_count--;
     prgms_and_eqns_count--;
     i = j = 0;
@@ -2399,18 +2403,21 @@ void goto_dot_dot(bool force_new) {
         for (i = 0; i < prgms_count; i++)
             newprgms[i] = prgms[i];
         for (i = prgms_count; i < prgms_and_eqns_count; i++) {
+            fprintf(stderr, "renumbering %d to %d %s (%d)\n", i, i + 1, std::string(prgms[i].eq_data->text, prgms[i].eq_data->length).c_str(), prgms[i].eq_data->refcount);
             newprgms[i + 1] = prgms[i];
-            if (newprgms[i + 1].eq != NULL)
-                newprgms[i + 1].eq->data->prgm_index = i + 1;
+            if (newprgms[i + 1].eq_data != NULL)
+                newprgms[i + 1].eq_data->prgm_index = i + 1;
         }
         if (prgms != NULL)
             free(prgms);
         prgms = newprgms;
     } else {
         for (int i = prgms_and_eqns_count; i > prgms_count; i--) {
+            fprintf(stderr, "renumbering %d to %d %s (%d)\n", i - 1, i, std::string(prgms[i - 1].eq_data->text, prgms[i -
+                        1].eq_data->length).c_str(), prgms[i - 1].eq_data->refcount);
             prgms[i] = prgms[i - 1];
-            if (prgms[i].eq != NULL)
-                prgms[i].eq->data->prgm_index = i;
+            if (prgms[i].eq_data != NULL)
+                prgms[i].eq_data->prgm_index = i;
         }
     }
     set_current_prgm_gto(prgms_count++);
@@ -2746,9 +2753,12 @@ void delete_command(int4 pc) {
             prgms[pos] = prgms[pos + 1];
         prgms_count--;
         prgms_and_eqns_count--;
-        for (pos = prgms_count; pos < prgms_and_eqns_count; pos++)
-            if (prgms[pos].eq != NULL)
-                prgms[pos].eq->data->prgm_index = pos;
+        for (pos = prgms_count; pos < prgms_and_eqns_count; pos++) {
+            fprintf(stderr, "renumbering %d to %d %s (%d)\n", prgms[pos].eq_data->prgm_index, pos,
+                    std::string(prgms[pos].eq_data->text, prgms[pos].eq_data->length).c_str(), prgms[pos].eq_data->refcount);
+            if (prgms[pos].eq_data != NULL)
+                prgms[pos].eq_data->prgm_index = pos;
+        }
         rebuild_label_table();
         invalidate_lclbls(current_prgm, true);
         draw_varmenu();
@@ -2767,13 +2777,18 @@ void delete_command(int4 pc) {
     draw_varmenu();
 }
 
-void store_command(int4 pc, int command, arg_struct *arg, const char *num_str) {
+bool store_command(int4 pc, int command, arg_struct *arg, const char *num_str) {
     unsigned char buf[100];
     int bufptr = 0;
     int xstr_len;
     int i;
     int4 pos;
     prgm_struct *prgm = prgms + current_prgm;
+
+    if (flags.f.prgm_mode && current_prgm >= prgms_count) {
+        display_error(ERR_RESTRICTED_OPERATION, false);
+        return false;
+    }
 
     /* We should never be called with pc = -1, but just to be safe... */
     if (pc == -1)
@@ -2863,17 +2878,26 @@ void store_command(int4 pc, int command, arg_struct *arg, const char *num_str) {
                 new_prgms[i] = prgms[i];
             for (i = current_prgm + 1; i < prgms_and_eqns_count; i++)
                 new_prgms[i + 1] = prgms[i];
-            for (i = prgms_count; i < prgms_and_eqns_count; i++)
-                if (new_prgms[i + 1].eq != NULL)
-                    new_prgms[i + 1].eq->data->prgm_index = i + 1;
+            for (i = prgms_count; i < prgms_and_eqns_count; i++) {
+                fprintf(stderr, "renumbering %d to %d %s (%d)\n", i, i + 1, std::string(prgms[i].eq_data->text, prgms[i].eq_data->length).c_str(), prgms[i].eq_data->refcount);
+                if (new_prgms[i + 1].eq_data != NULL)
+                    new_prgms[i + 1].eq_data->prgm_index = i + 1;
+            }
             free(prgms);
             prgms = new_prgms;
             prgm = prgms + current_prgm;
         } else {
+            for (i = prgms_and_eqns_count - 1; i >= prgms_count; i--) {
+                fprintf(stderr, "renumbering %d to %d %s (%d)\n", i, i + 1, std::string(prgms[i].eq_data->text, prgms[i].eq_data->length).c_str(), prgms[i].eq_data->refcount);
+                prgms[i + 1] = prgms[i];
+                if (prgms[i + 1].eq_data != NULL)
+                    prgms[i + 1].eq_data->prgm_index = i + 1;
+            }
             for (i = prgms_count - 1; i > current_prgm; i--)
                 prgms[i + 1] = prgms[i];
         }
         prgms_count++;
+        prgms_and_eqns_count++;
         new_prgm = prgm + 1;
         new_prgm->size = prgm->size - pc;
         new_prgm->capacity = (new_prgm->size + 511) & ~511;
@@ -2899,7 +2923,7 @@ void store_command(int4 pc, int command, arg_struct *arg, const char *num_str) {
         invalidate_lclbls(current_prgm - 1, true);
         clear_all_rtns();
         draw_varmenu();
-        return;
+        return true;
     }
 
     if ((command == CMD_GTO || command == CMD_XEQ)
@@ -3007,17 +3031,21 @@ void store_command(int4 pc, int command, arg_struct *arg, const char *num_str) {
     else
         update_label_table(current_prgm, pc, bufptr);
     invalidate_lclbls(current_prgm, false);
-    clear_all_rtns();
-    if (!loading_state)
+    if (!loading_state) {
+        clear_all_rtns();
         draw_varmenu();
+    }
+    return true;
 }
 
 void store_command_after(int4 *pc, int command, arg_struct *arg, const char *num_str) {
+    int4 oldpc = *pc;
     if (*pc == -1)
         *pc = 0;
     else if (prgms[current_prgm].text[*pc] != CMD_END)
         *pc += get_command_length(current_prgm, *pc);
-    store_command(*pc, command, arg, num_str);
+    if (!store_command(*pc, command, arg, num_str))
+        *pc = oldpc;
 }
 
 static bool ensure_prgm_space(int n) {
@@ -3966,11 +3994,12 @@ void clear_all_rtns() {
     // Free empty equation slots
     int e = prgms_count;
     for (int i = prgms_count; i < prgms_and_eqns_count; i++) {
-        if (prgms[i].eq == NULL)
+        if (prgms[i].eq_data == NULL)
             continue;
         if (e < i) {
+            fprintf(stderr, "renumbering %d to %d %s (%d)\n", i, e, std::string(prgms[i].eq_data->text, prgms[i].eq_data->length).c_str(), prgms[i].eq_data->refcount);
             prgms[e] = prgms[i];
-            prgms[e].eq->data->prgm_index = e;
+            prgms[e].eq_data->prgm_index = e;
         }
         e++;
     }
@@ -4003,20 +4032,31 @@ bool unwind_stack_until_solve() {
 }
 
 void inc_eqn_refcount(int prgm_index) {
-    //fprintf(stderr, "inc refcount %d\n", prgm_index);
     if (prgm_index >= prgms_count)
-        prgms[prgm_index].eq->data->refcount++;
+        fprintf(stderr, "inc refcount %d\n", prgm_index);
+    if (prgm_index >= prgms_count) {
+        std::string s(prgms[prgm_index].eq_data->text, prgms[prgm_index].eq_data->length);
+        fprintf(stderr, "  (%d) %s\n", prgms[prgm_index].eq_data->refcount, s.c_str());
+        prgms[prgm_index].eq_data->refcount++;
+    }
 }
 
 void dec_eqn_refcount(int prgm_index) {
-    //fprintf(stderr, "dec refcount %d\n", prgm_index);
+    if (prgm_index >= prgms_count)
+        fprintf(stderr, "dec refcount %d\n", prgm_index);
     if (prgm_index == -2)
         dec_solve_caller_refcount();
     else if (prgm_index == -3)
         dec_integ_caller_refcount();
-    else if (prgm_index >= prgms_count && --prgms[prgm_index].eq->data->refcount == 0) {
-        free_vartype((vartype *) prgms[prgm_index].eq);
-        prgms[prgm_index].eq = NULL;
+    else if (prgm_index >= prgms_count) {
+        std::string s(prgms[prgm_index].eq_data->text, prgms[prgm_index].eq_data->length);
+        fprintf(stderr, "  (%d) %s\n", prgms[prgm_index].eq_data->refcount, s.c_str());
+        if (--(prgms[prgm_index].eq_data->refcount) == 0) {
+            free(prgms[prgm_index].eq_data->text);
+            delete prgms[prgm_index].eq_data->ev;
+            free(prgms[prgm_index].eq_data);
+            prgms[prgm_index].eq_data = NULL;
+        }
     }
 }
 
@@ -4719,7 +4759,7 @@ static bool load_state2(bool *clear, bool *too_new) {
 
 // See the comment for bug_mode at its declaration...
 
-bool load_state(int4 ver_p, bool *clear, bool *too_new) {
+static bool load_state1(int4 ver_p, bool *clear, bool *too_new) {
     bug_mode = 0;
     ver = ver_p;
     long fpos = ftell(gfile);
@@ -4734,6 +4774,13 @@ bool load_state(int4 ver_p, bool *clear, bool *too_new) {
     fseek(gfile, fpos, SEEK_SET);
     bug_mode = 2;
     return load_state2(clear, too_new);
+}
+
+bool load_state(int4 ver_p, bool *clear, bool *too_new) {
+    loading_state = true;
+    bool ret = load_state1(ver_p, clear, too_new);
+    loading_state = false;
+    return ret;
 }
 
 void save_state() {

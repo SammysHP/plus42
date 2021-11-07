@@ -349,7 +349,7 @@ struct prgm_struct {
     int4 size;
     int lclbl_invalid;
     unsigned char *text;
-    vartype_equation *eq;
+    equation_data *eq_data;
 };
 struct prgm_struct_32bit {
     int4 capacity;
@@ -529,7 +529,7 @@ int get_command_length(int prgm, int4 pc);
 void get_next_command(int4 *pc, int *command, arg_struct *arg, int find_target, const char **num_str);
 void rebuild_label_table();
 void delete_command(int4 pc);
-void store_command(int4 pc, int command, arg_struct *arg, const char *num_str);
+bool store_command(int4 pc, int command, arg_struct *arg, const char *num_str);
 void store_command_after(int4 *pc, int command, arg_struct *arg, const char *num_str);
 int x2line();
 int a2line(bool append);

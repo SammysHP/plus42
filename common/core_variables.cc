@@ -188,7 +188,7 @@ vartype *new_equation(const char *text, int4 len, bool compat_mode, int *errpos,
     int new_prgms_and_eqns_count = prgms_and_eqns_count;
     if (prgm_index == -1) {
         for (int i = prgms_count; i < prgms_and_eqns_count; i++)
-            if (prgms[i].eq == NULL) {
+            if (prgms[i].eq_data == NULL) {
                 prgm_index = i;
                 break;
             }
@@ -202,22 +202,24 @@ vartype *new_equation(const char *text, int4 len, bool compat_mode, int *errpos,
                 prgms_capacity = new_prgms_capacity;
             }
             prgm_index = new_prgms_and_eqns_count++;
-            prgms[prgm_index].eq = NULL;
+            prgms[prgm_index].eq_data = NULL;
         }
     } else {
         // Loading an equation at a pre-determined program index
         // This is used while reading the state file; we want to
         // maintain program indexes here in order to be consistent
         // with the RTN stack.
-        if (prgm_index >= prgms_and_eqns_count) {
+        if (prgm_index >= prgms_capacity) {
             int new_prgms_capacity = prgm_index + 10;
             prgm_struct *new_prgms = (prgm_struct *) realloc(prgms, new_prgms_capacity * sizeof(prgm_struct));
             if (new_prgms == NULL)
                 return NULL;
             prgms = new_prgms;
             prgms_capacity = new_prgms_capacity;
+        }
+        if (prgm_index >= prgms_and_eqns_count) {
             for (int i = prgms_and_eqns_count; i <= prgm_index; i++)
-                prgms[i].eq = NULL;
+                prgms[i].eq_data = NULL;
             new_prgms_and_eqns_count = prgm_index + 1;
         }
     }
@@ -250,10 +252,11 @@ vartype *new_equation(const char *text, int4 len, bool compat_mode, int *errpos,
     eq->data->compatMode = compat_mode;
     eq->data->refcount = 1;
     eq->data->prgm_index = prgm_index;
-    prgms[prgm_index].eq = eq;
+    prgms[prgm_index].eq_data = eq->data;
     Parser::generateCode(eq->data->ev, prgms + prgm_index);
     // TODO: Error handling. Have generateCode() signal failure by setting 'text' to NULL or something.
     prgms_and_eqns_count = new_prgms_and_eqns_count;
+    fprintf(stderr, "created equation %d %s\n", prgm_index, std::string(text, len).c_str());
     return (vartype *) eq;
 }
 
@@ -319,10 +322,11 @@ void free_vartype(vartype *v) {
         }
         case TYPE_EQUATION: {
             vartype_equation *eq = (vartype_equation *) v;
+            fprintf(stderr, "delete eq %d %s (%d)\n", eq->data->prgm_index, std::string(eq->data->text, eq->data->length).c_str(), eq->data->refcount);
             if (--(eq->data->refcount) == 0) {
-                prgms[eq->data->prgm_index].eq = NULL;
+                prgms[eq->data->prgm_index].eq_data = NULL;
                 free(prgms[eq->data->prgm_index].text);
-                while (prgms_and_eqns_count > prgms_count && prgms[prgms_and_eqns_count - 1].eq == NULL)
+                while (prgms_and_eqns_count > prgms_count && prgms[prgms_and_eqns_count - 1].eq_data == NULL)
                     prgms_and_eqns_count--;
                 free(eq->data->text);
                 delete eq->data->ev;
@@ -443,6 +447,7 @@ vartype *dup_vartype(const vartype *v) {
         }
         case TYPE_EQUATION: {
             vartype_equation *eq = (vartype_equation *) v;
+            fprintf(stderr, "duplicate eq %d %s (%d)\n", eq->data->prgm_index, std::string(eq->data->text, eq->data->length).c_str(), eq->data->refcount);
             vartype_equation *eq2 = (vartype_equation *) malloc(sizeof(vartype_equation));
             if (eq2 == NULL)
                 return NULL;

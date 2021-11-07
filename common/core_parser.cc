@@ -155,10 +155,16 @@ class GeneratorContext {
         }
         // Label resolution done
         int saved_prgm = current_prgm;
-        current_prgm = prgm->eq->data->prgm_index;
+        current_prgm = prgm->eq_data->prgm_index;
         prgm->text = NULL;
         prgm->size = 0;
         prgm->capacity = 0;
+        // Temporarily turn off PRGM mode. This is because
+        // store_command() usually refuses to insert commands
+        // in programs above prgms_count, in order to prevent
+        // users from editing generated code.
+        char saved_prgm_mode = flags.f.prgm_mode;
+        flags.f.prgm_mode = false;
         // First, the end. Doing this before anything else prevents the program count from being bumped.
         arg_struct arg;
         arg.type = ARGTYPE_NONE;
@@ -199,6 +205,7 @@ class GeneratorContext {
             store_command_after(&pc, line->cmd, &arg, NULL);
         }
         current_prgm = saved_prgm;
+        flags.f.prgm_mode = saved_prgm_mode;
     }
 };
 

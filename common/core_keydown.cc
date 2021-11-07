@@ -1768,8 +1768,13 @@ void keydown_alpha_mode(int shift, int key) {
 
         handle_char:
         if (flags.f.prgm_mode) {
-            if (!mode_alpha_entry)
-                start_alpha_prgm_line();
+            if (!mode_alpha_entry) {
+                if (!start_alpha_prgm_line()) {
+                    display_error(ERR_RESTRICTED_OPERATION, false);
+                    redisplay();
+                    return;
+                }
+            }
             if (entered_string_length < 15)
                 entered_string[entered_string_length++] = c;
         } else {
@@ -1823,8 +1828,13 @@ void keydown_alpha_mode(int shift, int key) {
         }
     }
     if (flags.f.prgm_mode) {
-        if (!mode_alpha_entry)
-            start_alpha_prgm_line();
+        if (!mode_alpha_entry) {
+            if (!start_alpha_prgm_line()) {
+                display_error(ERR_RESTRICTED_OPERATION, false);
+                redisplay();
+                return;
+            }
+        }
         if (entered_string_length < 15)
             entered_string[entered_string_length++] = c;
     } else {
@@ -1925,9 +1935,11 @@ void keydown_alpha_mode(int shift, int key) {
             } else if (shift) {
                 set_menu(MENULEVEL_ALPHA, MENU_NONE);
             } else {
-                start_alpha_prgm_line();
-                entered_string[0] = 127;
-                entered_string_length = 1;
+                if (start_alpha_prgm_line()) {
+                    entered_string[0] = 127;
+                    entered_string_length = 1;
+                } else
+                    display_error(ERR_RESTRICTED_OPERATION, false);
             }
         } else {
             if (shift || mode_alpha_entry) {
@@ -2013,6 +2025,11 @@ void keydown_normal_mode(int shift, int key) {
         /* Entering number entry mode */
         if (deferred_print)
             print_command(CMD_NULL, NULL);
+        if (flags.f.prgm_mode && current_prgm >= prgms_count) {
+            display_error(ERR_RESTRICTED_OPERATION, false);
+            redisplay();
+            return;
+        }
         cmdline_length = 0;
         if (get_front_menu() != MENU_NONE)
             cmdline_row = 0;
@@ -2059,11 +2076,15 @@ void keydown_normal_mode(int shift, int key) {
         int4 line = pc2line(pc);
         if (line == 0)
             return;
-        if (current_prgm != prgms_count - 1
-                || prgms[current_prgm].text[pc] != CMD_END)
-            delete_command(pc);
-        pc = line2pc(line - 1);
-        prgm_highlight_row = 0;
+        if (current_prgm >= prgms_count) {
+            display_error(ERR_RESTRICTED_OPERATION, false);
+        } else {
+            if (current_prgm != prgms_count - 1
+                    || prgms[current_prgm].text[pc] != CMD_END)
+                delete_command(pc);
+            pc = line2pc(line - 1);
+            prgm_highlight_row = 0;
+        }
         redisplay();
         return;
     }

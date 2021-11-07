@@ -155,7 +155,6 @@ void core_save_state(const char *state_file_name) {
 }
 
 void core_cleanup() {
-    clear_rtns_vars_and_prgms();
     for (int i = 0; i <= sp; i++)
         free_vartype(stack[i]);
     sp = -1;
@@ -164,6 +163,7 @@ void core_cleanup() {
     stack_capacity = 0;
     free_vartype(lastx);
     lastx = NULL;
+    clear_rtns_vars_and_prgms();
     clean_vartype_pools();
 }
 

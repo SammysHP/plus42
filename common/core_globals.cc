@@ -81,7 +81,6 @@ const error_spec errors[] = {
     { /* RTN_STACK_FULL */         "RTN Stack Full",          14 },
     { /* NUMBER_TOO_LARGE */       "Number Too Large",        16 },
     { /* NUMBER_TOO_SMALL */       "Number Too Small",        16 },
-    { /* BIG_STACK_DISABLED */     "Big Stack Disabled",      18 },
     { /* INVALID_CONTEXT */        "Invalid Context",         15 },
     { /* NAME_TOO_LONG */          "Name Too Long",           13 },
     { /* PARSE_ERROR */            "Parse Error",             11 },
@@ -3515,8 +3514,6 @@ int pop_func_state(bool error) {
         vartype **st_data = st->array->data;
         char big = ((vartype_string *) st_data[0])->txt()[0] == '1';
         if (big) {
-            if (!core_settings.allow_big_stack)
-                return ERR_BIG_STACK_DISABLED;
             int4 size = st->size - 1;
             if (size > 0) {
                 if (!ensure_stack_capacity(size))
@@ -3630,8 +3627,6 @@ int pop_func_state(bool error) {
         if (st_big != fd_big)
             // Apparently someone called 4STK/NSTK between FUNC and L4STK/LNSTK
             return ERR_INVALID_CONTEXT;
-        if (fd_big && !core_settings.allow_big_stack)
-            return ERR_BIG_STACK_DISABLED;
 
         int n = to_int(((vartype_real *) fd_data[0])->x);
 

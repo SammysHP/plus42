@@ -66,7 +66,6 @@ public class PreferencesDialog extends Dialog {
     private CheckBox singularMatrixCB;
     private CheckBox matrixOutOfRangeCB;
     private CheckBox autoRepeatCB;
-    private CheckBox allowBigStackCB;
     private CheckBox alwaysOnCB;
     private SeekBar keyClicksSB;
     private SeekBar hapticSB;
@@ -91,7 +90,6 @@ public class PreferencesDialog extends Dialog {
         singularMatrixCB = (CheckBox) findViewById(R.id.singularMatrixCB);
         matrixOutOfRangeCB = (CheckBox) findViewById(R.id.matrixOutOfRangeCB);
         autoRepeatCB = (CheckBox) findViewById(R.id.autoRepeatCB);
-        allowBigStackCB = (CheckBox) findViewById(R.id.allowBigStackCB);
         alwaysOnCB = (CheckBox) findViewById(R.id.alwaysOnCB);
         keyClicksSB = (SeekBar) findViewById(R.id.keyClicksSB);
         keyClicksSB.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
@@ -250,14 +248,6 @@ public class PreferencesDialog extends Dialog {
 
     public boolean getAutoRepeat() {
         return autoRepeatCB.isChecked();
-    }
-
-    public void setAllowBigStack(boolean b) {
-        allowBigStackCB.setChecked(b);
-    }
-
-    public boolean getAllowBigStack() {
-        return allowBigStackCB.isChecked();
     }
 
     public void setAlwaysOn(boolean b) {

@@ -102,7 +102,7 @@ public class Free42Activity extends Activity {
 
     public static final String[] builtinSkinNames = new String[] { "Standard", "Landscape" };
     
-    private static final int SHELL_VERSION = 18;
+    private static final int SHELL_VERSION = 19;
     
     private static final int PRINT_BACKGROUND_COLOR = Color.LTGRAY;
     
@@ -966,7 +966,6 @@ public class Free42Activity extends Activity {
         preferencesDialog.setSingularMatrixError(cs.matrix_singularmatrix);
         preferencesDialog.setMatrixOutOfRange(cs.matrix_outofrange);
         preferencesDialog.setAutoRepeat(cs.auto_repeat);
-        preferencesDialog.setAllowBigStack(cs.allow_big_stack);
         preferencesDialog.setAlwaysOn(shell_always_on(-1));
         preferencesDialog.setKeyClicks(keyClicksLevel);
         preferencesDialog.setKeyVibration(keyVibration);
@@ -990,11 +989,7 @@ public class Free42Activity extends Activity {
         cs.matrix_singularmatrix = preferencesDialog.getSingularMatrixError();
         cs.matrix_outofrange = preferencesDialog.getMatrixOutOfRange();
         cs.auto_repeat = preferencesDialog.getAutoRepeat();
-        boolean oldBigStack = cs.allow_big_stack;
-        cs.allow_big_stack = preferencesDialog.getAllowBigStack();
         putCoreSettings(cs);
-        if (oldBigStack != cs.allow_big_stack)
-            core_update_allow_big_stack();
         shell_always_on(preferencesDialog.getAlwaysOn() ? 1 : 0);
         keyClicksLevel = preferencesDialog.getKeyClicks();
         keyVibration = preferencesDialog.getKeyVibration();
@@ -1773,8 +1768,10 @@ public class Free42Activity extends Activity {
                 cs.matrix_singularmatrix = state_read_boolean();
                 cs.matrix_outofrange = state_read_boolean();
                 cs.auto_repeat = state_read_boolean();
-                if (shell_version >= 18)
-                    cs.allow_big_stack = state_read_boolean();
+                if (shell_version == 18)
+                    // Allow Big Stack
+                    // Obsolete; NSTK is always allowed in Plus42
+                    state_read_boolean();
                 putCoreSettings(cs);
             }
             init_shell_state(shell_version);
@@ -1844,17 +1841,18 @@ public class Free42Activity extends Activity {
             cs.matrix_singularmatrix = false;
             cs.matrix_outofrange = false;
             cs.auto_repeat = true;
+            putCoreSettings(cs);
             // fall through
         case 15:
             // fall through
         case 16:
             // fall through
         case 17:
-            cs.allow_big_stack = false;
-            putCoreSettings(cs);
             // fall through
         case 18:
-            // current version (SHELL_VERSION = 18),
+            // fall through
+        case 19:
+            // current version (SHELL_VERSION = 19),
             // so nothing to do here since everything
             // was initialized from the state file.
             ;
@@ -1893,7 +1891,6 @@ public class Free42Activity extends Activity {
             state_write_boolean(cs.matrix_singularmatrix);
             state_write_boolean(cs.matrix_outofrange);
             state_write_boolean(cs.auto_repeat);
-            state_write_boolean(cs.allow_big_stack);
         } catch (IllegalArgumentException e) {}
     }
     
@@ -2055,13 +2052,11 @@ public class Free42Activity extends Activity {
     private native void redisplay();
     private native boolean program_running();
     private native void setAlwaysRepaintFullDisplay(boolean alwaysRepaint);
-    private native void core_update_allow_big_stack();
 
     private static class CoreSettings {
         public boolean matrix_singularmatrix;
         public boolean matrix_outofrange;
         public boolean auto_repeat;
-        public boolean allow_big_stack;
     }
 
     ///////////////////////////////////////////////////

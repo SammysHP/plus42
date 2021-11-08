@@ -68,6 +68,8 @@
 /android/app/src/main/cpp/core_math1.h
 /android/app/src/main/cpp/core_math2.cc
 /android/app/src/main/cpp/core_math2.h
+/android/app/src/main/cpp/core_parser.cc
+/android/app/src/main/cpp/core_parser.h
 /android/app/src/main/cpp/core_phloat.cc
 /android/app/src/main/cpp/core_phloat.h
 /android/app/src/main/cpp/core_sto_rcl.cc

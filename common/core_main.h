@@ -299,13 +299,6 @@ char *core_copy();
  */
 void core_paste(const char *s);
 
-/* core_update_allow_big_stack()
- *
- * Updates the big stack state and the UI to reflect a change in the
- * global Allow Big Stack setting.
- */
-void core_update_allow_big_stack();
-
 /* core_settings
  *
  * This is a struct that stores user-configurable core settings. The shell
@@ -316,7 +309,6 @@ struct core_settings_struct {
     bool matrix_singularmatrix;
     bool matrix_outofrange;
     bool auto_repeat;
-    bool allow_big_stack;
 };
 
 extern core_settings_struct core_settings;

@@ -1116,11 +1116,11 @@ class Literal : public Evaluator {
     Literal(int pos, phloat value) : Evaluator(pos), value(value) {}
 
     void printAlg(OutputStream *os) {
-        os->write(value);
+        os->write(to_double(value));
     }
 
     void printRpn(OutputStream *os) {
-        os->write(value);
+        os->write(to_double(value));
     }
 
     void generateCode(GeneratorContext *ctx) {

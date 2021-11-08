@@ -35,7 +35,10 @@ struct state_type {
     bool matrix_singularmatrix;
     bool matrix_outofrange;
     bool auto_repeat;
-    bool allow_big_stack;
+    // formerly 'allow big stack'; can't get rid of it completely
+    // because the way we're reading state_type doesn't allow
+    // for it to shrink.
+    bool dummy;
 };
 
 extern state_type state;
@@ -73,7 +76,6 @@ void calc_keymodifierschanged(NSUInteger flags);
     NSButton *prefsSingularMatrix;
     NSButton *prefsMatrixOutOfRange;
     NSButton *prefsAutoRepeat;
-    NSButton *prefsAllowBigStack;
     NSButton *prefsPrintText;
     NSTextField *prefsPrintTextFile;
     NSButton *prefsPrintTextRaw;
@@ -114,7 +116,6 @@ void calc_keymodifierschanged(NSUInteger flags);
 @property (nonatomic, retain) IBOutlet NSButton *prefsSingularMatrix;
 @property (nonatomic, retain) IBOutlet NSButton *prefsMatrixOutOfRange;
 @property (nonatomic, retain) IBOutlet NSButton *prefsAutoRepeat;
-@property (nonatomic, retain) IBOutlet NSButton *prefsAllowBigStack;
 @property (nonatomic, retain) IBOutlet NSButton *prefsPrintText;
 @property (nonatomic, retain) IBOutlet NSTextField *prefsPrintTextFile;
 @property (nonatomic, retain) IBOutlet NSButton *prefsPrintTextRaw;

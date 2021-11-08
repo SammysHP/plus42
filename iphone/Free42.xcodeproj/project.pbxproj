@@ -66,6 +66,7 @@
 		E977D08B1698FB4E00AA3FD9 /* SelectSkinView.mm in Sources */ = {isa = PBXBuildFile; fileRef = E977D07F1698FB4E00AA3FD9 /* SelectSkinView.mm */; };
 		E977D08D1698FB4E00AA3FD9 /* shell_skin_iphone.mm in Sources */ = {isa = PBXBuildFile; fileRef = E977D0811698FB4E00AA3FD9 /* shell_skin_iphone.mm */; };
 		E977D09A1699050400AA3FD9 /* URLButton.mm in Sources */ = {isa = PBXBuildFile; fileRef = E977D0991699050400AA3FD9 /* URLButton.mm */; };
+		E97FF5642739695100E36E03 /* core_equations.cc in Sources */ = {isa = PBXBuildFile; fileRef = E918AC4625E31DDB00528231 /* core_equations.cc */; };
 		E98DD7510F8C198A0089D9FA /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E98DD7500F8C198A0089D9FA /* AudioToolbox.framework */; };
 		E98DD7670F8C1A210089D9FA /* squeak.wav in Resources */ = {isa = PBXBuildFile; fileRef = E98DD75C0F8C1A210089D9FA /* squeak.wav */; };
 		E98DD7680F8C1A210089D9FA /* tone0.wav in Resources */ = {isa = PBXBuildFile; fileRef = E98DD75D0F8C1A210089D9FA /* tone0.wav */; };
@@ -901,6 +902,7 @@
 				E9FC40F8260707AF00E52296 /* DeleteSkinView.mm in Sources */,
 				E9FC40F9260707AF00E52296 /* RootViewController.mm in Sources */,
 				E9FC40FA260707AF00E52296 /* SelectSkinView.mm in Sources */,
+				E97FF5642739695100E36E03 /* core_equations.cc in Sources */,
 				E9FC40FB260707AF00E52296 /* LoadSkinView.mm in Sources */,
 				E9FC40FC260707AF00E52296 /* shell_skin_iphone.mm in Sources */,
 				E9FC40FD260707AF00E52296 /* URLButton.mm in Sources */,

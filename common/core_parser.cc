@@ -1913,7 +1913,7 @@ class Lexer {
     }
     
     bool isIdentifierStartChar(char c) {
-        return c != '+' && c != '-' && c != '\1' && c != '\0'
+        return !isspace(c) && c != '+' && c != '-' && c != '\1' && c != '\0'
                 && c != '^' && c != '(' && c != ')' && c != '<'
                 && c != '>' && c != '=' && c != ':'
                 && (compatMode

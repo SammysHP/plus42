@@ -269,6 +269,8 @@
 /windows/core_math1.h
 /windows/core_math2.cpp
 /windows/core_math2.h
+/windows/core_parser.cpp
+/windows/core_parser.h
 /windows/core_phloat.cpp
 /windows/core_phloat.h
 /windows/core_sto_rcl.cpp

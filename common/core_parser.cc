@@ -1310,6 +1310,42 @@ class Min : public Evaluator {
     }
 };
 
+/////////////////////
+/////  NameTag  /////
+/////////////////////
+
+class NameTag : public Evaluator {
+    
+    private:
+    
+    std::string name;
+    Evaluator *ev;
+    
+    public:
+    
+    NameTag(int pos, std::string name, Evaluator *ev) : Evaluator(pos), name(name), ev(ev) {}
+    
+    ~NameTag() {
+        delete ev;
+    }
+    
+    std::string eqnName() {
+        return name;
+    }
+
+    void printAlg(OutputStream *os) {
+        ev->printAlg(os);
+    }
+
+    void printRpn(OutputStream *os) {
+        ev->printRpn(os);
+    }
+
+    void generateCode(GeneratorContext *ctx) {
+        ev->generateCode(ctx);
+    }
+};
+
 //////////////////////
 /////  Negative  /////
 //////////////////////
@@ -1907,6 +1943,11 @@ class Lexer {
         pos = 0;
         prevpos = 0;
     }
+    
+    void reset() {
+        pos = 0;
+        prevpos = 0;
+    }
 
     int lpos() {
         return prevpos;
@@ -1923,6 +1964,17 @@ class Lexer {
     bool isIdentifierContinuationChar(char c) {
         return c >= '0' && c <= '9' || c == '.' || c == ','
                 || isIdentifierStartChar(c);
+    }
+    
+    bool isIdentifier(const std::string &s) {
+        if (s.length() == 0)
+            return false;
+        if (!isIdentifierStartChar(s[0]))
+            return false;
+        for (int i = 1; i < s.length(); i++)
+            if (!isIdentifierContinuationChar(s[i]))
+                return false;
+        return true;
     }
 
     bool nextToken(std::string *tok, int *tpos) {
@@ -2059,21 +2111,40 @@ class Lexer {
 #define CTX_BOOLEAN 2
 
 /* static */ Evaluator *Parser::parse(std::string expr, bool compatMode, int *errpos) {
-    Parser pz(expr, compatMode);
+    std::string t, t2, eqnName;
+    int tpos;
+    
+    // Look for equation name
+    Lexer *lex = new Lexer(expr, compatMode);
+    if (!lex->nextToken(&t, &tpos))
+        goto no_name;
+    if (!lex->isIdentifier(t))
+        goto no_name;
+    if (!lex->nextToken(&t2, &tpos))
+        goto no_name;
+    if (t2 != ":")
+        goto no_name;
+    eqnName = t;
+    goto name_done;
+    no_name:
+    lex->reset();
+    name_done:
+    
+    Parser pz(lex);
     Evaluator *ev = pz.parseExpr(CTX_TOP);
     if (ev == NULL) {
         fail:
         *errpos = pz.lex->lpos();
         return NULL;
     }
-    std::string t;
-    int tpos;
     if (!pz.nextToken(&t, &tpos)) {
         delete ev;
         goto fail;
     }
     if (t == "") {
         // Text consumed completely; this is the good scenario
+        if (eqnName != "")
+            ev = new NameTag(0, eqnName, ev);
         return ev;
     } else {
         // Trailing garbage
@@ -2089,9 +2160,7 @@ class Lexer {
     ctx.store(prgm);
 }
 
-Parser::Parser(std::string expr, bool compatMode) : text(expr), pbpos(-1) {
-    lex = new Lexer(expr, compatMode);
-}
+Parser::Parser(Lexer *lex) : lex(lex), pbpos(-1) {}
 
 Parser::~Parser() {
     delete lex;
@@ -2363,17 +2432,6 @@ Evaluator *Parser::parseFactor() {
     }
 }
 
-bool Parser::isIdentifier(const std::string &s) {
-    if (s.length() == 0)
-        return false;
-    if (!lex->isIdentifierStartChar(s[0]))
-        return false;
-    for (int i = 1; i < s.length(); i++)
-        if (!lex->isIdentifierContinuationChar(s[i]))
-            return false;
-    return true;
-}
-
 #define EXPR_LIST_EXPR 0
 #define EXPR_LIST_BOOLEAN 1
 #define EXPR_LIST_NAME 2
@@ -2404,7 +2462,7 @@ std::vector<Evaluator *> *Parser::parseExprList(int nargs, int mode) {
         if (mode == EXPR_LIST_NAME) {
             if (!nextToken(&t, &tpos) || t == "")
                 goto fail;
-            if (!isIdentifier(t))
+            if (!lex->isIdentifier(t))
                 goto fail;
             ev = new Variable(tpos, t);
         } else {
@@ -2466,7 +2524,7 @@ Evaluator *Parser::parseThing() {
             return NULL;
         }
         return new Identity(tpos, ev);
-    } else if (isIdentifier(t)) {
+    } else if (lex->isIdentifier(t)) {
         std::string t2;
         int t2pos;
         if (!nextToken(&t2, &t2pos))

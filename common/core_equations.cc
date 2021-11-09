@@ -31,7 +31,7 @@
 static bool active = false;
 static int menu_whence;
 
-static vartype_realmatrix *eqns;
+static vartype_list *eqns;
 static int4 num_eqns;
 static int selected_row = -1; // -1: top of list; num_eqns: bottom of list
 static int edit_pos; // -1: in list; >= 0: in editor
@@ -92,11 +92,11 @@ bool unpersist_eqn(int4 ver) {
     bool have_eqns;
     if (!read_bool(&have_eqns)) return false;
     if (have_eqns)
-        eqns = (vartype_realmatrix *) recall_var("EQNS", 4);
+        eqns = (vartype_list *) recall_var("EQNS", 4);
     else
         eqns = NULL;
     if (eqns != NULL)
-        num_eqns = eqns->rows * eqns->columns;
+        num_eqns = eqns->size;
     else
         num_eqns = 0;
     if (!read_int(&selected_row)) return false;
@@ -316,19 +316,22 @@ static void save() {
             return;
         }
     }
+    int errpos;
+    vartype *v = new_equation(edit_buf, edit_len, flags.f.eqn_compat, &errpos);
+    if (v == NULL)
+        v = new_string(edit_buf, edit_len);
+    if (v == NULL) {
+        show_error(ERR_INSUFFICIENT_MEMORY);
+        return;
+    }
     if (new_eq) {
         if (num_eqns == 0) {
-            eqns = (vartype_realmatrix *) new_realmatrix(1, 1);
+            eqns = (vartype_list *) new_list(1);
             if (eqns == NULL) {
                 show_error(ERR_INSUFFICIENT_MEMORY);
                 return;
             }
-            if (!put_matrix_string(eqns, 0, edit_buf, edit_len)) {
-                free_vartype((vartype *) eqns);
-                eqns = NULL;
-                show_error(ERR_INSUFFICIENT_MEMORY);
-                return;
-            }
+            eqns->array->data[0] = v;
             int err = store_var("EQNS", 4, (vartype *) eqns);
             if (err != ERR_NONE) {
                 free_vartype((vartype *) eqns);
@@ -339,39 +342,27 @@ static void save() {
             selected_row = 0;
             num_eqns = 1;
         } else {
-            int err = dimension_array_ref((vartype *) eqns, num_eqns + 1, 1);
-            if (err != ERR_NONE) {
-                show_error(err);
-                return;
-            }
-            if (!put_matrix_string(eqns, num_eqns, edit_buf, edit_len)) {
-                eqns->rows = num_eqns;
+            vartype **new_data = (vartype **) realloc(eqns->array->data, (num_eqns + 1) * sizeof(vartype *));
+            if (new_data == NULL) {
                 show_error(ERR_INSUFFICIENT_MEMORY);
                 return;
             }
+            eqns->array->data = new_data;
+            eqns->size++;
             num_eqns++;
             selected_row++;
             if (selected_row == num_eqns)
                 selected_row--;
             int n = num_eqns - selected_row - 1;
-            if (n > 0) {
-                char t1 = eqns->array->is_string[num_eqns - 1];
-                memmove(eqns->array->is_string + selected_row + 1,
-                        eqns->array->is_string + selected_row,
-                        n);
-                eqns->array->is_string[selected_row] = t1;
-                phloat t2 = eqns->array->data[num_eqns - 1];
+            if (n > 0)
                 memmove(eqns->array->data + selected_row + 1,
                         eqns->array->data + selected_row,
-                        n * sizeof(phloat));
-                eqns->array->data[selected_row] = t2;
-            }
+                        n);
+            eqns->array->data[selected_row] = v;
         }
     } else {
-        if (!put_matrix_string(eqns, selected_row, edit_buf, edit_len)) {
-            show_error(ERR_INSUFFICIENT_MEMORY);
-            return;
-        }
+        free_vartype(eqns->array->data[selected_row]);
+        eqns->array->data[selected_row] = v;
     }
     free(edit_buf);
     edit_pos = -1;
@@ -388,15 +379,15 @@ static int print_eq_worker(bool interrupted) {
     }
 
     if (print_eq_do_all || edit_pos == -1) {
-        if (eqns->array->is_string[print_eq_row]) {
-            const char *text;
-            int4 len;
-            get_matrix_string(eqns, print_eq_row, &text, &len);
-            print_lines(text, len, 1);
+        vartype *v = eqns->array->data[print_eq_row];
+        if (v->type == TYPE_STRING) {
+            vartype_string *s = (vartype_string *) v;
+            print_lines(s->txt(), s->length, 1);
+        } else if (v->type == TYPE_EQUATION) {
+            vartype_equation *eq = (vartype_equation *) v;
+            print_lines(eq->data->text, eq->data->length, 1);
         } else {
-            char buf[50];
-            int len = real2buf(buf, eqns->array->data[print_eq_row]);
-            print_lines(buf, len, 1);
+            print_lines("<Invalid>", 9, 1);
         }
     } else {
         print_lines(edit_buf, edit_len, 1);
@@ -445,12 +436,42 @@ int eqn_start(int whence) {
     if (v == NULL) {
         eqns = NULL;
         num_eqns = 0;
-    } else if (v->type != TYPE_REALMATRIX) {
+    } else if (v->type == TYPE_REALMATRIX) {
+        vartype_realmatrix *rm = (vartype_realmatrix *) v;
+        int4 n = rm->rows * rm->columns;
+        vartype_list *list = (vartype_list *) new_list(n);
+        if (list == NULL) {
+            active = false;
+            return ERR_INSUFFICIENT_MEMORY;
+        }
+        for (int4 i = 0; i < n; i++) {
+            vartype *s;
+            if (rm->array->is_string[i]) {
+                char *text;
+                int len;
+                get_matrix_string(rm, i, &text, &len);
+                s = new_string(text, len);
+            } else {
+                char buf[50];
+                int len = real2buf(buf, rm->array->data[i]);
+                s = new_string(buf, len);
+            }
+            if (s == NULL) {
+                active = false;
+                free_vartype((vartype *) list);
+                return ERR_INSUFFICIENT_MEMORY;
+            }
+            list->array->data[i] = s;
+        }
+        store_var("EQNS", 4, (vartype *) list);
+        goto do_list;
+    } else if (v->type != TYPE_LIST) {
         active = false;
         return ERR_INVALID_TYPE;
     } else {
-        eqns = (vartype_realmatrix *) v;
-        num_eqns = eqns->rows * eqns->columns;
+        do_list:
+        eqns = (vartype_list *) v;
+        num_eqns = eqns->size;
     }
     if (selected_row > num_eqns)
         selected_row = num_eqns;
@@ -488,20 +509,28 @@ char *eqn_copy() {
         }
     } else {
         for (int4 i = 0; i < num_eqns; i++) {
-            if (eqns->array->is_string[i]) {
-                const char *text;
-                int4 len;
-                get_matrix_string(eqns, i, &text, &len);
-                for (int4 j = 0; j < len; j += 10) {
-                    int4 seg_len = len - j;
-                    if (seg_len > 10)
-                        seg_len = 10;
-                    int4 bufptr = hp2ascii(buf, text + j, seg_len, false);
-                    tb_write(&tb, buf, bufptr);
-                }
-            } else {
-                int len = real2buf(buf, eqns->array->data[i]);
+            const char *text;
+            int len;
+            vartype *v = eqns->array->data[i];
+            if (v->type == TYPE_STRING) {
+                vartype_string *s = (vartype_string *) v;
+                text = s->txt();
+                len = s->length;
+            } else if (v->type == TYPE_EQUATION) {
+                vartype_equation *eq = (vartype_equation *) v;
+                text = eq->data->text;
+                len = eq->data->length;
                 tb_write(&tb, buf, len);
+            } else {
+                text = "<Invalid>";
+                len = 9;
+            }
+            for (int4 j = 0; j < len; j += 10) {
+                int4 seg_len = len - j;
+                if (seg_len > 10)
+                    seg_len = 10;
+                int4 bufptr = hp2ascii(buf, text + j, seg_len, false);
+                tb_write(&tb, buf, bufptr);
             }
             tb_write(&tb, "\r\n", 2);
         }
@@ -541,42 +570,36 @@ void eqn_paste(const char *buf) {
                 return;
             }
             int len = ascii2hp(hpbuf, t, buf + p, t);
+            int errpos;
+            vartype *v = new_equation(hpbuf, len, flags.f.eqn_compat, &errpos);
+            if (v == NULL)
+                v = new_string(hpbuf, len);
+            if (v == NULL)
+                goto nomem;
             if (num_eqns == 0) {
-                eqns = (vartype_realmatrix *) new_realmatrix(1, 1);
+                eqns = (vartype_list *) new_list(1);
                 if (eqns == NULL) {
+                    nomem:
                     show_error(ERR_INSUFFICIENT_MEMORY);
+                    free(v);
                     free(hpbuf);
                     return;
                 }
             } else {
-                int err = dimension_array_ref((vartype *) eqns, num_eqns + 1, 1);
-                if (err != ERR_NONE) {
-                    show_error(ERR_INSUFFICIENT_MEMORY);
-                    free(hpbuf);
-                    return;
-                }
+                vartype **new_data = (vartype **) realloc(eqns->array->data, (num_eqns + 1) * sizeof(vartype *));
+                if (new_data == NULL)
+                    goto nomem;
+                eqns->array->data = new_data;
+                eqns->size++;
             }
             int n = selected_row + 1;
             if (n > num_eqns)
                 n = num_eqns;
-            memmove(eqns->array->is_string + n + 1, eqns->array->is_string + n, num_eqns - n);
-            memmove(eqns->array->data + n + 1, eqns->array->data + n, (num_eqns - n) * sizeof(phloat));
-            eqns->array->is_string[n] = 0;
-            bool success = put_matrix_string(eqns, n, hpbuf, len);
+            memmove(eqns->array->data + n + 1, eqns->array->data + n, (num_eqns - n) * sizeof(vartype *));
+            eqns->array->data[n] = v;
             free(hpbuf);
-            if (!success) {
-                memmove(eqns->array->is_string + n, eqns->array->is_string + n + 1, num_eqns - n);
-                memmove(eqns->array->data + n, eqns->array->data + n + 1, (num_eqns - n) * sizeof(phloat));
-                if (num_eqns == 0) {
-                    free_vartype((vartype *) eqns);
-                    eqns = NULL;
-                }
-                eqns->rows--;
-                show_error(ERR_INSUFFICIENT_MEMORY);
-                return;
-            } else if (num_eqns == 0) {
+            if (num_eqns == 0)
                 store_var("EQNS", 4, (vartype *) eqns);
-            }
             selected_row = n;
             num_eqns++;
             if (buf[s] != 0)
@@ -674,21 +697,27 @@ bool eqn_draw() {
         } else if (selected_row == num_eqns) {
             draw_string(0, 0, "<Bottom of List>", 16);
         } else {
-            char buf[50];
+            const char *text;
             int4 len;
-            if (eqns->array->is_string[selected_row]) {
-                const char *text;
-                get_matrix_string(eqns, selected_row, &text, &len);
-                int bufptr = 0;
-                string2buf(buf, 22, &bufptr, text, len);
+            vartype *v = eqns->array->data[selected_row];
+            if (v->type == TYPE_STRING) {
+                vartype_string *s = (vartype_string *) v;
+                text = s->txt();
+                len = s->length;
+            } else if (v->type == TYPE_EQUATION) {
+                vartype_equation *eq = (vartype_equation *) v;
+                text = eq->data->text;
+                len = eq->data->length;
             } else {
-                len = real2buf(buf, eqns->array->data[selected_row]);
-                if (len > 22) {
-                    buf[21] = 26;
-                    len = 22;
-                }
+                text = "<Invalid>";
+                len = 9;
             }
-            draw_string(0, 0, buf, len);
+            if (len <= 22) {
+                draw_string(0, 0, text, len);
+            } else {
+                draw_string(0, 0, text, 21);
+                draw_char(21, 0, 26);
+            }
         }
         if (edit_menu == MENU_PRINT1) {
             draw_print1_menu();
@@ -1071,17 +1100,15 @@ static int keydown_delete_confirmation(int key, bool shift, int *repeat) {
                     show_error(ERR_INSUFFICIENT_MEMORY);
                     return 0;
                 }
-                if (eqns->array->is_string[selected_row] == 2)
-                    free(*(void **) &eqns->array->data[selected_row]);
-                memmove(eqns->array->is_string + selected_row,
-                        eqns->array->is_string + selected_row + 1,
-                        num_eqns - selected_row - 1);
+                free_vartype(eqns->array->data[selected_row]);
                 memmove(eqns->array->data + selected_row,
                         eqns->array->data + selected_row + 1,
-                        (num_eqns - selected_row - 1) * sizeof(phloat));
+                        (num_eqns - selected_row - 1) * sizeof(vartype *));
                 num_eqns--;
-                eqns->rows = num_eqns;
-                eqns->columns = 1;
+                eqns->size--;
+                vartype **new_data = (vartype **) realloc(eqns->array->data, num_eqns * sizeof(vartype *));
+                if (new_data != NULL)
+                    eqns->array->data = new_data;
             }
             goto finish;
         }
@@ -1188,24 +1215,26 @@ static int keydown_rcl(int key, bool shift, int *repeat) {
 }
 
 static bool get_equation() {
-    if (eqns->array->is_string[selected_row]) {
-        const char *text;
-        int4 len;
-        get_matrix_string(eqns, selected_row, &text, &len);
-        edit_buf = (char *) malloc(len);
-        if (edit_buf == NULL)
-            return false;
-        edit_len = edit_capacity = len;
-        memcpy(edit_buf, text, len);
+    const char *text;
+    int len;
+    vartype *v = eqns->array->data[selected_row];
+    if (v->type == TYPE_STRING) {
+        vartype_string *s = (vartype_string *) v;
+        text = s->txt();
+        len = s->length;
+    } else if (v->type == TYPE_EQUATION) {
+        vartype_equation *eq = (vartype_equation *) v;
+        text = eq->data->text;
+        len = eq->data->length;
     } else {
-        char buf[50];
-        int4 len = real2buf(buf, eqns->array->data[selected_row]);
-        edit_buf = (char *) malloc(len);
-        if (edit_buf == NULL)
-            return false;
-        edit_len = edit_capacity = len;
-        memcpy(edit_buf, buf, len);
+        text = "<Invalid>";
+        len = 9;
     }
+    edit_buf = (char *) malloc(len);
+    if (edit_buf == NULL)
+        return false;
+    edit_len = edit_capacity = len;
+    memcpy(edit_buf, text, len);
     return true;
 }
 
@@ -1399,32 +1428,36 @@ static int keydown_list(int key, bool shift, int *repeat) {
                 squeak();
                 return 1;
             }
-            if (!eqns->array->is_string[selected_row]) {
+            vartype *v = eqns->array->data[selected_row];
+            if (v->type == TYPE_STRING) {
+                vartype_string *s = (vartype_string *) v;
+                int errpos;
+                vartype *eq = new_equation(s->txt(), s->length, flags.f.eqn_compat, &errpos);
+                if (eq == NULL) {
+                    if (errpos == -1) {
+                        show_error(ERR_INSUFFICIENT_MEMORY);
+                    } else {
+                        squeak();
+                        show_error(ERR_INVALID_EQUATION);
+                        current_error = ERR_NONE;
+                        timeout_action = 3;
+                        timeout_edit_pos = errpos;
+                        shell_request_timeout3(1000);
+                    }
+                    return 1;
+                }
+                free_vartype(eqns->array->data[selected_row]);
+                eqns->array->data[selected_row] = eq;
+                v = eq;
+                goto do_eq;
+            } else if (v->type == TYPE_EQUATION) {
+                do_eq:
+                show_error(ERR_NOT_YET_IMPLEMENTED);
+                return 1;
+            } else {
                 show_error(ERR_INVALID_TYPE);
                 return 1;
             }
-            const char *eq;
-            int4 len = 0;
-            get_matrix_string(eqns, selected_row, &eq, &len);
-            int4 namelen = 0;
-            while (namelen < len && is_name_char(eq[namelen]))
-                namelen++;
-            if (namelen == len || eq[namelen] != ':')
-                namelen = 0;
-            int errpos;
-            Evaluator *ev = Parser::parse(std::string(eq + namelen, len - namelen), false, &errpos);
-            if (ev == NULL) {
-                squeak();
-                show_error(ERR_INVALID_EQUATION);
-                current_error = ERR_NONE;
-                timeout_action = 3;
-                timeout_edit_pos = errpos;
-                shell_request_timeout3(1000);
-            } else {
-                delete ev;
-                show_error(ERR_NOT_YET_IMPLEMENTED);
-            }
-            return 1;
 #if 0
             if (len != 0 && len <= 7) {
                 pending_command_arg.length = len;
@@ -1520,12 +1553,9 @@ static int keydown_list(int key, bool shift, int *repeat) {
                 if (selected_row == -1 || selected_row == num_eqns) {
                     selected_row -= dir;
                 } else {
-                    char t1 = eqns->array->is_string[selected_row];
-                    eqns->array->is_string[selected_row] = eqns->array->is_string[selected_row - dir];
-                    eqns->array->is_string[selected_row - dir] = t1;
-                    phloat t2 = eqns->array->data[selected_row];
+                    vartype *v = eqns->array->data[selected_row];
                     eqns->array->data[selected_row] = eqns->array->data[selected_row - dir];
-                    eqns->array->data[selected_row - dir] = t2;
+                    eqns->array->data[selected_row - dir] = v;
                 }
             }
             timeout_action = 1;
@@ -2017,10 +2047,22 @@ static int keydown_edit_2(int key, bool shift, int *repeat) {
                     break;
                 }
                 if (edit_menu == MENU_NONE) {
-                    if (!new_eq && eqns->array->is_string[selected_row] != 0) {
+                    if (!new_eq) {
+                        vartype *v = eqns->array->data[selected_row];
                         const char *orig_text;
-                        int4 orig_len;
-                        get_matrix_string(eqns, selected_row, &orig_text, &orig_len);
+                        int orig_len;
+                        if (v->type == TYPE_STRING) {
+                            vartype_string *s = (vartype_string *) v;
+                            orig_text = s->txt();
+                            orig_len = s->length;
+                        } else if (v->type == TYPE_EQUATION) {
+                            vartype_equation *eq = (vartype_equation *) v;
+                            orig_text = eq->data->text;
+                            orig_len = eq->data->length;
+                        } else {
+                            orig_text = "<Invalid>";
+                            orig_len = 9;
+                        }
                         if (string_equals(edit_buf, edit_len, orig_text, orig_len)) {
                             edit_pos = -1;
                             free(edit_buf);

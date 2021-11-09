@@ -32,6 +32,7 @@ class Evaluator {
     virtual ~Evaluator() {}
     virtual bool isBool() { return false; }
     virtual std::string name() { return ""; }
+    virtual std::string eqnName() { return ""; }
 
     int pos() { return tpos; }
 
@@ -59,7 +60,7 @@ class Parser {
 
     private:
 
-    Parser(std::string expr, bool compatMode);
+    Parser(Lexer *lex);
     ~Parser();
     Evaluator *parseExpr(int context);
     Evaluator *parseExpr2();

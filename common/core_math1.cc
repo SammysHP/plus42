@@ -426,10 +426,10 @@ int set_solve_eqn(equation_data *eqdata) {
     vartype_equation *eq = (vartype_equation *) malloc(sizeof(vartype_equation));
     if (eq == NULL)
         return ERR_INSUFFICIENT_MEMORY;
-    free_vartype(solve.eq);
     eq->type = TYPE_EQUATION;
     eq->data = eqdata;
     eq->data->refcount++;
+    free_vartype(solve.eq);
     solve.eq = (vartype *) eq;
     return ERR_NONE;
 }
@@ -1100,10 +1100,10 @@ int set_integ_eqn(equation_data *eqdata) {
     vartype_equation *eq = (vartype_equation *) malloc(sizeof(vartype_equation));
     if (eq == NULL)
         return ERR_INSUFFICIENT_MEMORY;
-    free_vartype(integ.eq);
     eq->type = TYPE_EQUATION;
     eq->data = eqdata;
     eq->data->refcount++;
+    free_vartype(integ.eq);
     integ.eq = (vartype *) eq;
     return ERR_NONE;
 }

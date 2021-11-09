@@ -1487,6 +1487,11 @@ void display_command(int row) {
                                          labels[labelindex].length);
             char2buf(buf, 22, &bufptr, '"');
         }
+    } else if (pending_command_arg.type == ARGTYPE_EQN) {
+        equation_data *eqd = prgms[pending_command_arg.val.num].eq_data;
+        char2buf(buf, 22, &bufptr, eqd->compatMode ? '`' : '\'');
+        string2buf(buf, 22, &bufptr, eqd->text, eqd->length);
+        char2buf(buf, 22, &bufptr, eqd->compatMode ? '`' : '\'');
     } else /* ARGTYPE_LCLBL */ {
         char2buf(buf, 22, &bufptr, pending_command_arg.val.lclbl);
     }
@@ -1538,11 +1543,11 @@ void config_varmenu_lbl(const char *name, int len) {
 }
 
 void config_varmenu_eqn(equation_data *eqdata) {
-    free_vartype(varmenu_eqn);
     vartype_equation *eq = (vartype_equation *) malloc(sizeof(vartype_equation));
     eq->type = TYPE_EQUATION;
     eq->data = eqdata;
     eq->data->refcount++;
+    free_vartype(varmenu_eqn);
     varmenu_eqn = (vartype *) eq;
 }
 
@@ -2207,7 +2212,7 @@ void redisplay() {
         avail_rows = 1;
     } else if (menu_id == MENU_VARMENU) {
         draw_varmenu();
-        if (varmenu_length == 0) {
+        if (varmenu_length == 0 && varmenu_eqn == NULL) {
             redisplay();
             return;
         }
@@ -2744,11 +2749,6 @@ int command2buf(char *buf, int len, int cmd, const arg_struct *arg) {
             string2buf(buf, len, &bufptr, arg->val.xstr,
                                             arg->length);
             char2buf(buf, len, &bufptr, '"');
-        } else if (arg->type == ARGTYPE_EQN) {
-            equation_data *eqd = prgms[arg->val.num].eq_data;
-            char2buf(buf, len, &bufptr, eqd->compatMode ? '`' : '\'');
-            string2buf(buf, len, &bufptr, eqd->text, eqd->length);
-            char2buf(buf, len, &bufptr, eqd->compatMode ? '`' : '\'');
         } else /* ARGTYPE_COMMAND; for backward compatibility only */ {
             const command_spec *cs = &cmd_array[arg->val.cmd];
             char2buf(buf, len, &bufptr, '"');

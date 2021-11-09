@@ -1449,36 +1449,13 @@ static int keydown_list(int key, bool shift, int *repeat) {
                 free_vartype(eqns->array->data[selected_row]);
                 eqns->array->data[selected_row] = eq;
                 v = eq;
-                goto do_eq;
-            } else if (v->type == TYPE_EQUATION) {
-                do_eq:
-                show_error(ERR_NOT_YET_IMPLEMENTED);
-                return 1;
-            } else {
+            } else if (v->type != TYPE_EQUATION) {
                 show_error(ERR_INVALID_TYPE);
                 return 1;
             }
-#if 0
-            if (len != 0 && len <= 7) {
-                pending_command_arg.length = len;
-                memcpy(pending_command_arg.val.text, name, len);
-            } else {
-                /* For equations with no name, or with a name longer
-                    * than 7 characters, we generate a pseudo-name
-                    * "eq{NNN}", but only if NNN <= 999. If the number
-                    * is >= 1000, we punt.
-                    */
-                if (selected_row >= 1000) {
-                    squeak();
-                    return 1;
-                }
-                len = 0;
-                string2buf(pending_command_arg.val.text, 7, &len, "eq{", 3);
-                len += int2string(selected_row, pending_command_arg.val.text + len, 7 - len);
-                string2buf(pending_command_arg.val.text, 7, &len, "}", 1);
-            }
-            pending_command_arg.type = ARGTYPE_STR;
-            pending_command_arg.length = len;
+
+            pending_command_arg.type = ARGTYPE_EQN;
+            pending_command_arg.val.num = ((vartype_equation *) v)->data->prgm_index;
             if (menu_whence == CATSECT_PGM_SOLVE)
                 pending_command = CMD_PGMSLVi;
             else if (menu_whence == CATSECT_PGM_INTEG)
@@ -1493,7 +1470,7 @@ static int keydown_list(int key, bool shift, int *repeat) {
                 */
             redisplay();
             return 2;
-#endif
+
         }
         case KEY_INV: {
             /* EDIT */

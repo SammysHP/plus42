@@ -925,9 +925,7 @@ int docmd_varmenu(arg_struct *arg) {
     current_prgm = saved_prgm;
     if (command != CMD_MVAR)
         return ERR_NO_MENU_VARIABLES;
-    varmenu_length = arg->length;
-    for (i = 0; i < varmenu_length; i++)
-        varmenu[i] = arg->val.text[i];
+    config_varmenu_lbl(arg->val.text, arg->length);
     varmenu_row = 0;
     varmenu_role = 0;
     return set_menu_return_err(MENULEVEL_APP, MENU_VARMENU, false);

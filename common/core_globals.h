@@ -374,6 +374,7 @@ extern int current_prgm;
 extern int4 pc;
 extern int prgm_highlight_row;
 
+extern vartype *varmenu_eqn;
 extern int varmenu_length;
 extern char varmenu[7];
 extern int varmenu_rows;
@@ -587,6 +588,9 @@ void save_state();
 // 1 = State File Corrupt
 // 2 = State File Too New
 void hard_reset(int reason);
+
+bool persist_vartype(vartype *v);
+bool unpersist_vartype(vartype **v, bool padded);
 
 #ifdef IPHONE
 bool off_enabled();

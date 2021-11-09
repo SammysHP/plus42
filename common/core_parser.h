@@ -39,6 +39,7 @@ class Evaluator {
     virtual void printAlg(OutputStream *os) = 0;
     virtual void printRpn(OutputStream *os) = 0;
     virtual void generateCode(GeneratorContext *ctx) = 0;
+    virtual void collectVariables(std::vector<std::string> *vars) = 0;
 };
 
 class Lexer;
@@ -77,3 +78,5 @@ class Parser {
     void pushback(std::string o, int p);
     static bool isOperator(const std::string &s);
 };
+
+void get_varmenu_row_for_eqn(vartype *eqn, int *rows, int *row, char ktext[6][7], int klen[6]);

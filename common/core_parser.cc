@@ -242,6 +242,10 @@ class Abs : public Evaluator {
         ev->generateCode(ctx);
         ctx->addLine(CMD_ABS);
     }
+
+    void collectVariables(std::vector<std::string> *vars) {
+        ev->collectVariables(vars);
+    }
 };
 
 //////////////////
@@ -277,6 +281,10 @@ class Acos : public Evaluator {
         ev->generateCode(ctx);
         ctx->addLine(CMD_ACOS);
     }
+
+    void collectVariables(std::vector<std::string> *vars) {
+        ev->collectVariables(vars);
+    }
 };
 
 //////////////////
@@ -311,6 +319,10 @@ class Alog : public Evaluator {
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
         ctx->addLine(CMD_10_POW_X);
+    }
+
+    void collectVariables(std::vector<std::string> *vars) {
+        ev->collectVariables(vars);
     }
 };
 
@@ -353,6 +365,11 @@ class And : public Evaluator {
         right->generateCode(ctx);
         ctx->addLine(CMD_GEN_AND);
     }
+
+    void collectVariables(std::vector<std::string> *vars) {
+        left->collectVariables(vars);
+        right->collectVariables(vars);
+    }
 };
 
 //////////////////
@@ -388,6 +405,10 @@ class Asin : public Evaluator {
         ev->generateCode(ctx);
         ctx->addLine(CMD_ASIN);
     }
+
+    void collectVariables(std::vector<std::string> *vars) {
+        ev->collectVariables(vars);
+    }
 };
 
 //////////////////
@@ -422,6 +443,10 @@ class Atan : public Evaluator {
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
         ctx->addLine(CMD_ATAN);
+    }
+
+    void collectVariables(std::vector<std::string> *vars) {
+        ev->collectVariables(vars);
     }
 };
 
@@ -475,6 +500,10 @@ class Call : public Evaluator {
     void generateCode(GeneratorContext *ctx) {
         // TODO
     }
+
+    void collectVariables(std::vector<std::string> *vars) {
+        // TODO
+    }
 };
 
 ///////////////////////
@@ -515,6 +544,11 @@ class CompareEQ : public Evaluator {
         left->generateCode(ctx);
         right->generateCode(ctx);
         ctx->addLine(CMD_GEN_EQ);
+    }
+
+    void collectVariables(std::vector<std::string> *vars) {
+        left->collectVariables(vars);
+        right->collectVariables(vars);
     }
 };
 
@@ -557,6 +591,11 @@ class CompareNE : public Evaluator {
         right->generateCode(ctx);
         ctx->addLine(CMD_GEN_NE);
     }
+
+    void collectVariables(std::vector<std::string> *vars) {
+        left->collectVariables(vars);
+        right->collectVariables(vars);
+    }
 };
 
 ///////////////////////
@@ -597,6 +636,11 @@ class CompareLT : public Evaluator {
         left->generateCode(ctx);
         right->generateCode(ctx);
         ctx->addLine(CMD_GEN_LT);
+    }
+
+    void collectVariables(std::vector<std::string> *vars) {
+        left->collectVariables(vars);
+        right->collectVariables(vars);
     }
 };
 
@@ -639,6 +683,11 @@ class CompareLE : public Evaluator {
         right->generateCode(ctx);
         ctx->addLine(CMD_GEN_LE);
     }
+
+    void collectVariables(std::vector<std::string> *vars) {
+        left->collectVariables(vars);
+        right->collectVariables(vars);
+    }
 };
 
 ///////////////////////
@@ -679,6 +728,11 @@ class CompareGT : public Evaluator {
         left->generateCode(ctx);
         right->generateCode(ctx);
         ctx->addLine(CMD_GEN_GT);
+    }
+
+    void collectVariables(std::vector<std::string> *vars) {
+        left->collectVariables(vars);
+        right->collectVariables(vars);
     }
 };
 
@@ -721,6 +775,11 @@ class CompareGE : public Evaluator {
         right->generateCode(ctx);
         ctx->addLine(CMD_GEN_GE);
     }
+
+    void collectVariables(std::vector<std::string> *vars) {
+        left->collectVariables(vars);
+        right->collectVariables(vars);
+    }
 };
 
 /////////////////
@@ -755,6 +814,10 @@ class Cos : public Evaluator {
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
         ctx->addLine(CMD_COS);
+    }
+
+    void collectVariables(std::vector<std::string> *vars) {
+        ev->collectVariables(vars);
     }
 };
 
@@ -794,6 +857,11 @@ class Difference : public Evaluator {
         left->generateCode(ctx);
         right->generateCode(ctx);
         ctx->addLine(CMD_SUB);
+    }
+
+    void collectVariables(std::vector<std::string> *vars) {
+        left->collectVariables(vars);
+        right->collectVariables(vars);
     }
 };
 
@@ -835,6 +903,10 @@ class Ell : public Evaluator {
         ev->generateCode(ctx);
         ctx->addLine(CMD_STO, name);
     }
+
+    void collectVariables(std::vector<std::string> *vars) {
+        ev->collectVariables(vars);
+    }
 };
 
 //////////////////////
@@ -874,6 +946,11 @@ class Equation : public Evaluator {
         right->generateCode(ctx);
         ctx->addLine(CMD_SUB);
     }
+
+    void collectVariables(std::vector<std::string> *vars) {
+        left->collectVariables(vars);
+        right->collectVariables(vars);
+    }
 };
 
 /////////////////
@@ -905,6 +982,10 @@ class Ess : public Evaluator {
         ctx->addLine(CMD_NUMBER, (phloat) 0);
         ctx->addLine(CMD_SVAR_T, name);
         ctx->addLine(CMD_SIGN);
+    }
+
+    void collectVariables(std::vector<std::string> *vars) {
+        // nope
     }
 };
 
@@ -941,6 +1022,10 @@ class Exp : public Evaluator {
         ev->generateCode(ctx);
         ctx->addLine(CMD_E_POW_X);
     }
+
+    void collectVariables(std::vector<std::string> *vars) {
+        ev->collectVariables(vars);
+    }
 };
 
 /////////////////
@@ -970,6 +1055,10 @@ class Gee : public Evaluator {
 
     void generateCode(GeneratorContext *ctx) {
         ctx->addLine(CMD_RCL, name);
+    }
+
+    void collectVariables(std::vector<std::string> *vars) {
+        // nope
     }
 };
 
@@ -1003,6 +1092,10 @@ class Identity : public Evaluator {
 
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
+    }
+
+    void collectVariables(std::vector<std::string> *vars) {
+        ev->collectVariables(vars);
     }
 };
 
@@ -1058,6 +1151,12 @@ class If : public Evaluator {
         trueEv->generateCode(ctx);
         ctx->addLine(CMD_LBL, lbl2);
     }
+
+    void collectVariables(std::vector<std::string> *vars) {
+        condition->collectVariables(vars);
+        trueEv->collectVariables(vars);
+        falseEv->collectVariables(vars);
+    }
 };
 
 //////////////////
@@ -1099,6 +1198,10 @@ class Item : public Evaluator {
         ev->generateCode(ctx);
         ctx->addLine(CMD_MATITEM);
     }
+
+    void collectVariables(std::vector<std::string> *vars) {
+        ev->collectVariables(vars);
+    }
 };
 
 /////////////////////
@@ -1125,6 +1228,10 @@ class Literal : public Evaluator {
 
     void generateCode(GeneratorContext *ctx) {
         ctx->addLine(CMD_NUMBER, value);
+    }
+
+    void collectVariables(std::vector<std::string> *vars) {
+        // nope
     }
 };
 
@@ -1161,6 +1268,10 @@ class Ln : public Evaluator {
         ev->generateCode(ctx);
         ctx->addLine(CMD_LN);
     }
+
+    void collectVariables(std::vector<std::string> *vars) {
+        ev->collectVariables(vars);
+    }
 };
 
 /////////////////
@@ -1195,6 +1306,10 @@ class Log : public Evaluator {
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
         ctx->addLine(CMD_LOG);
+    }
+
+    void collectVariables(std::vector<std::string> *vars) {
+        ev->collectVariables(vars);
     }
 };
 
@@ -1252,6 +1367,11 @@ class Max : public Evaluator {
             }
         }
     }
+
+    void collectVariables(std::vector<std::string> *vars) {
+        for (int i = 0; i < evs->size(); i++)
+            (*evs)[i]->collectVariables(vars);
+    }
 };
 
 /////////////////
@@ -1308,6 +1428,11 @@ class Min : public Evaluator {
             }
         }
     }
+
+    void collectVariables(std::vector<std::string> *vars) {
+        for (int i = 0; i < evs->size(); i++)
+            (*evs)[i]->collectVariables(vars);
+    }
 };
 
 /////////////////////
@@ -1344,6 +1469,10 @@ class NameTag : public Evaluator {
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
     }
+
+    void collectVariables(std::vector<std::string> *vars) {
+        ev->collectVariables(vars);
+    }
 };
 
 //////////////////////
@@ -1377,6 +1506,10 @@ class Negative : public Evaluator {
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
         ctx->addLine(CMD_CHS);
+    }
+
+    void collectVariables(std::vector<std::string> *vars) {
+        ev->collectVariables(vars);
     }
 };
 
@@ -1413,6 +1546,10 @@ class Not : public Evaluator {
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
         ctx->addLine(CMD_GEN_NOT);
+    }
+
+    void collectVariables(std::vector<std::string> *vars) {
+        ev->collectVariables(vars);
     }
 };
 
@@ -1455,6 +1592,11 @@ class Or : public Evaluator {
         right->generateCode(ctx);
         ctx->addLine(CMD_GEN_OR);
     }
+
+    void collectVariables(std::vector<std::string> *vars) {
+        left->collectVariables(vars);
+        right->collectVariables(vars);
+    }
 };
 
 //////////////////////
@@ -1487,6 +1629,10 @@ class Positive : public Evaluator {
 
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
+    }
+
+    void collectVariables(std::vector<std::string> *vars) {
+        ev->collectVariables(vars);
     }
 };
 
@@ -1527,6 +1673,11 @@ class Power : public Evaluator {
         right->generateCode(ctx);
         ctx->addLine(CMD_Y_POW_X);
     }
+
+    void collectVariables(std::vector<std::string> *vars) {
+        left->collectVariables(vars);
+        right->collectVariables(vars);
+    }
 };
 
 /////////////////////
@@ -1566,6 +1717,11 @@ class Product : public Evaluator {
         right->generateCode(ctx);
         ctx->addLine(CMD_MUL);
     }
+
+    void collectVariables(std::vector<std::string> *vars) {
+        left->collectVariables(vars);
+        right->collectVariables(vars);
+    }
 };
 
 //////////////////////
@@ -1604,6 +1760,11 @@ class Quotient : public Evaluator {
         left->generateCode(ctx);
         right->generateCode(ctx);
         ctx->addLine(CMD_DIV);
+    }
+
+    void collectVariables(std::vector<std::string> *vars) {
+        left->collectVariables(vars);
+        right->collectVariables(vars);
     }
 };
 
@@ -1706,6 +1867,13 @@ class Sigma : public Evaluator {
         ctx->addLine(CMD_DROPN, 3);
         ctx->popSubroutine();
     }
+
+    void collectVariables(std::vector<std::string> *vars) {
+        from->collectVariables(vars);
+        to->collectVariables(vars);
+        step->collectVariables(vars);
+        ev->collectVariables(vars);
+    }
 };
 
 /////////////////
@@ -1741,6 +1909,10 @@ class Sin : public Evaluator {
         ev->generateCode(ctx);
         ctx->addLine(CMD_SIN);
     }
+
+    void collectVariables(std::vector<std::string> *vars) {
+        ev->collectVariables(vars);
+    }
 };
 
 //////////////////
@@ -1775,6 +1947,10 @@ class Sqrt : public Evaluator {
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
         ctx->addLine(CMD_SQRT);
+    }
+
+    void collectVariables(std::vector<std::string> *vars) {
+        ev->collectVariables(vars);
     }
 };
 
@@ -1815,6 +1991,11 @@ class Sum : public Evaluator {
         right->generateCode(ctx);
         ctx->addLine(CMD_ADD);
     }
+
+    void collectVariables(std::vector<std::string> *vars) {
+        left->collectVariables(vars);
+        right->collectVariables(vars);
+    }
 };
 
 /////////////////
@@ -1850,6 +2031,10 @@ class Tan : public Evaluator {
         ev->generateCode(ctx);
         ctx->addLine(CMD_TAN);
     }
+
+    void collectVariables(std::vector<std::string> *vars) {
+        ev->collectVariables(vars);
+    }
 };
 
 //////////////////////
@@ -1878,6 +2063,13 @@ class Variable : public Evaluator {
 
     void generateCode(GeneratorContext *ctx) {
         ctx->addLine(CMD_RCL, nam);
+    }
+
+    void collectVariables(std::vector<std::string> *vars) {
+        for (int i = 0; i < vars->size(); i++)
+            if ((*vars)[i] == nam)
+                return;
+        vars->push_back(nam);
     }
 };
 
@@ -1919,6 +2111,11 @@ class Xor : public Evaluator {
         left->generateCode(ctx);
         right->generateCode(ctx);
         ctx->addLine(CMD_GEN_XOR);
+    }
+
+    void collectVariables(std::vector<std::string> *vars) {
+        left->collectVariables(vars);
+        right->collectVariables(vars);
     }
 };
 
@@ -2677,4 +2874,27 @@ bool Parser::nextToken(std::string *tok, int *tpos) {
 void Parser::pushback(std::string o, int p) {
     pb = o;
     pbpos = p;
+}
+
+void get_varmenu_row_for_eqn(vartype *eqn, int *rows, int *row, char ktext[6][7], int klen[6]) {
+    Evaluator *ev = ((vartype_equation *) eqn)->data->ev;
+    std::vector<std::string> vars;
+    ev->collectVariables(&vars);
+    *rows = (vars.size() + 5) / 6;
+    if (*rows == 0)
+        return;
+    if (*row >= *rows)
+        *row = *rows - 1;
+    for (int i = 0; i < 6; i++) {
+        int r = 6 * *row + i;
+        if (r < vars.size()) {
+            std::string t = vars[r];
+            int len = t.length();
+            if (len > 7)
+                len = 7;
+            memcpy(ktext[i], t.c_str(), len);
+            klen[i] = len;
+        } else
+            klen[i] = 0;
+    }
 }

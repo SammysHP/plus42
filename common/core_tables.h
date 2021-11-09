@@ -576,6 +576,7 @@
 #define ARGTYPE_DOUBLE   10
 #define ARGTYPE_LBLINDEX 11
 #define ARGTYPE_XSTR     12
+#define ARGTYPE_EQN      13 /* For PGMSLVi and PGMINTi */
 
 
 struct arg_struct {

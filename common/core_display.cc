@@ -24,6 +24,7 @@
 #include "core_globals.h"
 #include "core_helpers.h"
 #include "core_main.h"
+#include "core_parser.h"
 #include "core_tables.h"
 #include "core_variables.h"
 #include "shell.h"
@@ -1530,63 +1531,94 @@ static int set_appmenu(int menuid, bool exitall) {
     }
 }
 
-void draw_varmenu() {
-    arg_struct arg;
-    int saved_prgm, prgm;
-    int4 pc, pc2;
-    int command, i, row, key;
-    int num_mvars = 0;
+void config_varmenu_lbl(const char *name, int len) {
+    string_copy(varmenu, &varmenu_length, name, len);
+    free_vartype(varmenu_eqn);
+    varmenu_eqn = NULL;
+}
 
+void config_varmenu_eqn(equation_data *eqdata) {
+    free_vartype(varmenu_eqn);
+    vartype_equation *eq = (vartype_equation *) malloc(sizeof(vartype_equation));
+    eq->type = TYPE_EQUATION;
+    eq->data = eqdata;
+    eq->data->refcount++;
+    varmenu_eqn = (vartype *) eq;
+}
+
+void config_varmenu_none() {
+    varmenu_length = 0;
+    free_vartype(varmenu_eqn);
+    varmenu_eqn = NULL;
+}
+
+void draw_varmenu() {
     if (mode_appmenu != MENU_VARMENU)
         return;
-    arg.type = ARGTYPE_STR;
-    arg.length = varmenu_length;
-    for (i = 0; i < arg.length; i++)
-        arg.val.text[i] = varmenu[i];
-    if (!find_global_label(&arg, &prgm, &pc)) {
-        set_appmenu(MENU_NONE, false);
-        varmenu_length = 0;
-        return;
-    }
-    saved_prgm = current_prgm;
-    current_prgm = prgm;
-    pc += get_command_length(prgm, pc);
-    pc2 = pc;
-    while (get_next_command(&pc, &command, &arg, 0, NULL), command == CMD_MVAR)
-        num_mvars++;
-    if (num_mvars == 0) {
+
+    if (varmenu_eqn != NULL) {
+        char ktext[6][7];
+        int klen[6];
+        get_varmenu_row_for_eqn(varmenu_eqn, &varmenu_rows, &varmenu_row, ktext, klen);
+        shell_annunciators(varmenu_rows > 1, -1, -1, -1, -1, -1);
+        for (int i = 0; i < 6; i++)
+            draw_key(i, 0, 0, ktext[i], klen[i]);
+    } else {
+        arg_struct arg;
+        int saved_prgm, prgm;
+        int4 pc, pc2;
+        int command, i, row, key;
+        int num_mvars = 0;
+
+        arg.type = ARGTYPE_STR;
+        arg.length = varmenu_length;
+        for (i = 0; i < arg.length; i++)
+            arg.val.text[i] = varmenu[i];
+        if (!find_global_label(&arg, &prgm, &pc)) {
+            set_appmenu(MENU_NONE, false);
+            config_varmenu_none();
+            return;
+        }
+        saved_prgm = current_prgm;
+        current_prgm = prgm;
+        pc += get_command_length(prgm, pc);
+        pc2 = pc;
+        while (get_next_command(&pc, &command, &arg, 0, NULL), command == CMD_MVAR)
+            num_mvars++;
+        if (num_mvars == 0) {
+            current_prgm = saved_prgm;
+            set_appmenu(MENU_NONE, false);
+            config_varmenu_none();
+            return;
+        }
+
+        varmenu_rows = (num_mvars + 5) / 6;
+        if (varmenu_row >= varmenu_rows)
+            varmenu_row = varmenu_rows - 1;
+        shell_annunciators(varmenu_rows > 1, -1, -1, -1, -1, -1);
+
+        row = 0;
+        key = 0;
+        while (get_next_command(&pc2, &command, &arg, 0, NULL), command == CMD_MVAR) {
+            if (row == varmenu_row) {
+                varmenu_labellength[key] = arg.length;
+                for (i = 0; i < arg.length; i++)
+                    varmenu_labeltext[key][i] = arg.val.text[i];
+                draw_key(key, 0, 0, arg.val.text, arg.length);
+            }
+            if (key++ == 5) {
+                if (row++ == varmenu_row)
+                    break;
+                else
+                    key = 0;
+            }
+        }
         current_prgm = saved_prgm;
-        set_appmenu(MENU_NONE, false);
-        varmenu_length = 0;
-        return;
-    }
-
-    varmenu_rows = (num_mvars + 5) / 6;
-    if (varmenu_row >= varmenu_rows)
-        varmenu_row = varmenu_rows - 1;
-    shell_annunciators(varmenu_rows > 1, -1, -1, -1, -1, -1);
-
-    row = 0;
-    key = 0;
-    while (get_next_command(&pc2, &command, &arg, 0, NULL), command == CMD_MVAR) {
-        if (row == varmenu_row) {
-            varmenu_labellength[key] = arg.length;
-            for (i = 0; i < arg.length; i++)
-                varmenu_labeltext[key][i] = arg.val.text[i];
-            draw_key(key, 0, 0, arg.val.text, arg.length);
+        while (key < 6) {
+            varmenu_labellength[key] = 0;
+            draw_key(key, 0, 0, "", 0);
+            key++;
         }
-        if (key++ == 5) {
-            if (row++ == varmenu_row)
-                break;
-            else
-                key = 0;
-        }
-    }
-    current_prgm = saved_prgm;
-    while (key < 6) {
-        varmenu_labellength[key] = 0;
-        draw_key(key, 0, 0, "", 0);
-        key++;
     }
 }
 
@@ -2712,6 +2744,11 @@ int command2buf(char *buf, int len, int cmd, const arg_struct *arg) {
             string2buf(buf, len, &bufptr, arg->val.xstr,
                                             arg->length);
             char2buf(buf, len, &bufptr, '"');
+        } else if (arg->type == ARGTYPE_EQN) {
+            equation_data *eqd = prgms[arg->val.num].eq_data;
+            char2buf(buf, len, &bufptr, eqd->compatMode ? '`' : '\'');
+            string2buf(buf, len, &bufptr, eqd->text, eqd->length);
+            char2buf(buf, len, &bufptr, eqd->compatMode ? '`' : '\'');
         } else /* ARGTYPE_COMMAND; for backward compatibility only */ {
             const command_spec *cs = &cmd_array[arg->val.cmd];
             char2buf(buf, len, &bufptr, '"');

@@ -880,8 +880,48 @@ int docmd_or(arg_struct *arg) {
     return binary_result(v);
 }
 
+// PGMSLV and PGMINT allow indirectly referenced equations.
+// This function deals with those, so resolve_ind_arg() doesn't have to.
+static int get_arg_object(arg_struct *arg, vartype_equation **eq) {
+    *eq = NULL;
+    vartype *v;
+    if (arg->type == ARGTYPE_IND_STK) {
+        int idx;
+        switch (arg->val.stk) {
+            case 'X': idx = 0; break;
+            case 'Y': idx = 1; break;
+            case 'Z': idx = 2; break;
+            case 'T': idx = 3; break;
+            case 'L': idx = -1; break;
+        }
+        if (idx == -1) {
+            v = lastx;
+        } else {
+            if (idx > sp)
+                return ERR_NONEXISTENT;
+            v = stack[sp - idx];
+        }
+        goto finish_resolve;
+    } else if (arg->type == ARGTYPE_IND_STR) {
+        v = recall_var(arg->val.text, arg->length);
+        if (v == NULL)
+            return ERR_NONEXISTENT;
+        finish_resolve:
+        if (v->type == TYPE_EQUATION)
+            *eq = (vartype_equation *) v;
+        return ERR_NONE;
+    } else
+        return ERR_NONE;
+}
+
 int docmd_pgmslv(arg_struct *arg) {
-    int err;
+    vartype_equation *eq;
+    int err = get_arg_object(arg, &eq);
+    if (err != ERR_NONE)
+        return err;
+    if (eq != NULL)
+        return set_solve_eqn(eq->data);
+
     if (arg->type == ARGTYPE_IND_NUM
             || arg->type == ARGTYPE_IND_STK
             || arg->type == ARGTYPE_IND_STR) {
@@ -901,7 +941,13 @@ int docmd_pgmslv(arg_struct *arg) {
 }
 
 int docmd_pgmint(arg_struct *arg) {
-    int err;
+    vartype_equation *eq;
+    int err = get_arg_object(arg, &eq);
+    if (err != ERR_NONE)
+        return err;
+    if (eq != NULL)
+        return set_integ_eqn(eq->data);
+
     if (arg->type == ARGTYPE_IND_NUM
             || arg->type == ARGTYPE_IND_STK
             || arg->type == ARGTYPE_IND_STR) {
@@ -938,12 +984,21 @@ int docmd_pgmslvi(arg_struct *arg) {
         if (!label_has_mvar(idx))
             return ERR_NO_MENU_VARIABLES;
         set_solve_prgm(arg->val.text, arg->length);
-        string_copy(varmenu, &varmenu_length, arg->val.text, arg->length);
+        config_varmenu_lbl(arg->val.text, arg->length);
+        finish:
         varmenu_row = 0;
         varmenu_role = 1;
         set_menu(MENULEVEL_APP, MENU_VARMENU);
         set_appmenu_exitcallback(3);
         return ERR_NONE;
+    } else if (arg->type == ARGTYPE_EQN) {
+        eqn_end();
+        int idx = arg->val.num;
+        int err = set_solve_eqn(prgms[idx].eq_data);
+        if (err != ERR_NONE)
+            return err;
+        config_varmenu_eqn(prgms[idx].eq_data);
+        goto finish;
     } else
         return ERR_INVALID_TYPE;
 }
@@ -978,7 +1033,8 @@ int docmd_pgminti(arg_struct *arg) {
         if (!label_has_mvar(idx))
             return ERR_NO_MENU_VARIABLES;
         set_integ_prgm(arg->val.text, arg->length);
-        string_copy(varmenu, &varmenu_length, arg->val.text, arg->length);
+        config_varmenu_lbl(arg->val.text, arg->length);
+        finish:
         varmenu_row = 0;
         varmenu_role = 2;
         set_menu(MENULEVEL_APP, MENU_VARMENU);
@@ -989,6 +1045,14 @@ int docmd_pgminti(arg_struct *arg) {
         flags.f.two_line_message = 0;
         mode_varmenu = true;
         return ERR_NONE;
+    } else if (arg->type == ARGTYPE_EQN) {
+        eqn_end();
+        int idx = arg->val.num;
+        int err = set_integ_eqn(prgms[idx].eq_data);
+        if (err != ERR_NONE)
+            return err;
+        config_varmenu_eqn(prgms[idx].eq_data);
+        goto finish;
     } else
         return ERR_INVALID_TYPE;
 }

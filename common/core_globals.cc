@@ -600,6 +600,7 @@ int current_prgm = -1;
 int4 pc;
 int prgm_highlight_row = 0;
 
+vartype *varmenu_eqn;
 int varmenu_length;
 char varmenu[7];
 int varmenu_rows;
@@ -887,8 +888,6 @@ static void **shared_data;
 
 static bool shared_data_grow();
 static int shared_data_search(void *data);
-static bool persist_vartype(vartype *v);
-static bool unpersist_vartype(vartype **v, bool padded);
 static void update_label_table(int prgm, int4 pc, int inserted);
 static void invalidate_lclbls(int prgm_index, bool force);
 static int pc_line_convert(int4 loc, int loc_is_pc);
@@ -936,7 +935,7 @@ static int shared_data_search(void *data) {
     return -1;
 }
 
-static bool persist_vartype(vartype *v) {
+bool persist_vartype(vartype *v) {
     if (v == NULL)
         return write_char(TYPE_NULL);
     if (!write_char(v->type))
@@ -1123,7 +1122,7 @@ int bug_mode;
 int4 ver;
 bool plus;
 
-static bool unpersist_vartype(vartype **v, bool padded) {
+bool unpersist_vartype(vartype **v, bool padded) {
     if (state_is_portable) {
         char type;
         if (!read_char(&type))
@@ -1740,6 +1739,8 @@ static bool persist_globals() {
             || !persist_vartype(vars[i].value))
             goto done;
     }
+    if (!persist_vartype(varmenu_eqn))
+        goto done;
     if (!write_int(varmenu_length))
         goto done;
     if (fwrite(varmenu, 1, 7, gfile) != 7)
@@ -2093,19 +2094,24 @@ static bool unpersist_globals() {
         incomplete_saved_pc = line2pc(incomplete_saved_pc);
     }
 
-    if (!read_int(&varmenu_length)) {
-        varmenu_length = 0;
-        goto done;
+    if (plus && ver >= 43) {
+        if (!unpersist_vartype(&varmenu_eqn, false)) {
+            varmenu_eqn = NULL;
+            goto done;
+        }
+    } else {
+        varmenu_eqn = NULL;
     }
-    if (fread(varmenu, 1, 7, gfile) != 7) {
-        varmenu_length = 0;
-        goto done;
-    }
-    if (!read_int(&varmenu_rows)) {
-        varmenu_length = 0;
-        goto done;
-    }
+    if (!read_int(&varmenu_length))
+        goto varmenu_fail;
+    if (fread(varmenu, 1, 7, gfile) != 7)
+        goto varmenu_fail;
+    if (!read_int(&varmenu_rows))
+        goto varmenu_fail;
     if (!read_int(&varmenu_row)) {
+        varmenu_fail:
+        free_vartype(varmenu_eqn);
+        varmenu_eqn = NULL;
         varmenu_length = 0;
         goto done;
     }
@@ -4446,8 +4452,8 @@ bool read_arg(arg_struct *arg, bool old) {
 
 bool write_arg(const arg_struct *arg) {
     int type = arg->type;
-    if (type == ARGTYPE_XSTR)
-        // This type is always used immediately, so no need to persist it;
+    if (type == ARGTYPE_XSTR || type == ARGTYPE_EQN)
+        // This types are always used immediately, so no need to persist them;
         // also, persisting it would be difficult, since this variant uses
         // a pointer to the actual text, which is context-dependent and
         // would be impossible to restore.
@@ -4739,10 +4745,10 @@ static bool load_state2(bool *clear, bool *too_new) {
     }
 
 #ifdef BCD_MATH
-    if (!unpersist_math(ver, state_file_number_format != NUMBER_FORMAT_BID128))
+    if (!unpersist_math(ver, plus, state_file_number_format != NUMBER_FORMAT_BID128))
         return false;
 #else
-    if (!unpersist_math(ver, state_file_number_format != NUMBER_FORMAT_BINARY))
+    if (!unpersist_math(ver, plus, state_file_number_format != NUMBER_FORMAT_BINARY))
         return false;
 #endif
 
@@ -5024,6 +5030,7 @@ void hard_reset(int reason) {
     mode_pause = false;
     mode_varmenu = false;
     prgm_highlight_row = 0;
+    varmenu_eqn = NULL;
     varmenu_length = 0;
     mode_updown = false;
     mode_sigma_reg = 11;

@@ -1,1 +1,5 @@
 ????-??-??: release 1.0
+
+* Based on Free42 3.0.7, with the addition of equation functionality: the
+  equation editor, accessible with the white [=] soft key in the SOLVER, ∫f(x),
+  and PGMMENU menus; the equation object type; and PARSE and EVAL.

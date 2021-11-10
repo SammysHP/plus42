@@ -23,6 +23,7 @@
 #include "core_globals.h"
 #include "core_helpers.h"
 #include "core_main.h"
+#include "core_parser.h"
 #include "core_variables.h"
 #include "shell.h"
 
@@ -407,6 +408,23 @@ static int call_solve_fn(int which, int state) {
 }
 
 int start_solve(const char *name, int length, phloat x1, phloat x2) {
+    // Try direct solution
+    if (solve.eq != NULL) {
+        int idx = isolate(solve.eq, name, length);
+        if (idx != -1) {
+            if (program_running()) {
+                int err = push_rtn_addr(current_prgm, pc);
+                if (err != ERR_NONE) {
+                    dec_eqn_refcount(idx);
+                    return err;
+                }
+            }
+            current_prgm = idx;
+            pc = 0;
+            return program_running() ? ERR_NONE : ERR_RUN;
+        }
+    }
+
     if (solve_active())
         return ERR_SOLVE_SOLVE;
     string_copy(solve.var_name, &solve.var_length, name, length);

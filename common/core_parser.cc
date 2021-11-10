@@ -2,6 +2,7 @@
 #include <string.h>
 #include <math.h>
 #include <float.h>
+#include <sstream>
 
 #include "core_parser.h"
 #include "core_tables.h"
@@ -11,45 +12,33 @@
 /////  class declarations  /////
 ////////////////////////////////
 
-class FileOutputStream : public OutputStream {
+class StringOutputStream : public OutputStream {
     private:
 
-    FILE *file;
-    bool autoFlush;
+    std::stringstream ss;
 
     public:
 
-    FileOutputStream(FILE *file, bool autoFlush = false) : file(file), autoFlush(autoFlush) {}
-    ~FileOutputStream();
-    void write(std::string text);
+    StringOutputStream() {}
+    void write(std::string text) {
+        ss << text;
+    }
+    std::string get() {
+        return ss.str();
+    }
 };
 
 //////////////////////////
 /////  OutputStream  /////
 //////////////////////////
 
-void OutputStream::write(double d) {
+void OutputStream::write(phloat d) {
     char buf[50];
-    sprintf(buf, "%.9g", d);
+    sprintf(buf, "%.9g", to_double(d));
     write(buf);
 }
 void OutputStream::newline() {
     write("\n");
-}
-
-//////////////////////////////
-/////  FileOutputStream  /////
-//////////////////////////////
-
-FileOutputStream::~FileOutputStream() {
-    fclose(file);
-}
-
-void FileOutputStream::write(std::string text) {
-    const char *s = text.c_str();
-    fwrite(s, 1, strlen(s), file);
-    if (autoFlush)
-        fflush(file);
 }
 
 //////////////////////////////
@@ -229,15 +218,14 @@ class Abs : public Evaluator {
         delete ev;
     }
 
+    Evaluator *clone() {
+        return new Abs(tpos, ev->clone());
+    }
+
     void printAlg(OutputStream *os) {
         os->write("ABS(");
         ev->printAlg(os);
         os->write(")");
-    }
-
-    void printRpn(OutputStream *os) {
-        ev->printRpn(os);
-        os->write(" ABS");
     }
 
     void generateCode(GeneratorContext *ctx) {
@@ -245,8 +233,12 @@ class Abs : public Evaluator {
         ctx->addLine(CMD_ABS);
     }
 
-    void collectVariables(std::vector<std::string> *vars) {
-        ev->collectVariables(vars);
+    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
+        ev->collectVariables(vars, locals);
+    }
+
+    int howMany(const std::string *name) {
+        return ev->howMany(name) == 0 ? 0 : -1;
     }
 };
 
@@ -262,10 +254,16 @@ class Acos : public Evaluator {
 
     public:
 
+    friend int isolate(vartype *eqn, const char *name, int length);
+
     Acos(int pos, Evaluator *ev) : Evaluator(pos), ev(ev) {}
 
     ~Acos() {
         delete ev;
+    }
+
+    Evaluator *clone() {
+        return new Acos(tpos, ev->clone());
     }
 
     void printAlg(OutputStream *os) {
@@ -274,18 +272,17 @@ class Acos : public Evaluator {
         os->write(")");
     }
 
-    void printRpn(OutputStream *os) {
-        ev->printRpn(os);
-        os->write(" ACOS");
-    }
-
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
         ctx->addLine(CMD_ACOS);
     }
 
-    void collectVariables(std::vector<std::string> *vars) {
-        ev->collectVariables(vars);
+    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
+        ev->collectVariables(vars, locals);
+    }
+
+    int howMany(const std::string *name) {
+        return ev->howMany(name);
     }
 };
 
@@ -301,10 +298,16 @@ class Alog : public Evaluator {
 
     public:
 
+    friend int isolate(vartype *eqn, const char *name, int length);
+
     Alog(int pos, Evaluator *ev) : Evaluator(pos), ev(ev) {}
 
     ~Alog() {
         delete ev;
+    }
+
+    Evaluator *clone() {
+        return new Alog(tpos, ev->clone());
     }
 
     void printAlg(OutputStream *os) {
@@ -313,18 +316,17 @@ class Alog : public Evaluator {
         os->write(")");
     }
 
-    void printRpn(OutputStream *os) {
-        ev->printRpn(os);
-        os->write(" ALOG");
-    }
-
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
         ctx->addLine(CMD_10_POW_X);
     }
 
-    void collectVariables(std::vector<std::string> *vars) {
-        ev->collectVariables(vars);
+    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
+        ev->collectVariables(vars, locals);
+    }
+
+    int howMany(const std::string *name) {
+        return ev->howMany(name);
     }
 };
 
@@ -347,6 +349,10 @@ class And : public Evaluator {
         delete right;
     }
 
+    Evaluator *clone() {
+        return new And(tpos, left->clone(), right->clone());
+    }
+
     bool isBool() { return true; }
 
     void printAlg(OutputStream *os) {
@@ -355,22 +361,22 @@ class And : public Evaluator {
         right->printAlg(os);
     }
 
-    void printRpn(OutputStream *os) {
-        left->printRpn(os);
-        os->write(" ");
-        right->printRpn(os);
-        os->write(" AND");
-    }
-
     void generateCode(GeneratorContext *ctx) {
         left->generateCode(ctx);
         right->generateCode(ctx);
         ctx->addLine(CMD_GEN_AND);
     }
 
-    void collectVariables(std::vector<std::string> *vars) {
-        left->collectVariables(vars);
-        right->collectVariables(vars);
+    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
+        left->collectVariables(vars, locals);
+        right->collectVariables(vars, locals);
+    }
+
+    int howMany(const std::string *name) {
+        if (left->howMany(name) == 0 && right->howMany(name) == 0)
+            return 0;
+        else
+            return -1;
     }
 };
 
@@ -386,10 +392,16 @@ class Asin : public Evaluator {
 
     public:
 
+    friend int isolate(vartype *eqn, const char *name, int length);
+
     Asin(int pos, Evaluator *ev) : Evaluator(pos), ev(ev) {}
 
     ~Asin() {
         delete ev;
+    }
+
+    Evaluator *clone() {
+        return new Asin(tpos, ev->clone());
     }
 
     void printAlg(OutputStream *os) {
@@ -398,18 +410,17 @@ class Asin : public Evaluator {
         os->write(")");
     }
 
-    void printRpn(OutputStream *os) {
-        ev->printRpn(os);
-        os->write(" ASIN");
-    }
-
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
         ctx->addLine(CMD_ASIN);
     }
 
-    void collectVariables(std::vector<std::string> *vars) {
-        ev->collectVariables(vars);
+    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
+        ev->collectVariables(vars, locals);
+    }
+
+    int howMany(const std::string *name) {
+        return ev->howMany(name);
     }
 };
 
@@ -425,10 +436,16 @@ class Atan : public Evaluator {
 
     public:
 
+    friend int isolate(vartype *eqn, const char *name, int length);
+
     Atan(int pos, Evaluator *ev) : Evaluator(pos), ev(ev) {}
 
     ~Atan() {
         delete ev;
+    }
+
+    Evaluator *clone() {
+        return new Atan(tpos, ev->clone());
     }
 
     void printAlg(OutputStream *os) {
@@ -437,18 +454,17 @@ class Atan : public Evaluator {
         os->write(")");
     }
 
-    void printRpn(OutputStream *os) {
-        ev->printRpn(os);
-        os->write(" ATAN");
-    }
-
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
         ctx->addLine(CMD_ATAN);
     }
 
-    void collectVariables(std::vector<std::string> *vars) {
-        ev->collectVariables(vars);
+    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
+        ev->collectVariables(vars, locals);
+    }
+
+    int howMany(const std::string *name) {
+        return ev->howMany(name);
     }
 };
 
@@ -473,12 +489,12 @@ class Call : public Evaluator {
         delete evs;
     }
 
-#if 0
-    double eval() {
-        // TODO: Not yet implemented. This is where it get interesting...
-        return 0;
+    Evaluator *clone() {
+        std::vector<Evaluator *> *evs2 = new std::vector<Evaluator *>;
+        for (int i = 0; i < evs->size(); i++)
+            evs2->push_back((*evs)[i]->clone());
+        return new Call(tpos, name, evs2);
     }
-#endif
 
     void printAlg(OutputStream *os) {
         os->write(name);
@@ -491,20 +507,19 @@ class Call : public Evaluator {
         os->write(")");
     }
 
-    void printRpn(OutputStream *os) {
-        for (int i = 0; i < evs->size(); i++) {
-            (*evs)[i]->printRpn(os);
-            os->write(" ");
-        }
-        os->write(name);
-    }
-    
     void generateCode(GeneratorContext *ctx) {
         // TODO
     }
 
-    void collectVariables(std::vector<std::string> *vars) {
+    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
         // TODO
+    }
+
+    int howMany(const std::string *name) {
+        for (int i = 0; i < evs->size(); i++)
+            if ((*evs)[i]->howMany(name) != 0)
+                return -1;
+        return 0;
     }
 };
 
@@ -527,6 +542,10 @@ class CompareEQ : public Evaluator {
         delete right;
     }
 
+    Evaluator *clone() {
+        return new CompareEQ(tpos, left->clone(), right->clone());
+    }
+
     bool isBool() { return true; }
 
     void printAlg(OutputStream *os) {
@@ -535,22 +554,22 @@ class CompareEQ : public Evaluator {
         right->printAlg(os);
     }
 
-    void printRpn(OutputStream *os) {
-        left->printRpn(os);
-        os->write(" ");
-        right->printRpn(os);
-        os->write(" =");
-    }
-
     void generateCode(GeneratorContext *ctx) {
         left->generateCode(ctx);
         right->generateCode(ctx);
         ctx->addLine(CMD_GEN_EQ);
     }
 
-    void collectVariables(std::vector<std::string> *vars) {
-        left->collectVariables(vars);
-        right->collectVariables(vars);
+    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
+        left->collectVariables(vars, locals);
+        right->collectVariables(vars, locals);
+    }
+
+    int howMany(const std::string *name) {
+        if (left->howMany(name) == 0 && right->howMany(name) == 0)
+            return 0;
+        else
+            return -1;
     }
 };
 
@@ -573,6 +592,10 @@ class CompareNE : public Evaluator {
         delete right;
     }
 
+    Evaluator *clone() {
+        return new CompareNE(tpos, left->clone(), right->clone());
+    }
+
     bool isBool() { return true; }
 
     void printAlg(OutputStream *os) {
@@ -581,22 +604,22 @@ class CompareNE : public Evaluator {
         right->printAlg(os);
     }
 
-    void printRpn(OutputStream *os) {
-        left->printRpn(os);
-        os->write(" ");
-        right->printRpn(os);
-        os->write(" <>");
-    }
-
     void generateCode(GeneratorContext *ctx) {
         left->generateCode(ctx);
         right->generateCode(ctx);
         ctx->addLine(CMD_GEN_NE);
     }
 
-    void collectVariables(std::vector<std::string> *vars) {
-        left->collectVariables(vars);
-        right->collectVariables(vars);
+    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
+        left->collectVariables(vars, locals);
+        right->collectVariables(vars, locals);
+    }
+
+    int howMany(const std::string *name) {
+        if (left->howMany(name) == 0 && right->howMany(name) == 0)
+            return 0;
+        else
+            return -1;
     }
 };
 
@@ -619,6 +642,10 @@ class CompareLT : public Evaluator {
         delete right;
     }
 
+    Evaluator *clone() {
+        return new CompareLT(tpos, left->clone(), right->clone());
+    }
+
     bool isBool() { return true; }
 
     void printAlg(OutputStream *os) {
@@ -627,22 +654,22 @@ class CompareLT : public Evaluator {
         right->printAlg(os);
     }
 
-    void printRpn(OutputStream *os) {
-        left->printRpn(os);
-        os->write(" ");
-        right->printRpn(os);
-        os->write(" <");
-    }
-
     void generateCode(GeneratorContext *ctx) {
         left->generateCode(ctx);
         right->generateCode(ctx);
         ctx->addLine(CMD_GEN_LT);
     }
 
-    void collectVariables(std::vector<std::string> *vars) {
-        left->collectVariables(vars);
-        right->collectVariables(vars);
+    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
+        left->collectVariables(vars, locals);
+        right->collectVariables(vars, locals);
+    }
+
+    int howMany(const std::string *name) {
+        if (left->howMany(name) == 0 && right->howMany(name) == 0)
+            return 0;
+        else
+            return -1;
     }
 };
 
@@ -665,6 +692,10 @@ class CompareLE : public Evaluator {
         delete right;
     }
 
+    Evaluator *clone() {
+        return new CompareLE(tpos, left->clone(), right->clone());
+    }
+
     bool isBool() { return true; }
 
     void printAlg(OutputStream *os) {
@@ -673,22 +704,22 @@ class CompareLE : public Evaluator {
         right->printAlg(os);
     }
 
-    void printRpn(OutputStream *os) {
-        left->printRpn(os);
-        os->write(" ");
-        right->printRpn(os);
-        os->write(" <=");
-    }
-
     void generateCode(GeneratorContext *ctx) {
         left->generateCode(ctx);
         right->generateCode(ctx);
         ctx->addLine(CMD_GEN_LE);
     }
 
-    void collectVariables(std::vector<std::string> *vars) {
-        left->collectVariables(vars);
-        right->collectVariables(vars);
+    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
+        left->collectVariables(vars, locals);
+        right->collectVariables(vars, locals);
+    }
+
+    int howMany(const std::string *name) {
+        if (left->howMany(name) == 0 && right->howMany(name) == 0)
+            return 0;
+        else
+            return -1;
     }
 };
 
@@ -711,6 +742,10 @@ class CompareGT : public Evaluator {
         delete right;
     }
 
+    Evaluator *clone() {
+        return new CompareGT(tpos, left->clone(), right->clone());
+    }
+
     bool isBool() { return true; }
 
     void printAlg(OutputStream *os) {
@@ -719,22 +754,22 @@ class CompareGT : public Evaluator {
         right->printAlg(os);
     }
 
-    void printRpn(OutputStream *os) {
-        left->printRpn(os);
-        os->write(" ");
-        right->printRpn(os);
-        os->write(" >");
-    }
-
     void generateCode(GeneratorContext *ctx) {
         left->generateCode(ctx);
         right->generateCode(ctx);
         ctx->addLine(CMD_GEN_GT);
     }
 
-    void collectVariables(std::vector<std::string> *vars) {
-        left->collectVariables(vars);
-        right->collectVariables(vars);
+    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
+        left->collectVariables(vars, locals);
+        right->collectVariables(vars, locals);
+    }
+
+    int howMany(const std::string *name) {
+        if (left->howMany(name) == 0 && right->howMany(name) == 0)
+            return 0;
+        else
+            return -1;
     }
 };
 
@@ -757,6 +792,10 @@ class CompareGE : public Evaluator {
         delete right;
     }
 
+    Evaluator *clone() {
+        return new CompareGE(tpos, left->clone(), right->clone());
+    }
+
     bool isBool() { return true; }
 
     void printAlg(OutputStream *os) {
@@ -765,22 +804,22 @@ class CompareGE : public Evaluator {
         right->printAlg(os);
     }
 
-    void printRpn(OutputStream *os) {
-        left->printRpn(os);
-        os->write(" ");
-        right->printRpn(os);
-        os->write(" >=");
-    }
-
     void generateCode(GeneratorContext *ctx) {
         left->generateCode(ctx);
         right->generateCode(ctx);
         ctx->addLine(CMD_GEN_GE);
     }
 
-    void collectVariables(std::vector<std::string> *vars) {
-        left->collectVariables(vars);
-        right->collectVariables(vars);
+    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
+        left->collectVariables(vars, locals);
+        right->collectVariables(vars, locals);
+    }
+
+    int howMany(const std::string *name) {
+        if (left->howMany(name) == 0 && right->howMany(name) == 0)
+            return 0;
+        else
+            return -1;
     }
 };
 
@@ -796,10 +835,16 @@ class Cos : public Evaluator {
 
     public:
 
+    friend int isolate(vartype *eqn, const char *name, int length);
+
     Cos(int pos, Evaluator *ev) : Evaluator(pos), ev(ev) {}
 
     ~Cos() {
         delete ev;
+    }
+
+    Evaluator *clone() {
+        return new Cos(tpos, ev->clone());
     }
 
     void printAlg(OutputStream *os) {
@@ -808,18 +853,17 @@ class Cos : public Evaluator {
         os->write(")");
     }
 
-    void printRpn(OutputStream *os) {
-        ev->printRpn(os);
-        os->write(" ");
-    }
-
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
         ctx->addLine(CMD_COS);
     }
 
-    void collectVariables(std::vector<std::string> *vars) {
-        ev->collectVariables(vars);
+    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
+        ev->collectVariables(vars, locals);
+    }
+
+    int howMany(const std::string *name) {
+        return ev->howMany(name);
     }
 };
 
@@ -835,11 +879,17 @@ class Difference : public Evaluator {
 
     public:
 
+    friend int isolate(vartype *eqn, const char *name, int length);
+
     Difference(int pos, Evaluator *left, Evaluator *right) : Evaluator(pos), left(left), right(right) {}
 
     ~Difference() {
         delete left;
         delete right;
+    }
+
+    Evaluator *clone() {
+        return new Difference(tpos, left->clone(), right->clone());
     }
 
     void printAlg(OutputStream *os) {
@@ -848,22 +898,25 @@ class Difference : public Evaluator {
         right->printAlg(os);
     }
 
-    void printRpn(OutputStream *os) {
-        left->printRpn(os);
-        os->write(" ");
-        right->printRpn(os);
-        os->write(" -");
-    }
-
     void generateCode(GeneratorContext *ctx) {
         left->generateCode(ctx);
         right->generateCode(ctx);
         ctx->addLine(CMD_SUB);
     }
 
-    void collectVariables(std::vector<std::string> *vars) {
-        left->collectVariables(vars);
-        right->collectVariables(vars);
+    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
+        left->collectVariables(vars, locals);
+        right->collectVariables(vars, locals);
+    }
+
+    int howMany(const std::string *name) {
+        int a = left->howMany(name);
+        if (a == -1)
+            return -1;
+        int b = right->howMany(name);
+        if (b == -1)
+            return -1;
+        return a + b;
     }
 };
 
@@ -881,10 +934,16 @@ class Ell : public Evaluator {
 
     public:
 
+    friend int isolate(vartype *eqn, const char *name, int length);
+
     Ell(int pos, std::string name, Evaluator *ev, bool compatMode) : Evaluator(pos), name(name), ev(ev), compatMode(compatMode) {}
 
     ~Ell() {
         delete ev;
+    }
+
+    Evaluator *clone() {
+        return new Ell(tpos, name, ev->clone(), compatMode);
     }
 
     void printAlg(OutputStream *os) {
@@ -895,20 +954,17 @@ class Ell : public Evaluator {
         os->write(")");
     }
 
-    void printRpn(OutputStream *os) {
-        ev->printRpn(os);
-        os->write(" ");
-        os->write(name);
-        os->write(" L");
-    }
-
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
         ctx->addLine(compatMode ? CMD_GSTO : CMD_STO, name);
     }
 
-    void collectVariables(std::vector<std::string> *vars) {
-        ev->collectVariables(vars);
+    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
+        ev->collectVariables(vars, locals);
+    }
+
+    int howMany(const std::string *name) {
+        return ev->howMany(name);
     }
 };
 
@@ -924,11 +980,21 @@ class Equation : public Evaluator {
 
     public:
 
+    friend int isolate(vartype *eqn, const char *name, int length);
+
     Equation(int pos, Evaluator *left, Evaluator *right) : Evaluator(pos), left(left), right(right) {}
 
     ~Equation() {
         delete left;
         delete right;
+    }
+
+    Evaluator *clone() {
+        return new Equation(tpos, left->clone(), right->clone());
+    }
+
+    bool isEquation() {
+        return true;
     }
 
     void printAlg(OutputStream *os) {
@@ -937,22 +1003,25 @@ class Equation : public Evaluator {
         right->printAlg(os);
     }
 
-    void printRpn(OutputStream *os) {
-        left->printRpn(os);
-        os->write(" ");
-        right->printRpn(os);
-        os->write(" =");
-    }
-
     void generateCode(GeneratorContext *ctx) {
         left->generateCode(ctx);
         right->generateCode(ctx);
         ctx->addLine(CMD_SUB);
     }
 
-    void collectVariables(std::vector<std::string> *vars) {
-        left->collectVariables(vars);
-        right->collectVariables(vars);
+    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
+        left->collectVariables(vars, locals);
+        right->collectVariables(vars, locals);
+    }
+
+    int howMany(const std::string *name) {
+        int a = left->howMany(name);
+        if (a == -1)
+            return -1;
+        int b = right->howMany(name);
+        if (b == -1)
+            return -1;
+        return a + b;
     }
 };
 
@@ -970,15 +1039,14 @@ class Ess : public Evaluator {
 
     Ess(int pos, std::string name) : Evaluator(pos), name(name) {}
 
+    Evaluator *clone() {
+        return new Ess(tpos, name);
+    }
+
     void printAlg(OutputStream *os) {
         os->write("S(");
         os->write(name);
         os->write(")");
-    }
-
-    void printRpn(OutputStream *os) {
-        os->write(name);
-        os->write(" S");
     }
 
     void generateCode(GeneratorContext *ctx) {
@@ -987,8 +1055,13 @@ class Ess : public Evaluator {
         ctx->addLine(CMD_SIGN);
     }
 
-    void collectVariables(std::vector<std::string> *vars) {
+    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
         // nope
+    }
+
+    int howMany(const std::string *name) {
+        // TODO: Not sure what to do here
+        return 0;
     }
 };
 
@@ -1004,10 +1077,16 @@ class Exp : public Evaluator {
 
     public:
 
+    friend int isolate(vartype *eqn, const char *name, int length);
+
     Exp(int pos, Evaluator *ev) : Evaluator(pos), ev(ev) {}
 
     ~Exp() {
         delete ev;
+    }
+
+    Evaluator *clone() {
+        return new Exp(tpos, ev->clone());
     }
 
     void printAlg(OutputStream *os) {
@@ -1016,18 +1095,17 @@ class Exp : public Evaluator {
         os->write(")");
     }
 
-    void printRpn(OutputStream *os) {
-        ev->printRpn(os);
-        os->write(" EXP");
-    }
-
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
         ctx->addLine(CMD_E_POW_X);
     }
 
-    void collectVariables(std::vector<std::string> *vars) {
-        ev->collectVariables(vars);
+    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
+        ev->collectVariables(vars, locals);
+    }
+
+    int howMany(const std::string *name) {
+        return ev->howMany(name);
     }
 };
 
@@ -1046,23 +1124,26 @@ class Gee : public Evaluator {
 
     Gee(int pos, std::string name, bool compatMode) : Evaluator(pos), name(name), compatMode(compatMode) {}
 
+    Evaluator *clone() {
+        return new Gee(tpos, name, compatMode);
+    }
+
     void printAlg(OutputStream *os) {
         os->write("G(");
         os->write(name);
         os->write(")");
     }
 
-    void printRpn(OutputStream *os) {
-        os->write(name);
-        os->write(" G");
-    }
-
     void generateCode(GeneratorContext *ctx) {
         ctx->addLine(compatMode ? CMD_GRCL : CMD_RCL, name);
     }
 
-    void collectVariables(std::vector<std::string> *vars) {
+    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
         // nope
+    }
+
+    int howMany(const std::string *name) {
+        return 0;
     }
 };
 
@@ -1078,10 +1159,16 @@ class Identity : public Evaluator {
 
     public:
 
+    friend int isolate(vartype *eqn, const char *name, int length);
+
     Identity(int pos, Evaluator *ev) : Evaluator(pos), ev(ev) {}
 
     ~Identity() {
         delete ev;
+    }
+
+    Evaluator *clone() {
+        return new Identity(tpos, ev->clone());
     }
 
     void printAlg(OutputStream *os) {
@@ -1090,16 +1177,16 @@ class Identity : public Evaluator {
         os->write(")");
     }
 
-    void printRpn(OutputStream *os) {
-        ev->printRpn(os);
-    }
-
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
     }
 
-    void collectVariables(std::vector<std::string> *vars) {
-        ev->collectVariables(vars);
+    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
+        ev->collectVariables(vars, locals);
+    }
+
+    int howMany(const std::string *name) {
+        return ev->howMany(name);
     }
 };
 
@@ -1124,6 +1211,10 @@ class If : public Evaluator {
         delete falseEv;
     }
 
+    Evaluator *clone() {
+        return new If(tpos, condition->clone(), trueEv->clone(), falseEv->clone());
+    }
+
     void printAlg(OutputStream *os) {
         os->write("IF(");
         condition->printAlg(os);
@@ -1132,15 +1223,6 @@ class If : public Evaluator {
         os->write(":");
         falseEv->printAlg(os);
         os->write(")");
-    }
-
-    void printRpn(OutputStream *os) {
-        condition->printRpn(os);
-        os->write(" ");
-        trueEv->printRpn(os);
-        os->write(" ");
-        falseEv->printRpn(os);
-        os->write(" IF");
     }
 
     void generateCode(GeneratorContext *ctx) {
@@ -1156,10 +1238,63 @@ class If : public Evaluator {
         ctx->addLine(CMD_LBL, lbl2);
     }
 
-    void collectVariables(std::vector<std::string> *vars) {
-        condition->collectVariables(vars);
-        trueEv->collectVariables(vars);
-        falseEv->collectVariables(vars);
+    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
+        condition->collectVariables(vars, locals);
+        trueEv->collectVariables(vars, locals);
+        falseEv->collectVariables(vars, locals);
+    }
+
+    int howMany(const std::string *name) {
+        if (condition->howMany(name) != 0
+                || trueEv->howMany(name) != 0
+                || falseEv->howMany(name) != 0)
+            return -1;
+        else
+            return 0;
+    }
+};
+
+/////////////////
+/////  Inv  /////
+/////////////////
+
+class Inv : public Evaluator {
+
+    private:
+
+    Evaluator *ev;
+
+    public:
+
+    friend int isolate(vartype *eqn, const char *name, int length);
+
+    Inv(int pos, Evaluator *ev) : Evaluator(pos), ev(ev) {}
+
+    ~Inv() {
+        delete ev;
+    }
+
+    Evaluator *clone() {
+        return new Inv(tpos, ev->clone());
+    }
+
+    void printAlg(OutputStream *os) {
+        os->write("INV(");
+        ev->printAlg(os);
+        os->write(")");
+    }
+
+    void generateCode(GeneratorContext *ctx) {
+        ev->generateCode(ctx);
+        ctx->addLine(CMD_INV);
+    }
+
+    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
+        ev->collectVariables(vars, locals);
+    }
+
+    int howMany(const std::string *name) {
+        return ev->howMany(name);
     }
 };
 
@@ -1182,6 +1317,10 @@ class Item : public Evaluator {
         delete ev;
     }
 
+    Evaluator *clone() {
+        return new Item(tpos, name, ev->clone());
+    }
+
     void printAlg(OutputStream *os) {
         os->write("ITEM(");
         os->write(name);
@@ -1190,21 +1329,21 @@ class Item : public Evaluator {
         os->write(")");
     }
 
-    void printRpn(OutputStream *os) {
-        os->write(name);
-        os->write(" ");
-        ev->printRpn(os);
-        os->write(" ITEM");
-    }
-
     void generateCode(GeneratorContext *ctx) {
         ctx->addLine(CMD_RCL, name);
         ev->generateCode(ctx);
         ctx->addLine(CMD_MATITEM);
     }
 
-    void collectVariables(std::vector<std::string> *vars) {
-        ev->collectVariables(vars);
+    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
+        ev->collectVariables(vars, locals);
+    }
+
+    int howMany(const std::string *nam) {
+        if (*nam == name || ev->howMany(nam) != 0)
+            return -1;
+        else
+            return 0;
     }
 };
 
@@ -1220,13 +1359,15 @@ class Literal : public Evaluator {
 
     public:
 
+    friend int isolate(vartype *eqn, const char *name, int length);
+
     Literal(int pos, phloat value) : Evaluator(pos), value(value) {}
 
-    void printAlg(OutputStream *os) {
-        os->write(to_double(value));
+    Evaluator *clone() {
+        return new Literal(tpos, value);
     }
 
-    void printRpn(OutputStream *os) {
+    void printAlg(OutputStream *os) {
         os->write(to_double(value));
     }
 
@@ -1234,8 +1375,12 @@ class Literal : public Evaluator {
         ctx->addLine(CMD_NUMBER, value);
     }
 
-    void collectVariables(std::vector<std::string> *vars) {
+    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
         // nope
+    }
+
+    int howMany(const std::string *name) {
+        return 0;
     }
 };
 
@@ -1251,10 +1396,16 @@ class Ln : public Evaluator {
 
     public:
 
+    friend int isolate(vartype *eqn, const char *name, int length);
+
     Ln(int pos, Evaluator *ev) : Evaluator(pos), ev(ev) {}
 
     ~Ln() {
         delete ev;
+    }
+
+    Evaluator *clone() {
+        return new Ln(tpos, ev->clone());
     }
 
     void printAlg(OutputStream *os) {
@@ -1263,18 +1414,17 @@ class Ln : public Evaluator {
         os->write(")");
     }
 
-    void printRpn(OutputStream *os) {
-        ev->printRpn(os);
-        os->write(" LN");
-    }
-
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
         ctx->addLine(CMD_LN);
     }
 
-    void collectVariables(std::vector<std::string> *vars) {
-        ev->collectVariables(vars);
+    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
+        ev->collectVariables(vars, locals);
+    }
+
+    int howMany(const std::string *name) {
+        return ev->howMany(name);
     }
 };
 
@@ -1290,10 +1440,16 @@ class Log : public Evaluator {
 
     public:
 
+    friend int isolate(vartype *eqn, const char *name, int length);
+
     Log(int pos, Evaluator *ev) : Evaluator(pos), ev(ev) {}
 
     ~Log() {
         delete ev;
+    }
+
+    Evaluator *clone() {
+        return new Log(tpos, ev->clone());
     }
 
     void printAlg(OutputStream *os) {
@@ -1302,18 +1458,17 @@ class Log : public Evaluator {
         os->write(")");
     }
 
-    void printRpn(OutputStream *os) {
-        ev->printRpn(os);
-        os->write(" LOG");
-    }
-
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
         ctx->addLine(CMD_LOG);
     }
 
-    void collectVariables(std::vector<std::string> *vars) {
-        ev->collectVariables(vars);
+    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
+        ev->collectVariables(vars, locals);
+    }
+
+    int howMany(const std::string *name) {
+        return ev->howMany(name);
     }
 };
 
@@ -1337,6 +1492,13 @@ class Max : public Evaluator {
         delete evs;
     }
 
+    Evaluator *clone() {
+        std::vector<Evaluator *> *evs2 = new std::vector<Evaluator *>;
+        for (int i = 0; i < evs->size(); i++)
+            evs2->push_back((*evs)[i]->clone());
+        return new Max(tpos, evs2);
+    }
+
     void printAlg(OutputStream *os) {
         os->write("MAX(");
         for (int i = 0; i < evs->size(); i++) {
@@ -1345,15 +1507,6 @@ class Max : public Evaluator {
             (*evs)[i]->printAlg(os);
         }
         os->write(")");
-    }
-
-    void printRpn(OutputStream *os) {
-        for (int i = 0; i < evs->size(); i++) {
-            (*evs)[i]->printRpn(os);
-            os->write(" ");
-        }
-        os->write((double) evs->size());
-        os->write(" MAX");
     }
 
     void generateCode(GeneratorContext *ctx) {
@@ -1372,9 +1525,16 @@ class Max : public Evaluator {
         }
     }
 
-    void collectVariables(std::vector<std::string> *vars) {
+    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
         for (int i = 0; i < evs->size(); i++)
-            (*evs)[i]->collectVariables(vars);
+            (*evs)[i]->collectVariables(vars, locals);
+    }
+
+    int howMany(const std::string *name) {
+        for (int i = 0; i < evs->size(); i++)
+            if ((*evs)[i]->howMany(name) != 0)
+                return -1;
+        return 0;
     }
 };
 
@@ -1398,6 +1558,13 @@ class Min : public Evaluator {
         delete evs;
     }
 
+    Evaluator *clone() {
+        std::vector<Evaluator *> *evs2 = new std::vector<Evaluator *>;
+        for (int i = 0; i < evs->size(); i++)
+            evs2->push_back((*evs)[i]->clone());
+        return new Min(tpos, evs2);
+    }
+
     void printAlg(OutputStream *os) {
         os->write("MIN(");
         for (int i = 0; i < evs->size(); i++) {
@@ -1406,15 +1573,6 @@ class Min : public Evaluator {
             (*evs)[i]->printAlg(os);
         }
         os->write(")");
-    }
-
-    void printRpn(OutputStream *os) {
-        for (int i = 0; i < evs->size(); i++) {
-            (*evs)[i]->printRpn(os);
-            os->write(" ");
-        }
-        os->write((double) evs->size());
-        os->write(" MIN");
     }
 
     void generateCode(GeneratorContext *ctx) {
@@ -1433,9 +1591,16 @@ class Min : public Evaluator {
         }
     }
 
-    void collectVariables(std::vector<std::string> *vars) {
+    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
         for (int i = 0; i < evs->size(); i++)
-            (*evs)[i]->collectVariables(vars);
+            (*evs)[i]->collectVariables(vars, locals);
+    }
+
+    int howMany(const std::string *name) {
+        for (int i = 0; i < evs->size(); i++)
+            if ((*evs)[i]->howMany(name) != 0)
+                return -1;
+        return 0;
     }
 };
 
@@ -1457,25 +1622,35 @@ class NameTag : public Evaluator {
     ~NameTag() {
         delete ev;
     }
+
+    Evaluator *clone() {
+        return new NameTag(tpos, name, ev->clone());
+    }
     
     std::string eqnName() {
         return name;
+    }
+
+    Evaluator *removeName() {
+        Evaluator *ret = ev;
+        delete this;
+        return ret;
     }
 
     void printAlg(OutputStream *os) {
         ev->printAlg(os);
     }
 
-    void printRpn(OutputStream *os) {
-        ev->printRpn(os);
-    }
-
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
     }
 
-    void collectVariables(std::vector<std::string> *vars) {
-        ev->collectVariables(vars);
+    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
+        ev->collectVariables(vars, locals);
+    }
+
+    int howMany(const std::string *name) {
+        return ev->howMany(name);
     }
 };
 
@@ -1491,10 +1666,16 @@ class Negative : public Evaluator {
 
     public:
 
+    friend int isolate(vartype *eqn, const char *name, int length);
+
     Negative(int pos, Evaluator *ev) : Evaluator(pos), ev(ev) {}
 
     ~Negative() {
         delete ev;
+    }
+
+    Evaluator *clone() {
+        return new Negative(tpos, ev->clone());
     }
 
     void printAlg(OutputStream *os) {
@@ -1502,18 +1683,17 @@ class Negative : public Evaluator {
         ev->printAlg(os);
     }
 
-    void printRpn(OutputStream *os) {
-        ev->printRpn(os);
-        os->write(" +/-");
-    }
-
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
         ctx->addLine(CMD_CHS);
     }
 
-    void collectVariables(std::vector<std::string> *vars) {
-        ev->collectVariables(vars);
+    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
+        ev->collectVariables(vars, locals);
+    }
+
+    int howMany(const std::string *name) {
+        return ev->howMany(name);
     }
 };
 
@@ -1535,6 +1715,10 @@ class Not : public Evaluator {
         delete ev;
     }
 
+    Evaluator *clone() {
+        return new Not(tpos, ev->clone());
+    }
+
     bool isBool() { return true; }
 
     void printAlg(OutputStream *os) {
@@ -1542,18 +1726,17 @@ class Not : public Evaluator {
         ev->printAlg(os);
     }
 
-    void printRpn(OutputStream *os) {
-        ev->printRpn(os);
-        os->write(" NOT");
-    }
-
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
         ctx->addLine(CMD_GEN_NOT);
     }
 
-    void collectVariables(std::vector<std::string> *vars) {
-        ev->collectVariables(vars);
+    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
+        ev->collectVariables(vars, locals);
+    }
+
+    int howMany(const std::string *name) {
+        return ev->howMany(name) == 0 ? 0 : -1;
     }
 };
 
@@ -1576,6 +1759,10 @@ class Or : public Evaluator {
         delete right;
     }
 
+    Evaluator *clone() {
+        return new Or(tpos, left->clone(), right->clone());
+    }
+
     bool isBool() { return true; }
 
     void printAlg(OutputStream *os) {
@@ -1584,22 +1771,22 @@ class Or : public Evaluator {
         right->printAlg(os);
     }
 
-    void printRpn(OutputStream *os) {
-        left->printRpn(os);
-        os->write(" ");
-        right->printRpn(os);
-        os->write(" OR");
-    }
-
     void generateCode(GeneratorContext *ctx) {
         left->generateCode(ctx);
         right->generateCode(ctx);
         ctx->addLine(CMD_GEN_OR);
     }
 
-    void collectVariables(std::vector<std::string> *vars) {
-        left->collectVariables(vars);
-        right->collectVariables(vars);
+    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
+        left->collectVariables(vars, locals);
+        right->collectVariables(vars, locals);
+    }
+
+    int howMany(const std::string *name) {
+        if (left->howMany(name) == 0 && right->howMany(name) == 0)
+            return 0;
+        else
+            return -1;
     }
 };
 
@@ -1615,10 +1802,16 @@ class Positive : public Evaluator {
 
     public:
 
+    friend int isolate(vartype *eqn, const char *name, int length);
+
     Positive(int pos, Evaluator *ev) : Evaluator(pos), ev(ev) {}
 
     ~Positive() {
         delete ev;
+    }
+
+    Evaluator *clone() {
+        return new Positive(tpos, ev->clone());
     }
 
     void printAlg(OutputStream *os) {
@@ -1626,17 +1819,16 @@ class Positive : public Evaluator {
         ev->printAlg(os);
     }
 
-    void printRpn(OutputStream *os) {
-        ev->printRpn(os);
-        os->write(" NOP");
-    }
-
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
     }
 
-    void collectVariables(std::vector<std::string> *vars) {
-        ev->collectVariables(vars);
+    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
+        ev->collectVariables(vars, locals);
+    }
+
+    int howMany(const std::string *name) {
+        return ev->howMany(name);
     }
 };
 
@@ -1652,11 +1844,17 @@ class Power : public Evaluator {
 
     public:
 
+    friend int isolate(vartype *eqn, const char *name, int length);
+
     Power(int pos, Evaluator *left, Evaluator *right) : Evaluator(pos), left(left), right(right) {}
 
     ~Power() {
         delete left;
         delete right;
+    }
+
+    Evaluator *clone() {
+        return new Power(tpos, left->clone(), right->clone());
     }
 
     void printAlg(OutputStream *os) {
@@ -1665,22 +1863,25 @@ class Power : public Evaluator {
         right->printAlg(os);
     }
 
-    void printRpn(OutputStream *os) {
-        left->printRpn(os);
-        os->write(" ");
-        right->printRpn(os);
-        os->write(" ^");
-    }
-
     void generateCode(GeneratorContext *ctx) {
         left->generateCode(ctx);
         right->generateCode(ctx);
         ctx->addLine(CMD_Y_POW_X);
     }
 
-    void collectVariables(std::vector<std::string> *vars) {
-        left->collectVariables(vars);
-        right->collectVariables(vars);
+    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
+        left->collectVariables(vars, locals);
+        right->collectVariables(vars, locals);
+    }
+
+    int howMany(const std::string *name) {
+        int a = left->howMany(name);
+        if (a == -1)
+            return -1;
+        int b = right->howMany(name);
+        if (b == -1)
+            return -1;
+        return a + b;
     }
 };
 
@@ -1696,11 +1897,17 @@ class Product : public Evaluator {
 
     public:
 
+    friend int isolate(vartype *eqn, const char *name, int length);
+
     Product(int pos, Evaluator *left, Evaluator *right) : Evaluator(pos), left(left), right(right) {}
 
     ~Product() {
         delete left;
         delete right;
+    }
+
+    Evaluator *clone() {
+        return new Product(tpos, left->clone(), right->clone());
     }
 
     void printAlg(OutputStream *os) {
@@ -1709,22 +1916,25 @@ class Product : public Evaluator {
         right->printAlg(os);
     }
 
-    void printRpn(OutputStream *os) {
-        left->printRpn(os);
-        os->write(" ");
-        right->printRpn(os);
-        os->write(" *");
-    }
-
     void generateCode(GeneratorContext *ctx) {
         left->generateCode(ctx);
         right->generateCode(ctx);
         ctx->addLine(CMD_MUL);
     }
 
-    void collectVariables(std::vector<std::string> *vars) {
-        left->collectVariables(vars);
-        right->collectVariables(vars);
+    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
+        left->collectVariables(vars, locals);
+        right->collectVariables(vars, locals);
+    }
+
+    int howMany(const std::string *name) {
+        int a = left->howMany(name);
+        if (a == -1)
+            return -1;
+        int b = right->howMany(name);
+        if (b == -1)
+            return -1;
+        return a + b;
     }
 };
 
@@ -1740,11 +1950,17 @@ class Quotient : public Evaluator {
 
     public:
 
+    friend int isolate(vartype *eqn, const char *name, int length);
+
     Quotient(int pos, Evaluator *left, Evaluator *right) : Evaluator(pos), left(left), right(right) {}
 
     ~Quotient() {
         delete left;
         delete right;
+    }
+
+    Evaluator *clone() {
+        return new Quotient(tpos, left->clone(), right->clone());
     }
 
     void printAlg(OutputStream *os) {
@@ -1753,22 +1969,25 @@ class Quotient : public Evaluator {
         right->printAlg(os);
     }
 
-    void printRpn(OutputStream *os) {
-        left->printRpn(os);
-        os->write(" ");
-        right->printRpn(os);
-        os->write(" /");
-    }
-
     void generateCode(GeneratorContext *ctx) {
         left->generateCode(ctx);
         right->generateCode(ctx);
         ctx->addLine(CMD_DIV);
     }
 
-    void collectVariables(std::vector<std::string> *vars) {
-        left->collectVariables(vars);
-        right->collectVariables(vars);
+    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
+        left->collectVariables(vars, locals);
+        right->collectVariables(vars, locals);
+    }
+
+    int howMany(const std::string *name) {
+        int a = left->howMany(name);
+        if (a == -1)
+            return -1;
+        int b = right->howMany(name);
+        if (b == -1)
+            return -1;
+        return a + b;
     }
 };
 
@@ -1798,22 +2017,9 @@ class Sigma : public Evaluator {
         delete ev;
     }
 
-#if 0
-    double eval() {
-        double f = from->eval();
-        double t = to->eval();
-        double s = step->eval();
-        double sum = 0;
-        do {
-            vartype *v = new_real(f);
-            store_var(name.c_str(), name.length(), v, true);
-            sum += ev->eval();
-            // TODO: What if step is not positive?
-            f += s;
-        } while (f <= t);
-        return sum;
+    Evaluator *clone() {
+        return new Sigma(tpos, name, from->clone(), to->clone(), step->clone(), ev->clone());
     }
-#endif
 
     void printAlg(OutputStream *os) {
         os->write("Sigma(");
@@ -1827,19 +2033,6 @@ class Sigma : public Evaluator {
         os->write(":");
         ev->printAlg(os);
         os->write(")");
-    }
-
-    void printRpn(OutputStream *os) {
-        os->write(name);
-        os->write(" ");
-        from->printRpn(os);
-        os->write(" ");
-        to->printRpn(os);
-        os->write(" ");
-        step->printRpn(os);
-        os->write(" ");
-        ev->printRpn(os);
-        os->write(" Sigma");
     }
 
     void generateCode(GeneratorContext *ctx) {
@@ -1872,11 +2065,25 @@ class Sigma : public Evaluator {
         ctx->popSubroutine();
     }
 
-    void collectVariables(std::vector<std::string> *vars) {
-        from->collectVariables(vars);
-        to->collectVariables(vars);
-        step->collectVariables(vars);
-        ev->collectVariables(vars);
+    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
+        locals->push_back(name);
+        from->collectVariables(vars, locals);
+        to->collectVariables(vars, locals);
+        step->collectVariables(vars, locals);
+        locals->pop_back();
+        ev->collectVariables(vars, locals);
+    }
+
+    int howMany(const std::string *nam) {
+        if (*nam != name) {
+            if (ev->howMany(nam) != 0)
+                return -1;
+        }
+        if (from->howMany(nam) != 0
+                || to->howMany(nam) != 0
+                || step->howMany(nam) != 0)
+            return -1;
+        return 0;
     }
 };
 
@@ -1892,10 +2099,16 @@ class Sin : public Evaluator {
 
     public:
 
+    friend int isolate(vartype *eqn, const char *name, int length);
+
     Sin(int pos, Evaluator *ev) : Evaluator(pos), ev(ev) {}
 
     ~Sin() {
         delete ev;
+    }
+
+    Evaluator *clone() {
+        return new Sin(tpos, ev->clone());
     }
 
     void printAlg(OutputStream *os) {
@@ -1904,18 +2117,62 @@ class Sin : public Evaluator {
         os->write(")");
     }
 
-    void printRpn(OutputStream *os) {
-        ev->printRpn(os);
-        os->write(" SIN");
-    }
-
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
         ctx->addLine(CMD_SIN);
     }
 
-    void collectVariables(std::vector<std::string> *vars) {
-        ev->collectVariables(vars);
+    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
+        ev->collectVariables(vars, locals);
+    }
+
+    int howMany(const std::string *name) {
+        return ev->howMany(name);
+    }
+};
+
+////////////////
+/////  Sq  /////
+////////////////
+
+class Sq : public Evaluator {
+
+    private:
+
+    Evaluator *ev;
+
+    public:
+
+    friend int isolate(vartype *eqn, const char *name, int length);
+
+    Sq(int pos, Evaluator *ev) : Evaluator(pos), ev(ev) {}
+
+    ~Sq() {
+        delete ev;
+    }
+
+    Evaluator *clone() {
+        return new Sq(tpos, ev->clone());
+    }
+
+    void printAlg(OutputStream *os) {
+        os->write("SQ(");
+        ev->printAlg(os);
+        os->write(")");
+    }
+
+    void generateCode(GeneratorContext *ctx) {
+        ev->generateCode(ctx);
+        ctx->addLine(CMD_DUP);
+        ctx->addLine(CMD_MUL);
+    }
+
+    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
+        ev->collectVariables(vars, locals);
+    }
+
+    int howMany(const std::string *name) {
+        return ev->howMany(name);
     }
 };
 
@@ -1931,10 +2188,16 @@ class Sqrt : public Evaluator {
 
     public:
 
+    friend int isolate(vartype *eqn, const char *name, int length);
+
     Sqrt(int pos, Evaluator *ev) : Evaluator(pos), ev(ev) {}
 
     ~Sqrt() {
         delete ev;
+    }
+
+    Evaluator *clone() {
+        return new Sqrt(tpos, ev->clone());
     }
 
     void printAlg(OutputStream *os) {
@@ -1943,18 +2206,17 @@ class Sqrt : public Evaluator {
         os->write(")");
     }
 
-    void printRpn(OutputStream *os) {
-        ev->printRpn(os);
-        os->write(" SQRT");
-    }
-
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
         ctx->addLine(CMD_SQRT);
     }
 
-    void collectVariables(std::vector<std::string> *vars) {
-        ev->collectVariables(vars);
+    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
+        ev->collectVariables(vars, locals);
+    }
+
+    int howMany(const std::string *name) {
+        return ev->howMany(name);
     }
 };
 
@@ -1970,11 +2232,17 @@ class Sum : public Evaluator {
 
     public:
 
+    friend int isolate(vartype *eqn, const char *name, int length);
+
     Sum(int pos, Evaluator *left, Evaluator *right) : Evaluator(pos), left(left), right(right) {}
 
     ~Sum() {
         delete left;
         delete right;
+    }
+
+    Evaluator *clone() {
+        return new Sum(tpos, left->clone(), right->clone());
     }
 
     void printAlg(OutputStream *os) {
@@ -1983,22 +2251,25 @@ class Sum : public Evaluator {
         right->printAlg(os);
     }
 
-    void printRpn(OutputStream *os) {
-        left->printRpn(os);
-        os->write(" ");
-        right->printRpn(os);
-        os->write(" +");
-    }
-
     void generateCode(GeneratorContext *ctx) {
         left->generateCode(ctx);
         right->generateCode(ctx);
         ctx->addLine(CMD_ADD);
     }
 
-    void collectVariables(std::vector<std::string> *vars) {
-        left->collectVariables(vars);
-        right->collectVariables(vars);
+    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
+        left->collectVariables(vars, locals);
+        right->collectVariables(vars, locals);
+    }
+
+    int howMany(const std::string *name) {
+        int a = left->howMany(name);
+        if (a == -1)
+            return -1;
+        int b = right->howMany(name);
+        if (b == -1)
+            return -1;
+        return a + b;
     }
 };
 
@@ -2014,10 +2285,16 @@ class Tan : public Evaluator {
 
     public:
 
+    friend int isolate(vartype *eqn, const char *name, int length);
+
     Tan(int pos, Evaluator *ev) : Evaluator(pos), ev(ev) {}
 
     ~Tan() {
         delete ev;
+    }
+
+    Evaluator *clone() {
+        return new Tan(tpos, ev->clone());
     }
 
     void printAlg(OutputStream *os) {
@@ -2026,18 +2303,17 @@ class Tan : public Evaluator {
         os->write(")");
     }
 
-    void printRpn(OutputStream *os) {
-        ev->printRpn(os);
-        os->write(" TAN");
-    }
-
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
         ctx->addLine(CMD_TAN);
     }
 
-    void collectVariables(std::vector<std::string> *vars) {
-        ev->collectVariables(vars);
+    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
+        ev->collectVariables(vars, locals);
+    }
+
+    int howMany(const std::string *name) {
+        return ev->howMany(name);
     }
 };
 
@@ -2054,14 +2330,16 @@ class Variable : public Evaluator {
     public:
 
     Variable(int pos, std::string name) : Evaluator(pos), nam(name) {}
+
+    Evaluator *clone() {
+        return new Variable(tpos, nam);
+    }
     
     std::string name() { return nam; }
 
-    void printAlg(OutputStream *os) {
-        os->write(nam);
-    }
+    bool is(const std::string *name) { return *name == nam; }
 
-    void printRpn(OutputStream *os) {
+    void printAlg(OutputStream *os) {
         os->write(nam);
     }
 
@@ -2069,11 +2347,18 @@ class Variable : public Evaluator {
         ctx->addLine(CMD_RCL, nam);
     }
 
-    void collectVariables(std::vector<std::string> *vars) {
+    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
+        for (int i = 0; i < locals->size(); i++)
+            if ((*locals)[i] == nam)
+                return;
         for (int i = 0; i < vars->size(); i++)
             if ((*vars)[i] == nam)
                 return;
         vars->push_back(nam);
+    }
+
+    int howMany(const std::string *name) {
+        return nam == *name;
     }
 };
 
@@ -2096,6 +2381,10 @@ class Xor : public Evaluator {
         delete right;
     }
 
+    Evaluator *clone() {
+        return new Xor(tpos, left->clone(), right->clone());
+    }
+
     bool isBool() { return true; }
 
     void printAlg(OutputStream *os) {
@@ -2104,22 +2393,22 @@ class Xor : public Evaluator {
         right->printAlg(os);
     }
 
-    void printRpn(OutputStream *os) {
-        left->printRpn(os);
-        os->write(" ");
-        right->printRpn(os);
-        os->write(" XOR");
-    }
-
     void generateCode(GeneratorContext *ctx) {
         left->generateCode(ctx);
         right->generateCode(ctx);
         ctx->addLine(CMD_GEN_XOR);
     }
 
-    void collectVariables(std::vector<std::string> *vars) {
-        left->collectVariables(vars);
-        right->collectVariables(vars);
+    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
+        left->collectVariables(vars, locals);
+        right->collectVariables(vars, locals);
+    }
+
+    int howMany(const std::string *name) {
+        if (left->howMany(name) == 0 && right->howMany(name) == 0)
+            return 0;
+        else
+            return -1;
     }
 };
 
@@ -2736,7 +3025,7 @@ Evaluator *Parser::parseThing() {
             if (t == "SIN" || t == "COS" || t == "TAN"
                     || t == "ASIN" || t == "ACOS" || t == "ATAN"
                     || t == "LOG" || t == "EXP" || t == "SQRT"
-                    || t == "ABS") {
+                    || t == "SQ" || t == "INV" || t == "ABS") {
                 nargs = 1;
                 mode = EXPR_LIST_EXPR;
             } else if (t == "MIN" || t == "MAX") {
@@ -2771,7 +3060,8 @@ Evaluator *Parser::parseThing() {
             if (t == "SIN" || t == "COS" || t == "TAN"
                     || t == "ASIN" || t == "ACOS" || t == "ATAN"
                     || t == "LN" || t == "LOG" || t == "EXP"
-                    || t == "ALOG" || t == "SQRT" || t == "ABS") {
+                    || t == "ALOG" || t == "SQRT" 
+                    || t == "SQ" || t == "INV" || t == "ABS") {
                 Evaluator *ev = (*evs)[0];
                 delete evs;
                 if (t == "SIN")
@@ -2794,8 +3084,12 @@ Evaluator *Parser::parseThing() {
                     return new Exp(tpos, ev);
                 else if (t == "ALOG")
                     return new Alog(tpos, ev);
+                else if (t == "SQ")
+                    return new Sq(tpos, ev);
                 else if (t == "SQRT")
                     return new Sqrt(tpos, ev);
+                else if (t == "INV")
+                    return new Inv(tpos, ev);
                 else // t == "ABS"
                     return new Abs(tpos, ev);
             } else if (t == "MAX" || t == "MIN") {
@@ -2883,7 +3177,8 @@ void Parser::pushback(std::string o, int p) {
 void get_varmenu_row_for_eqn(vartype *eqn, int *rows, int *row, char ktext[6][7], int klen[6]) {
     Evaluator *ev = ((vartype_equation *) eqn)->data->ev;
     std::vector<std::string> vars;
-    ev->collectVariables(&vars);
+    std::vector<std::string> locals;
+    ev->collectVariables(&vars, &locals);
     *rows = (vars.size() + 5) / 6;
     if (*rows == 0)
         return;
@@ -2901,4 +3196,253 @@ void get_varmenu_row_for_eqn(vartype *eqn, int *rows, int *row, char ktext[6][7]
         } else
             klen[i] = 0;
     }
+}
+
+int isolate(vartype *eqn, const char *name, int length) {
+    if (eqn == NULL || eqn->type != TYPE_EQUATION)
+        return -1;
+    vartype_equation *eq = (vartype_equation *) eqn;
+    Evaluator *ev = eq->data->ev;
+    std::string n(name, length);
+    if (ev->howMany(&n) != 1)
+        return -1;
+    ev = ev->clone()->removeName();
+    Evaluator *lhs, *rhs;
+    {
+        Equation *e = dynamic_cast<Equation *>(ev);
+        if (e != NULL) {
+            if (e->left->howMany(&n) == 1) {
+                lhs = e->left;
+                rhs = e->right;
+            } else {
+                lhs = e->right;
+                rhs = e->left;
+            }
+            e->left = NULL;
+            e->right = NULL;
+            delete e;
+        } else {
+            lhs = ev;
+            rhs = new Literal(0, 0);
+        }
+    }
+
+    while (!lhs->is(&n)) {
+        {
+            Acos *e = dynamic_cast<Acos *>(lhs);
+            if (e != NULL) {
+                lhs = e->ev;
+                rhs = new Cos(0, rhs);
+                continue;
+            }
+        }
+        {
+            Alog *e = dynamic_cast<Alog *>(lhs);
+            if (e != NULL) {
+                lhs = e->ev;
+                rhs = new Log(0, rhs);
+                continue;
+            }
+        }
+        {
+            Asin *e = dynamic_cast<Asin *>(lhs);
+            if (e != NULL) {
+                lhs = e->ev;
+                rhs = new Sin(0, rhs);
+                continue;
+            }
+        }
+        {
+            Atan *e = dynamic_cast<Atan *>(lhs);
+            if (e != NULL) {
+                lhs = e->ev;
+                rhs = new Tan(0, rhs);
+                continue;
+            }
+        }
+        {
+            Cos *e = dynamic_cast<Cos *>(lhs);
+            if (e != NULL) {
+                lhs = e->ev;
+                rhs = new Acos(0, rhs);
+                continue;
+            }
+        }
+        {
+            Difference *e = dynamic_cast<Difference *>(lhs);
+            if (e != NULL) {
+                if (e->left->howMany(&n) == 1) {
+                    lhs = e->left;
+                    rhs = new Sum(0, rhs, e->right);
+                } else {
+                    lhs = e->right;
+                    rhs = new Difference(0, e->left, rhs);
+                }
+                continue;
+            }
+        }
+        {
+            Ell *e = dynamic_cast<Ell *>(lhs);
+            if (e != NULL) {
+                lhs = e->ev;
+                rhs = new Ell(0, e->name, rhs, e->compatMode);
+                continue;
+            }
+        }
+        {
+            Exp *e = dynamic_cast<Exp *>(lhs);
+            if (e != NULL) {
+                lhs = e->ev;
+                rhs = new Ln(0, rhs);
+                continue;
+            }
+        }
+        {
+            Identity *e = dynamic_cast<Identity *>(lhs);
+            if (e != NULL) {
+                lhs = e->ev;
+                rhs = new Identity(0, rhs);
+                continue;
+            }
+        }
+        {
+            Inv *e = dynamic_cast<Inv *>(lhs);
+            if (e != NULL) {
+                lhs = e->ev;
+                rhs = new Inv(0, rhs);
+                continue;
+            }
+        }
+        {
+            Ln *e = dynamic_cast<Ln *>(lhs);
+            if (e != NULL) {
+                lhs = e->ev;
+                rhs = new Exp(0, rhs);
+                continue;
+            }
+        }
+        {
+            Log *e = dynamic_cast<Log *>(lhs);
+            if (e != NULL) {
+                lhs = e->ev;
+                rhs = new Alog(0, rhs);
+                continue;
+            }
+        }
+        {
+            Negative *e = dynamic_cast<Negative *>(lhs);
+            if (e != NULL) {
+                lhs = e->ev;
+                rhs = new Negative(0, rhs);
+                continue;
+            }
+        }
+        {
+            Positive *e = dynamic_cast<Positive *>(lhs);
+            if (e != NULL) {
+                lhs = e->ev;
+                rhs = new Positive(0, rhs);
+                continue;
+            }
+        }
+        {
+            Power *e = dynamic_cast<Power *>(lhs);
+            if (e != NULL) {
+                if (e->left->howMany(&n) == 1) {
+                    lhs = e->left;
+                    rhs = new Power(0, rhs, new Inv(0, e->right));
+                } else {
+                    lhs = e->right;
+                    rhs = new Quotient(0, new Ln(0, rhs), new Ln(0, e->left));
+                }
+                continue;
+            }
+        }
+        {
+            Product *e = dynamic_cast<Product *>(lhs);
+            if (e != NULL) {
+                if (e->left->howMany(&n) == 1) {
+                    lhs = e->left;
+                    rhs = new Quotient(0, rhs, e->right);
+                } else {
+                    lhs = e->right;
+                    rhs = new Quotient(0, rhs, e->left);
+                }
+                continue;
+            }
+        }
+        {
+            Quotient *e = dynamic_cast<Quotient *>(lhs);
+            if (e != NULL) {
+                if (e->left->howMany(&n) == 1) {
+                    lhs = e->left;
+                    rhs = new Product(0, rhs, e->right);
+                } else {
+                    lhs = e->right;
+                    rhs = new Quotient(0, e->left, rhs);
+                }
+                continue;
+            }
+        }
+        {
+            Sin *e = dynamic_cast<Sin *>(lhs);
+            if (e != NULL) {
+                lhs = e->ev;
+                rhs = new Asin(0, rhs);
+                continue;
+            }
+        }
+        {
+            Sq *e = dynamic_cast<Sq *>(lhs);
+            if (e != NULL) {
+                lhs = e->ev;
+                rhs = new Sqrt(0, rhs);
+                continue;
+            }
+        }
+        {
+            Sqrt *e = dynamic_cast<Sqrt *>(lhs);
+            if (e != NULL) {
+                lhs = e->ev;
+                rhs = new Sq(0, rhs);
+                continue;
+            }
+        }
+        {
+            Sum *e = dynamic_cast<Sum *>(lhs);
+            if (e != NULL) {
+                if (e->left->howMany(&n) == 1) {
+                    lhs = e->left;
+                    rhs = new Difference(0, rhs, e->right);
+                } else {
+                    lhs = e->right;
+                    rhs = new Difference(0, rhs, e->left);
+                }
+                continue;
+            }
+        }
+        {
+            Tan *e = dynamic_cast<Tan *>(lhs);
+            if (e != NULL) {
+                lhs = e->ev;
+                rhs = new Atan(0, rhs);
+                continue;
+            }
+        }
+        // Shouldn't get here
+        delete lhs;
+        delete rhs;
+        return -1;
+    }
+
+    int errpos;
+    // Dummy equation, just to reserve a program slot
+    vartype_equation *neq = (vartype_equation *) new_equation("A", 1, eq->data->compatMode, &errpos);
+    // That's why I'm using free() here, not free_vartype()...
+    equation_data *eqd = neq->data;
+    free(neq);
+    GeneratorContext ctx;
+    rhs->generateCode(&ctx);
+    ctx.store(prgms + eqd->prgm_index);
+    return eqd->prgm_index;
 }

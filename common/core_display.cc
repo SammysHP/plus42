@@ -1566,8 +1566,10 @@ void draw_varmenu() {
         int klen[6];
         get_varmenu_row_for_eqn(varmenu_eqn, &varmenu_rows, &varmenu_row, ktext, klen);
         shell_annunciators(varmenu_rows > 1, -1, -1, -1, -1, -1);
-        for (int i = 0; i < 6; i++)
+        for (int i = 0; i < 6; i++) {
+            string_copy(varmenu_labeltext[i], &varmenu_labellength[i], ktext[i], klen[i]);
             draw_key(i, 0, 0, ktext[i], klen[i]);
+        }
     } else {
         arg_struct arg;
         int saved_prgm, prgm;
@@ -1606,9 +1608,7 @@ void draw_varmenu() {
         key = 0;
         while (get_next_command(&pc2, &command, &arg, 0, NULL), command == CMD_MVAR) {
             if (row == varmenu_row) {
-                varmenu_labellength[key] = arg.length;
-                for (i = 0; i < arg.length; i++)
-                    varmenu_labeltext[key][i] = arg.val.text[i];
+                string_copy(varmenu_labeltext[key], &varmenu_labellength[key], arg.val.text, arg.length);
                 draw_key(key, 0, 0, arg.val.text, arg.length);
             }
             if (key++ == 5) {

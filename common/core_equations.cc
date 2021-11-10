@@ -1464,10 +1464,10 @@ static int keydown_list(int key, bool shift, int *repeat) {
                 /* PGMMENU */
                 pending_command = CMD_PMEXEC;
             /* Note that we don't do active = false here, since at this point
-                * it is still possible that the command will go do NULL, and in
-                * that case, we should stay here. Thus, setting active = false
-                * is accomplished by PGMSLV, PGMINT, and PMEXEC.
-                */
+             * it is still possible that the command will go to NULL, and in
+             * that case, we should stay here. Thus, setting active = false
+             * is accomplished by PGMSLV, PGMINT, and PMEXEC.
+             */
             redisplay();
             return 2;
 

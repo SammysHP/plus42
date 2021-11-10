@@ -1676,8 +1676,8 @@ static int hp42ext[] = {
     CMD_VARMNU1 | 0x2000,
     CMD_NULL    | 0x3000, /* GTOL */
     CMD_NULL    | 0x3000, /* XEQL */
-    CMD_NULL    | 0x4000,
-    CMD_NULL    | 0x4000,
+    CMD_GSTO    | 0x0000,
+    CMD_GRCL    | 0x0000,
     CMD_NULL    | 0x4000,
     CMD_NULL    | 0x4000,
     CMD_NULL    | 0x4000,

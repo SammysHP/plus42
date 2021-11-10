@@ -1394,6 +1394,8 @@ void keydown_command_entry(int shift, int key) {
                 && incomplete_command != CMD_CLP
                 && incomplete_command != CMD_PRP
                 && incomplete_command != CMD_MVAR
+                && incomplete_command != CMD_GSTO
+                && incomplete_command != CMD_GRCL
                 && !incomplete_ind
                 && incomplete_length == 0
                 && (mode_commandmenu < MENU_ALPHA1

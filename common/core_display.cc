@@ -1619,7 +1619,7 @@ static int ext_stk_cat[] = {
 };
 
 static int ext_eqn_cat[] = {
-    CMD_EQEXT, CMD_EQSTD, CMD_EQN_T, CMD_EVAL, CMD_PARSE, CMD_UNPARSE
+    CMD_COMP, CMD_EQN_T, CMD_EVAL, CMD_PARSE, CMD_STD, CMD_UNPARSE
 };
 
 static int ext_dir_cat[] = {
@@ -2252,10 +2252,10 @@ void redisplay() {
                         case CMD_MIXED:
                             is_flag = !mode_menu_caps;
                             break;
-                        case CMD_EQEXT:
+                        case CMD_STD:
                             is_flag = !flags.f.eqn_compat;
                             break;
-                        case CMD_EQSTD:
+                        case CMD_COMP:
                             is_flag = flags.f.eqn_compat;
                             break;
                         case CMD_PON:

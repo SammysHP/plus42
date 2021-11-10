@@ -177,6 +177,8 @@ class GeneratorContext {
                     || line->cmd == CMD_RCL
                     || line->cmd == CMD_LSTO
                     || line->cmd == CMD_STO_ADD
+                    || line->cmd == CMD_GSTO
+                    || line->cmd == CMD_GRCL
                     || line->cmd == CMD_SVAR_T) {
                 arg.type = ARGTYPE_STR;
                 arg.length = line->s->size();
@@ -875,10 +877,11 @@ class Ell : public Evaluator {
 
     std::string name;
     Evaluator *ev;
+    bool compatMode;
 
     public:
 
-    Ell(int pos, std::string name, Evaluator *ev) : Evaluator(pos), name(name), ev(ev) {}
+    Ell(int pos, std::string name, Evaluator *ev, bool compatMode) : Evaluator(pos), name(name), ev(ev), compatMode(compatMode) {}
 
     ~Ell() {
         delete ev;
@@ -901,7 +904,7 @@ class Ell : public Evaluator {
 
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
-        ctx->addLine(CMD_STO, name);
+        ctx->addLine(compatMode ? CMD_GSTO : CMD_STO, name);
     }
 
     void collectVariables(std::vector<std::string> *vars) {
@@ -1037,10 +1040,11 @@ class Gee : public Evaluator {
     private:
 
     std::string name;
+    bool compatMode;
 
     public:
 
-    Gee(int pos, std::string name) : Evaluator(pos), name(name) {}
+    Gee(int pos, std::string name, bool compatMode) : Evaluator(pos), name(name), compatMode(compatMode) {}
 
     void printAlg(OutputStream *os) {
         os->write("G(");
@@ -1054,7 +1058,7 @@ class Gee : public Evaluator {
     }
 
     void generateCode(GeneratorContext *ctx) {
-        ctx->addLine(CMD_RCL, name);
+        ctx->addLine(compatMode ? CMD_GRCL : CMD_RCL, name);
     }
 
     void collectVariables(std::vector<std::string> *vars) {
@@ -2810,7 +2814,7 @@ Evaluator *Parser::parseThing() {
                 delete evs;
                 std::string n = name->name();
                 delete name;
-                return new Gee(tpos, n);
+                return new Gee(tpos, n, lex->compatMode);
             } else if (t == "S") {
                 Evaluator *name = (*evs)[0];
                 delete evs;
@@ -2823,7 +2827,7 @@ Evaluator *Parser::parseThing() {
                 delete evs;
                 std::string n = name->name();
                 delete name;
-                return new Ell(tpos, n, ev);
+                return new Ell(tpos, n, ev, lex->compatMode);
             } else if (t == "ITEM") {
                 Evaluator *name = (*evs)[0];
                 Evaluator *ev = (*evs)[1];

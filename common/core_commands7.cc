@@ -1982,12 +1982,12 @@ int docmd_eqn_t(arg_struct *arg) {
     return stack[sp]->type == TYPE_EQUATION ? ERR_YES : ERR_NO;
 }
 
-int docmd_eqext(arg_struct *arg) {
+int docmd_std(arg_struct *arg) {
     flags.f.eqn_compat = 0;
     return ERR_NONE;
 }
 
-int docmd_eqstd(arg_struct *arg) {
+int docmd_comp(arg_struct *arg) {
     flags.f.eqn_compat = 1;
     return ERR_NONE;
 }
@@ -2026,6 +2026,40 @@ int docmd_xeql(arg_struct *arg) {
         clear_all_rtns();
         return ERR_RUN;
     }
+}
+
+int docmd_gsto(arg_struct *arg) {
+    if (arg->type != ARGTYPE_STR)
+        return ERR_INVALID_TYPE;
+    /* Only allow matrices to be stored in "REGS" */
+    if (string_equals(arg->val.text, arg->length, "REGS", 4)
+            && stack[sp]->type != TYPE_REALMATRIX
+            && stack[sp]->type != TYPE_COMPLEXMATRIX)
+        return ERR_RESTRICTED_OPERATION;
+    /* When EDITN is active, don't allow the matrix being
+     * edited to be overwritten. */
+    if (matedit_mode == 3 && string_equals(arg->val.text,
+                arg->length, matedit_name, matedit_length))
+        return ERR_RESTRICTED_OPERATION;
+    vartype *newval = dup_vartype(stack[sp]);
+    if (newval == NULL)
+        return ERR_INSUFFICIENT_MEMORY;
+    int err = store_var(arg->val.text, arg->length, newval, false, true);
+    if (err != ERR_NONE)
+        free_vartype(newval);
+    return err;
+}
+
+int docmd_grcl(arg_struct *arg) {
+    if (arg->type != ARGTYPE_STR)
+        return ERR_INVALID_TYPE;
+    vartype *v = recall_global_var(arg->val.text, arg->length);
+    if (v == NULL)
+        return ERR_NONEXISTENT;
+    v = dup_vartype(v);
+    if (v == NULL)
+        return ERR_INSUFFICIENT_MEMORY;
+    return recall_result(v);
 }
 
 int docmd_svar_t(arg_struct *arg) {

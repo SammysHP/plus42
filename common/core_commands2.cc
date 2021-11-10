@@ -907,7 +907,6 @@ int docmd_varmenu(arg_struct *arg) {
     int4 pc;
     int command;
     arg_struct arg2;
-    int i;
 
     if (arg->type == ARGTYPE_IND_NUM
             || arg->type == ARGTYPE_IND_STK

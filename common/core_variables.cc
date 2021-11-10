@@ -599,6 +599,30 @@ vartype *recall_var(const char *name, int namelength) {
         return vars[varindex].value;
 }
 
+static int lookup_global_var(const char *name, int namelength) {
+    int i, j;
+    for (i = 0; i < vars_count; i++) {
+        if (vars[i].level != -1)
+            continue;
+        if (vars[i].length == namelength) {
+            for (j = 0; j < namelength; j++)
+                if (vars[i].name[j] != name[j])
+                    goto nomatch;
+            return i;
+        }
+        nomatch:;
+    }
+    return -1;
+}
+
+vartype *recall_global_var(const char *name, int namelength) {
+    int varindex = lookup_global_var(name, namelength);
+    if (varindex == -1)
+        return NULL;
+    else
+        return vars[varindex].value;
+}
+
 bool ensure_var_space(int n) {
     int nc = vars_count + n;
     if (nc > vars_capacity) {
@@ -611,8 +635,9 @@ bool ensure_var_space(int n) {
     return true;
 }
 
-int store_var(const char *name, int namelength, vartype *value, bool local) {
-    int varindex = lookup_var(name, namelength);
+int store_var(const char *name, int namelength, vartype *value, bool local, bool global /* = false */) {
+    int varindex = global ? lookup_global_var(name, namelength)
+                          : lookup_var(name, namelength);
     int i;
     if (varindex == -1) {
         if (vars_count == vars_capacity) {

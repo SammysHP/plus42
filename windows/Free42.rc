@@ -117,7 +117,7 @@ CAPTION "About Plus42"
 FONT 8, "System"
 BEGIN
     ICON            IDI_FREE42,IDC_STATIC,9,7,20,20
-    LTEXT           FREE42_VERSION_1,IDC_STATIC,31,4,99,8,SS_NOPREFIX
+    LTEXT           PLUS42_VERSION_1,IDC_STATIC,31,4,99,8,SS_NOPREFIX
     LTEXT           "© 2004-2021 Thomas Okken",IDC_STATIC,31,17,98,8
     LTEXT           "https://thomasokken.com/plus42/",
                     IDC_WEBSITELINK,31,27,191,8,SS_NOTIFY
@@ -271,8 +271,8 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION FREE42_VERSION_3
- PRODUCTVERSION FREE42_VERSION_3
+ FILEVERSION PLUS42_VERSION_3
+ PRODUCTVERSION PLUS42_VERSION_3
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -290,14 +290,14 @@ BEGIN
             //VALUE "Comments", "\0"
             //VALUE "CompanyName", "\0"
             VALUE "FileDescription", "Plus42\0"
-            VALUE "FileVersion", FREE42_VERSION_2
-            VALUE "InternalName", "Free42\0"
+            VALUE "FileVersion", PLUS42_VERSION_2
+            VALUE "InternalName", "Plus42\0"
             VALUE "LegalCopyright", "Copyright © 2004-2021 Thomas Okken\0"
             //VALUE "LegalTrademarks", "\0"
             VALUE "OriginalFilename", "Plus42.exe\0"
             //VALUE "PrivateBuild", "\0"
             VALUE "ProductName", "Plus42\0"
-            VALUE "ProductVersion", FREE42_VERSION_2
+            VALUE "ProductVersion", PLUS42_VERSION_2
             //VALUE "SpecialBuild", "\0"
         END
     END

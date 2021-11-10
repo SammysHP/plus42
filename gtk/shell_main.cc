@@ -924,7 +924,7 @@ static int read_shell_state(int4 *ver) {
 
     if (fread(&magic, 1, sizeof(int4), statefile) != sizeof(int4))
         return 0;
-    if (magic != PLUS42_MAGIC && magic != FREE42_MAGIC)
+    if (magic != PLUS42_MAGIC)
         return 0;
 
     if (fread(&version, 1, sizeof(int4), statefile) != sizeof(int4))
@@ -1434,7 +1434,7 @@ static void states_menu_import() {
 
     if (dialog == NULL)
         dialog = make_file_select_dialog("Import State",
-                "Plus42 State (*.p42)\0*.[Pp]42\0Free42 State (*.f42)\0*.[Ff]42\0All Files (*.*)\0*\0",
+                "Plus42 State (*.p42)\0*.[Pp]42\0All Files (*.*)\0*\0",
                 false, dlg);
 
     gtk_window_set_role(GTK_WINDOW(dialog), "Plus42 Dialog");

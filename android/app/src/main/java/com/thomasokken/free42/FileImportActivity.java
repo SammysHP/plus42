@@ -42,7 +42,7 @@ public class FileImportActivity extends Activity {
 
         // If attachment, some contortions to try and get the original file name
         String baseName = null;
-        String type = "f42";
+        String type = "p42";
         String scheme = uri.getScheme();
         if (scheme.equals("content")) {
             try {
@@ -58,16 +58,15 @@ public class FileImportActivity extends Activity {
         }
         if (baseName == null || baseName.equals("")) {
             baseName = "Imported State";
-        } else if (baseName.toLowerCase().endsWith(".p42")
-                || baseName.toLowerCase().endsWith(".f42")) {
+        } else if (baseName.toLowerCase().endsWith(".p42")) {
             baseName = baseName.substring(0, baseName.length() - 4);
-            type = "f42";
+            type = "p42";
         } else if (baseName.toLowerCase().endsWith(".raw")) {
             baseName = baseName.substring(0, baseName.length() - 4);
             type = "raw";
         }
 
-        if (type.equals("f42")) {
+        if (type.equals("p42")) {
             importIsState = true;
             int n = 0;
             String baseDir = getFilesDir().getAbsolutePath();

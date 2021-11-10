@@ -85,8 +85,6 @@ static int catalog_rows = 15;
 static void restart_cursor();
 
 bool unpersist_eqn(int4 ver) {
-    if (ver < 36)
-        return true;
     if (!read_bool(&active)) return false;
     if (!read_int(&menu_whence)) return false;
     bool have_eqns;
@@ -103,29 +101,12 @@ bool unpersist_eqn(int4 ver) {
     if (!read_int(&edit_pos)) return false;
     if (!read_int(&display_pos)) return false;
 
-    if (ver < 41) {
-        bool in_save_confirmation, in_delete_confirmation;
-        if (!read_bool(&in_save_confirmation)) return false;
-        if (!read_bool(&in_delete_confirmation)) return false;
-        if (in_save_confirmation)
-            dialog = DIALOG_SAVE_CONFIRM;
-        else if (in_delete_confirmation)
-            dialog = DIALOG_DELETE_CONFIRM;
-        else
-            dialog = DIALOG_NONE;
-    } else {
-        if (!read_int(&dialog)) return false;
-    }
+    if (!read_int(&dialog)) return false;
 
     if (!read_int(&edit_menu)) return false;
     if (!read_int(&prev_edit_menu)) return false;
-    if (ver < 37) {
-        catalog_row = 0;
-        menu_sticky = false;
-    } else {
-        if (!read_int(&catalog_row)) return false;
-        if (!read_bool(&menu_sticky)) return false;
-    }
+    if (!read_int(&catalog_row)) return false;
+    if (!read_bool(&menu_sticky)) return false;
     if (!read_bool(&new_eq)) return false;
     if (!read_int4(&edit_len)) return false;
     edit_capacity = edit_len;
@@ -136,11 +117,7 @@ bool unpersist_eqn(int4 ver) {
         return false;
     if (fread(edit_buf, 1, edit_len, gfile) != edit_len) goto fail;
     if (!read_bool(&cursor_on)) goto fail;
-    if (ver < 38) {
-        current_error = ERR_NONE;
-    } else {
-        if (!read_int(&current_error)) return false;
-    }
+    if (!read_int(&current_error)) return false;
 
     if (active && edit_pos != -1 && dialog == DIALOG_NONE)
         restart_cursor();

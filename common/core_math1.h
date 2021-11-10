@@ -23,7 +23,7 @@
 #include "core_variables.h"
 
 bool persist_math();
-bool unpersist_math(int ver, bool plus, bool discard);
+bool unpersist_math(int ver, bool discard);
 void reset_math();
 
 void put_shadow(const char *name, int length, phloat value);

@@ -284,7 +284,7 @@
 }
 
 - (void) doImport {
-    FileOpenPanel *openDlg = [FileOpenPanel panelWithTitle:@"Import State" types:@"Plus42 State;p42;Free42 State;f42;All Files;*"];
+    FileOpenPanel *openDlg = [FileOpenPanel panelWithTitle:@"Import State" types:@"Plus42 State;p42;All Files;*"];
     if ([openDlg runModal] != NSOKButton)
         return;
     NSArray *paths = [openDlg paths];
@@ -292,8 +292,7 @@
         NSString *path = [paths objectAtIndex:i];
         NSString *name = [path lastPathComponent];
         int len = [name length];
-        if (len > 4 && ([[name substringFromIndex:len - 4] caseInsensitiveCompare:@".f42"] == NSOrderedSame
-                     || [[name substringFromIndex:len - 4] caseInsensitiveCompare:@".p42"] == NSOrderedSame))
+        if (len > 4 && [[name substringFromIndex:len - 4] caseInsensitiveCompare:@".p42"] == NSOrderedSame)
             name = [name substringToIndex:len - 4];
         NSString *destPath = [NSString stringWithFormat:@"%s/%@.p42", free42dirname, name];
         const char *destPathC = [destPath UTF8String];

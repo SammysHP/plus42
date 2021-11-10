@@ -1760,7 +1760,7 @@ static int read_shell_state(int4 *ver) {
     
     if (fread(&magic, 1, sizeof(int4), statefile) != sizeof(int4))
         return 0;
-    if (magic != PLUS42_MAGIC && magic != FREE42_MAGIC)
+    if (magic != PLUS42_MAGIC)
         return 0;
     
     if (fread(&version, 1, sizeof(int4), statefile) != sizeof(int4))

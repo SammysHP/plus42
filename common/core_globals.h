@@ -506,9 +506,7 @@ extern int keybuf[16];
 extern int remove_program_catalog;
 
 #define NUMBER_FORMAT_BINARY 0
-#define NUMBER_FORMAT_BCD20_OLD 1
-#define NUMBER_FORMAT_BCD20_NEW 2
-#define NUMBER_FORMAT_BID128 3
+#define NUMBER_FORMAT_BID128 1
 extern int state_file_number_format;
 
 extern bool no_keystrokes_yet;
@@ -562,8 +560,6 @@ void set_current_prgm_gto(int prgm_index);
 void set_current_prgm_xeq(int prgm_index);
 void set_current_prgm_rtn(int prgm_index);
 
-extern bool state_is_portable;
-
 bool read_bool(bool *b);
 bool write_bool(bool b);
 bool read_char(char *c);
@@ -590,7 +586,7 @@ void save_state();
 void hard_reset(int reason);
 
 bool persist_vartype(vartype *v);
-bool unpersist_vartype(vartype **v, bool padded);
+bool unpersist_vartype(vartype **v);
 
 #ifdef IPHONE
 bool off_enabled();

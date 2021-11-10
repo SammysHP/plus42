@@ -48,13 +48,13 @@
         <data android:scheme="https"/>
         <data android:host="*"/>
         <data android:pathPattern=".*\\.raw"/>
-        <data android:pathPattern=".*\\.f42"/>
+        <data android:pathPattern=".*\\.p42"/>
         <data android:pathPattern=".*\\..*\\.raw"/>
-        <data android:pathPattern=".*\\..*\\.f42"/>
+        <data android:pathPattern=".*\\..*\\.p42"/>
         <data android:pathPattern=".*\\..*\\..*\\.raw"/>
-        <data android:pathPattern=".*\\..*\\..*\\.f42"/>
+        <data android:pathPattern=".*\\..*\\..*\\.p42"/>
         <data android:pathPattern=".*\\..*\\..*\\..*\\.raw"/>
-        <data android:pathPattern=".*\\..*\\..*\\..*\\.f42"/>
+        <data android:pathPattern=".*\\..*\\..*\\..*\\.p42"/>
         <data android:mimeType="*/*"/>
       </intent-filter>
     </activity>

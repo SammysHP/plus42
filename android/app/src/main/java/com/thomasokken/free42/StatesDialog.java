@@ -334,7 +334,7 @@ public class StatesDialog extends Dialog {
     private void doImport() {
         if (!Free42Activity.checkStorageAccess())
             return;
-        FileSelectionDialog fsd = new FileSelectionDialog(getContext(), new String[]{"p42", "f42", "*"});
+        FileSelectionDialog fsd = new FileSelectionDialog(getContext(), new String[]{"p42", "*"});
         fsd.setOkListener(new FileSelectionDialog.OkListener() {
             public void okPressed(String path) {
                 doImport2(path);
@@ -347,7 +347,7 @@ public class StatesDialog extends Dialog {
         int lastSlash = path.lastIndexOf('/');
         String name = lastSlash == -1 ? path : path.substring(lastSlash + 1);
         int len = name.length();
-        if (len > 4 && (name.endsWith(".p42") || name.endsWith(".f42")))
+        if (len > 4 && name.endsWith(".p42"))
             name = name.substring(0, len - 4);
         String destPath = getContext().getFilesDir() + "/" + name + ".p42";
         if (new File(destPath).exists())

@@ -94,7 +94,6 @@ static BOOL urlInInbox(NSURL *url) {
         NSString *ext = [url pathExtension];
         if (ext != nil
             && ([ext caseInsensitiveCompare:@"p42"] == NSOrderedSame
-                || [ext caseInsensitiveCompare:@"f42"] == NSOrderedSame
                 || [ext caseInsensitiveCompare:@"raw"] == NSOrderedSame)) {
             NSString *name = [url lastPathComponent];
             NSString *destPath = [NSString stringWithFormat:@"%@/Documents/_TEMP_/%@", NSHomeDirectory(), name];
@@ -129,14 +128,13 @@ static BOOL urlInInbox(NSURL *url) {
                 [fromNames addObject:[NSString stringWithFormat:@"_TEMP_/%@", name]];
         }
     }
-    // Handle all files with names ending in .p42, .f42, or .raw that happen to be in our Inbox.
+    // Handle all files with names ending in .p42 or .raw that happen to be in our Inbox.
     DIR *dir = opendir("Inbox");
     if (dir != NULL) {
         struct dirent *d;
         while ((d = readdir(dir)) != NULL) {
             size_t len = strlen(d->d_name);
             if (len < 5 || (strcasecmp(d->d_name + len - 4, ".p42") != 0
-                         && strcasecmp(d->d_name + len - 4, ".f42") != 0
                          && strcasecmp(d->d_name + len - 4, ".raw") != 0))
                 continue;
             [fromNames addObject:[NSString stringWithFormat:@"Inbox/%@", [NSString stringWithUTF8String:d->d_name]]];
@@ -155,8 +153,7 @@ static BOOL urlInInbox(NSURL *url) {
         NSString *fromName = [fromPath lastPathComponent];
         const char *fromPathC = [fromPath UTF8String];
         size_t clen = strlen(fromPathC);
-        if (strcasecmp(fromPathC + clen - 4, ".p42") == 0
-                || strcasecmp(fromPathC + clen - 4, ".f42") == 0) {
+        if (strcasecmp(fromPathC + clen - 4, ".p42") == 0) {
             FILE *f = fopen(fromPathC, "r");
             if (f == NULL) {
                 remove(fromPathC);
@@ -166,8 +163,7 @@ static BOOL urlInInbox(NSURL *url) {
             size_t n = fread(sig, 1, 4, f);
             fclose(f);
             sig[4] = 0;
-            if (n != 4 || (strcmp(sig, PLUS42_MAGIC_STR) != 0
-                        && strcmp(sig, FREE42_MAGIC_STR) != 0)) {
+            if (n != 4 || strcmp(sig, PLUS42_MAGIC_STR) != 0) {
                 remove(fromPathC);
                 continue;
             }
@@ -185,7 +181,7 @@ static BOOL urlInInbox(NSURL *url) {
                 firstState = toName;
         } else {
             // Must be .raw, because in the first loop, we only collect
-            // files with extensions .p42, .f42, or .raw
+            // files with extensions .p42 or .raw
             // Make sure the file ends in Cx xx 0D before importing it.
             FILE *f = fopen(fromPathC, "r");
             if (f != NULL) {

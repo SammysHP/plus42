@@ -336,7 +336,7 @@ static void doImport(HWND hDlg) {
     if (!browse_file_w(hDlg,
                     L"Import State",
                     0,
-                    L"Plus42 State (*.p42)\0*.p42\0Free42 State (*.f42)\0*.f42\0All Files (*.*)\0*.*\0\0",
+                    L"Plus42 State (*.p42)\0*.p42\0All Files (*.*)\0*.*\0\0",
                     NULL,
                     buf,
                     FILENAMELEN))

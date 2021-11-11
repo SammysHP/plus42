@@ -1,5 +1,5 @@
 ///////////////////////////////////////////////////////////////////////////////
-// Free42 -- an HP-42S calculator simulator
+// Plus42 -- an enhanced HP-42S calculator simulator
 // Copyright (C) 2004-2021  Thomas Okken
 //
 // This program is free software; you can redistribute it and/or modify

@@ -8,16 +8,6 @@
 /////  class declarations  /////
 ////////////////////////////////
 
-class OutputStream {
-    public:
-
-    virtual ~OutputStream() {}
-
-    virtual void write(std::string) = 0;
-    virtual void write(double d);
-    virtual void newline();
-};
-
 class GeneratorContext;
 
 class Evaluator {
@@ -35,12 +25,13 @@ class Evaluator {
     virtual std::string name() { return ""; }
     virtual std::string eqnName() { return ""; }
     virtual Evaluator *removeName() { return this; }
+    virtual void getSides(const std::string *name, Evaluator **lhs, Evaluator **rhs);
     virtual bool is(const std::string *name) { return false; }
     virtual Evaluator *clone() = 0;
 
     int pos() { return tpos; }
 
-    virtual void printAlg(OutputStream *os) = 0;
+    virtual bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) { return false; }
     virtual void generateCode(GeneratorContext *ctx) = 0;
     virtual void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) = 0;
     virtual int howMany(const std::string *name) = 0;

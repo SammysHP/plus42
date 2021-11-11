@@ -3011,8 +3011,11 @@ Evaluator *Parser::parseThing() {
                 nargs = -1;
                 mode = EXPR_LIST_NAME;
             } else {
-                nargs = -1;
-                mode = EXPR_LIST_EXPR;
+                // Call
+                // Not allowed, for now
+                //nargs = -1;
+                //mode = EXPR_LIST_EXPR;
+                return NULL;
             }
             std::vector<Evaluator *> *evs = parseExprList(nargs, mode);
             if (evs == NULL)

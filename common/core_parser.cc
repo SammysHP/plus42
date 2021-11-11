@@ -2163,8 +2163,7 @@ class Sq : public Evaluator {
 
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
-        ctx->addLine(CMD_DUP);
-        ctx->addLine(CMD_MUL);
+        ctx->addLine(CMD_SQUARE);
     }
 
     void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {

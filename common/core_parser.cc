@@ -3445,3 +3445,15 @@ int isolate(vartype *eqn, const char *name, int length) {
     ctx.store(prgms + eqd->prgm_index);
     return eqd->prgm_index;
 }
+
+bool has_parameters(equation_data *eqdata) {
+    std::vector<std::string> names, locals;
+    eqdata->ev->collectVariables(&names, &locals);
+    return names.size() > 0;
+}
+
+std::vector<std::string> get_parameters(equation_data *eqdata) {
+    std::vector<std::string> names, locals;
+    eqdata->ev->collectVariables(&names, &locals);
+    return names;
+}

@@ -150,6 +150,40 @@ int arg_to_num(arg_struct *arg, int4 *num) {
         return ERR_INVALID_TYPE;
 }
 
+// PGMSLV and PGMINT allow indirectly referenced equations.
+// This function deals with those, so resolve_ind_arg() doesn't have to.
+int get_arg_equation(arg_struct *arg, vartype_equation **eq) {
+    *eq = NULL;
+    vartype *v;
+    if (arg->type == ARGTYPE_IND_STK) {
+        int idx;
+        switch (arg->val.stk) {
+            case 'X': idx = 0; break;
+            case 'Y': idx = 1; break;
+            case 'Z': idx = 2; break;
+            case 'T': idx = 3; break;
+            case 'L': idx = -1; break;
+        }
+        if (idx == -1) {
+            v = lastx;
+        } else {
+            if (idx > sp)
+                return ERR_NONEXISTENT;
+            v = stack[sp - idx];
+        }
+        goto finish_resolve;
+    } else if (arg->type == ARGTYPE_IND_STR) {
+        v = recall_var(arg->val.text, arg->length);
+        if (v == NULL)
+            return ERR_NONEXISTENT;
+        finish_resolve:
+        if (v->type == TYPE_EQUATION)
+            *eq = (vartype_equation *) v;
+        return ERR_NONE;
+    } else
+        return ERR_NONE;
+}
+
 int recall_result_silently(vartype *v) {
     if (flags.f.stack_lift_disable) {
         // sp guaranteed to be >= 0 in this case

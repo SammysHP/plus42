@@ -537,10 +537,45 @@ bool core_keyup() {
             input_length = 0;
     }
 
-    if (pending_command == CMD_VMEXEC || pending_command == CMD_PMEXEC) {
+    if (pending_command == CMD_VMEXEC) {
         eqn_end();
         string_copy(reg_alpha, &reg_alpha_length,
                     pending_command_arg.val.text, pending_command_arg.length);
+        goto do_run;
+    }
+    if (pending_command == CMD_PMEXEC) {
+        eqn_end();
+        vartype *v;
+        if (pending_command_arg.type == ARGTYPE_EQN) {
+            equation_data *eqdata = prgms[pending_command_arg.val.num].eq_data;
+            int len = eqdata->length > 44 ? 44 : eqdata->length;
+            string_copy(reg_alpha, &reg_alpha_length, eqdata->text, len);
+            vartype_equation *eq = (vartype_equation *) malloc(sizeof(vartype_equation));
+            if (eq != NULL) {
+                eq->type = TYPE_EQUATION;
+                eq->data = eqdata;
+                eq->data->refcount++;
+            }
+            v = (vartype *) eq;
+        } else {
+            string_copy(reg_alpha, &reg_alpha_length,
+                        pending_command_arg.val.text, pending_command_arg.length);
+            v = new_string(pending_command_arg.val.text, pending_command_arg.length);
+        }
+        // This is an incompatible change from the original PGMMENU, strictly speaking,
+        // since it only returned the label name in ALPHA. I have to do something in
+        // order to accommodate equations, though. So, if a program is selected, I
+        // return it in ALPHA, as before, but I *also* return it as a string in X.
+        // My hope is that no one will depend on the contents of the stack right after
+        // PGMMENU, since the user is in normal interactive mode while the menu is
+        // active.
+        // Of course the scenario of the user going into the equation editor, selecting
+        // an equation, and pressing CALC, is entirely new, so what we do in that case
+        // isn't really an issue from a compatibility point of view. So, I'm copying as
+        // much of the equation as I can into ALPHA, and placing the equation itself
+        // in X.
+        if (v != NULL)
+            recall_result(v);
         goto do_run;
     }
     if (pending_command == CMD_RUN || pending_command == CMD_SST_UP) {

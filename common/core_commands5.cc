@@ -24,6 +24,7 @@
 #include "core_helpers.h"
 #include "core_main.h"
 #include "core_math1.h"
+#include "core_parser.h"
 #include "core_sto_rcl.h"
 #include "core_variables.h"
 
@@ -880,43 +881,9 @@ int docmd_or(arg_struct *arg) {
     return binary_result(v);
 }
 
-// PGMSLV and PGMINT allow indirectly referenced equations.
-// This function deals with those, so resolve_ind_arg() doesn't have to.
-static int get_arg_object(arg_struct *arg, vartype_equation **eq) {
-    *eq = NULL;
-    vartype *v;
-    if (arg->type == ARGTYPE_IND_STK) {
-        int idx;
-        switch (arg->val.stk) {
-            case 'X': idx = 0; break;
-            case 'Y': idx = 1; break;
-            case 'Z': idx = 2; break;
-            case 'T': idx = 3; break;
-            case 'L': idx = -1; break;
-        }
-        if (idx == -1) {
-            v = lastx;
-        } else {
-            if (idx > sp)
-                return ERR_NONEXISTENT;
-            v = stack[sp - idx];
-        }
-        goto finish_resolve;
-    } else if (arg->type == ARGTYPE_IND_STR) {
-        v = recall_var(arg->val.text, arg->length);
-        if (v == NULL)
-            return ERR_NONEXISTENT;
-        finish_resolve:
-        if (v->type == TYPE_EQUATION)
-            *eq = (vartype_equation *) v;
-        return ERR_NONE;
-    } else
-        return ERR_NONE;
-}
-
 int docmd_pgmslv(arg_struct *arg) {
     vartype_equation *eq;
-    int err = get_arg_object(arg, &eq);
+    int err = get_arg_equation(arg, &eq);
     if (err != ERR_NONE)
         return err;
     if (eq != NULL)
@@ -942,7 +909,7 @@ int docmd_pgmslv(arg_struct *arg) {
 
 int docmd_pgmint(arg_struct *arg) {
     vartype_equation *eq;
-    int err = get_arg_object(arg, &eq);
+    int err = get_arg_equation(arg, &eq);
     if (err != ERR_NONE)
         return err;
     if (eq != NULL)
@@ -996,6 +963,8 @@ int docmd_pgmslvi(arg_struct *arg) {
     } else if (arg->type == ARGTYPE_EQN) {
         eqn_end();
         int idx = arg->val.num;
+        if (!has_parameters(prgms[idx].eq_data))
+            return ERR_NO_MENU_VARIABLES;
         int err = set_solve_eqn(prgms[idx].eq_data);
         if (err != ERR_NONE)
             return err;
@@ -1053,6 +1022,8 @@ int docmd_pgminti(arg_struct *arg) {
     } else if (arg->type == ARGTYPE_EQN) {
         eqn_end();
         int idx = arg->val.num;
+        if (!has_parameters(prgms[idx].eq_data))
+            return ERR_NO_MENU_VARIABLES;
         int err = set_integ_eqn(prgms[idx].eq_data);
         if (err != ERR_NONE)
             return err;

@@ -26,6 +26,7 @@
 #include "core_main.h"
 #include "core_math1.h"
 #include "core_math2.h"
+#include "core_parser.h"
 #include "core_sto_rcl.h"
 #include "core_variables.h"
 #include "shell.h"
@@ -902,29 +903,39 @@ int docmd_mvar(arg_struct *arg) {
 }
 
 int docmd_varmenu(arg_struct *arg) {
-    int saved_prgm = current_prgm;
-    int prgm;
-    int4 pc;
-    int command;
-    arg_struct arg2;
+    vartype_equation *eq;
+    int err = get_arg_equation(arg, &eq);
+    if (err != ERR_NONE)
+        return err;
+    if (eq != NULL) {
+        if (!has_parameters(eq->data))
+            return ERR_NO_MENU_VARIABLES;
+        config_varmenu_eqn(eq->data);
+    } else {
+        int saved_prgm = current_prgm;
+        int prgm;
+        int4 pc;
+        int command;
+        arg_struct arg2;
 
-    if (arg->type == ARGTYPE_IND_NUM
-            || arg->type == ARGTYPE_IND_STK
-            || arg->type == ARGTYPE_IND_STR) {
-        int err = resolve_ind_arg(arg);
-        if (err != ERR_NONE)
-            return err;
+        if (arg->type == ARGTYPE_IND_NUM
+                || arg->type == ARGTYPE_IND_STK
+                || arg->type == ARGTYPE_IND_STR) {
+            int err = resolve_ind_arg(arg);
+            if (err != ERR_NONE)
+                return err;
+        }
+
+        if (!find_global_label(arg, &prgm, &pc))
+            return ERR_LABEL_NOT_FOUND;
+        pc += get_command_length(prgm, pc);
+        current_prgm = prgm;
+        get_next_command(&pc, &command, &arg2, 0, NULL);
+        current_prgm = saved_prgm;
+        if (command != CMD_MVAR)
+            return ERR_NO_MENU_VARIABLES;
+        config_varmenu_lbl(arg->val.text, arg->length);
     }
-
-    if (!find_global_label(arg, &prgm, &pc))
-        return ERR_LABEL_NOT_FOUND;
-    pc += get_command_length(prgm, pc);
-    current_prgm = prgm;
-    get_next_command(&pc, &command, &arg2, 0, NULL);
-    current_prgm = saved_prgm;
-    if (command != CMD_MVAR)
-        return ERR_NO_MENU_VARIABLES;
-    config_varmenu_lbl(arg->val.text, arg->length);
     varmenu_row = 0;
     varmenu_role = 0;
     return set_menu_return_err(MENULEVEL_APP, MENU_VARMENU, false);

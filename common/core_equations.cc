@@ -1543,8 +1543,10 @@ static int keydown_list(int key, bool shift, int *repeat) {
                 return 1;
             }
             active = false;
+            set_menu(MENULEVEL_APP, MENU_CATALOG);
+            set_cat_section(menu_whence);
             redisplay();
-            return 2;
+            return 1;
         }
         default: {
             squeak();

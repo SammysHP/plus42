@@ -38,7 +38,7 @@ void dec_solve_caller_refcount();
 
 void set_integ_prgm(const char *name, int length);
 int set_integ_eqn(equation_data *eqdata);
-void get_integ_prgm(char *name, int *length);
+void get_integ_prgm_eqn(char *name, int *length, vartype **eqn);
 void set_integ_var(const char *name, int length);
 void get_integ_var(char *name, int *length);
 int start_integ(const char *name, int length);

@@ -968,6 +968,8 @@ int docmd_pgmint(arg_struct *arg) {
 
 int appmenu_exitcallback_3(int menuid, bool exitall) {
     if (menuid == MENU_NONE && !exitall) {
+        if (varmenu_eqn != NULL)
+            return eqn_start(CATSECT_PGM_SOLVE);
         set_menu(MENULEVEL_APP, MENU_CATALOG);
         set_cat_section(CATSECT_PGM_SOLVE);
     } else
@@ -1005,6 +1007,8 @@ int docmd_pgmslvi(arg_struct *arg) {
 
 int appmenu_exitcallback_4(int menuid, bool exitall) {
     if (menuid == MENU_NONE && !exitall) {
+        if (varmenu_eqn != NULL)
+            return eqn_start(CATSECT_PGM_INTEG);
         set_menu(MENULEVEL_APP, MENU_CATALOG);
         set_cat_section(CATSECT_PGM_INTEG);
     } else
@@ -1014,7 +1018,8 @@ int appmenu_exitcallback_4(int menuid, bool exitall) {
 
 int appmenu_exitcallback_5(int menuid, bool exitall) {
     if (menuid == MENU_NONE && !exitall) {
-        get_integ_prgm(varmenu, &varmenu_length);
+        free_vartype(varmenu_eqn);
+        get_integ_prgm_eqn(varmenu, &varmenu_length, &varmenu_eqn);
         varmenu_row = 0;
         varmenu_role = 2;
         set_menu(MENULEVEL_APP, MENU_VARMENU);

@@ -1050,8 +1050,9 @@ int set_integ_eqn(equation_data *eqdata) {
     return ERR_NONE;
 }
 
-void get_integ_prgm(char *name, int *length) {
+void get_integ_prgm_eqn(char *name, int *length, vartype **eqn) {
     string_copy(name, length, integ.prgm_name, integ.prgm_length);
+    *eqn = dup_vartype(integ.eq);
 }
 
 void set_integ_var(const char *name, int length) {

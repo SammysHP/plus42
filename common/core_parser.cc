@@ -151,6 +151,10 @@ class GeneratorContext {
                 arg.val_d = line->d;
             } else if (line->cmd == CMD_LBL) {
                 continue;
+            } else if (line->cmd == CMD_FIX
+                    || line->cmd == CMD_SCI) {
+                arg.type = ARGTYPE_IND_STK;
+                arg.val.stk = 'X';
             } else if (line->cmd == CMD_GTOL
                     || line->cmd == CMD_XEQL
                     || line->cmd == CMD_FUNC
@@ -515,6 +519,33 @@ class Call : public Evaluator {
     }
 };
 
+///////////////////
+/////  Cdate  /////
+///////////////////
+
+class Cdate : public Evaluator {
+
+    public:
+
+    Cdate(int pos) : Evaluator(pos) {}
+
+    Evaluator *clone() {
+        return new Cdate(tpos);
+    }
+
+    void generateCode(GeneratorContext *ctx) {
+        ctx->addLine(CMD_DATE);
+    }
+
+    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
+        // nope
+    }
+
+    int howMany(const std::string *name) {
+        return 0;
+    }
+};
+
 //////////////////
 /////  Comb  /////
 //////////////////
@@ -715,6 +746,33 @@ class Cosh : public UnaryEvaluator {
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
         ctx->addLine(CMD_COSH);
+    }
+};
+
+///////////////////
+/////  Ctime  /////
+///////////////////
+
+class Ctime : public Evaluator {
+
+    public:
+
+    Ctime(int pos) : Evaluator(pos) {}
+
+    Evaluator *clone() {
+        return new Ctime(tpos);
+    }
+
+    void generateCode(GeneratorContext *ctx) {
+        ctx->addLine(CMD_TIME);
+    }
+
+    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
+        // nope
+    }
+
+    int howMany(const std::string *name) {
+        return 0;
     }
 };
 
@@ -1547,6 +1605,33 @@ class Perm : public BinaryEvaluator {
     }
 };
 
+////////////////
+/////  Pi  /////
+////////////////
+
+class Pi : public Evaluator {
+
+    public:
+
+    Pi(int pos) : Evaluator(pos) {}
+
+    Evaluator *clone() {
+        return new Pi(tpos);
+    }
+
+    void generateCode(GeneratorContext *ctx) {
+        ctx->addLine(CMD_PI);
+    }
+
+    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
+        // nope
+    }
+
+    int howMany(const std::string *name) {
+        return 0;
+    }
+};
+
 ///////////////////
 /////  Power  /////
 ///////////////////
@@ -1635,6 +1720,117 @@ class Rad : public UnaryEvaluator {
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
         ctx->addLine(CMD_TO_RAD);
+    }
+};
+
+////////////////////
+/////  Radius  /////
+////////////////////
+
+class Radius : public BinaryEvaluator {
+
+    public:
+
+    Radius(int pos, Evaluator *left, Evaluator *right) : BinaryEvaluator(pos, left, right, false) {}
+
+    Evaluator *clone() {
+        return new Radius(tpos, left->clone(), right->clone());
+    }
+
+    void generateCode(GeneratorContext *ctx) {
+        left->generateCode(ctx);
+        right->generateCode(ctx);
+        ctx->addLine(CMD_SWAP);
+        ctx->addLine(CMD_TO_POL);
+        ctx->addLine(CMD_SWAP);
+        ctx->addLine(CMD_DROP);
+    }
+};
+
+////////////////////
+/////  Random  /////
+////////////////////
+
+class Random : public Evaluator {
+
+    public:
+
+    Random(int pos) : Evaluator(pos) {}
+
+    Evaluator *clone() {
+        return new Random(tpos);
+    }
+
+    void generateCode(GeneratorContext *ctx) {
+        ctx->addLine(CMD_PI);
+    }
+
+    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
+        // nope
+    }
+
+    int howMany(const std::string *name) {
+        return 0;
+    }
+};
+
+/////////////////
+/////  Rnd  /////
+/////////////////
+
+class Rnd : public BinaryEvaluator {
+
+    public:
+
+    Rnd(int pos, Evaluator *left, Evaluator *right) : BinaryEvaluator(pos, left, right, false) {}
+
+    Evaluator *clone() {
+        return new Rnd(tpos, left->clone(), right->clone());
+    }
+
+    void generateCode(GeneratorContext *ctx) {
+        ctx->addLine(CMD_RCLFLAG);
+        left->generateCode(ctx);
+        right->generateCode(ctx);
+        ctx->addLine(CMD_X_LT_0);
+        int lbl1 = ctx->nextLabel();
+        int lbl2 = ctx->nextLabel();
+        ctx->addLine(CMD_GTOL, lbl1);
+        ctx->addLine(CMD_FIX);
+        ctx->addLine(CMD_GTOL, lbl2);
+        ctx->addLine(CMD_LBL, lbl1);
+        ctx->addLine(CMD_NUMBER, (phloat) -1);
+        ctx->addLine(CMD_SWAP);
+        ctx->addLine(CMD_SUB);
+        ctx->addLine(CMD_SCI);
+        ctx->addLine(CMD_LBL, lbl2);
+        ctx->addLine(CMD_DROP);
+        ctx->addLine(CMD_RND);
+        ctx->addLine(CMD_SWAP);
+        ctx->addLine(CMD_NUMBER, (phloat) 36.41);
+        ctx->addLine(CMD_STOFLAG);
+        ctx->addLine(CMD_DROPN, 2);
+    }
+};
+
+/////////////////
+/////  Sgn  /////
+/////////////////
+
+class Sgn : public UnaryEvaluator {
+
+    public:
+
+    Sgn(int pos, Evaluator *ev) : UnaryEvaluator(pos, ev, false) {}
+
+    Evaluator *clone() {
+        return new Sgn(tpos, ev->clone());
+    }
+
+    void generateCode(GeneratorContext *ctx) {
+        ctx->addLine(CMD_REAL_T);
+        ctx->addLine(CMD_X_NE_0);
+        ctx->addLine(CMD_SIGN);
     }
 };
 
@@ -1923,6 +2119,30 @@ class Variable : public Evaluator {
     }
 };
 
+////////////////////
+/////  Xcoord  /////
+////////////////////
+
+class Xcoord : public BinaryEvaluator {
+
+    public:
+
+    Xcoord(int pos, Evaluator *left, Evaluator *right) : BinaryEvaluator(pos, left, right, false) {}
+
+    Evaluator *clone() {
+        return new Xcoord(tpos, left->clone(), right->clone());
+    }
+
+    void generateCode(GeneratorContext *ctx) {
+        left->generateCode(ctx);
+        right->generateCode(ctx);
+        ctx->addLine(CMD_SWAP);
+        ctx->addLine(CMD_TO_REC);
+        ctx->addLine(CMD_SWAP);
+        ctx->addLine(CMD_DROP);
+    }
+};
+
 /////////////////
 /////  Xeq  /////
 /////////////////
@@ -2006,6 +2226,29 @@ class Xor : public BinaryEvaluator {
         left->generateCode(ctx);
         right->generateCode(ctx);
         ctx->addLine(CMD_GEN_XOR);
+    }
+};
+
+////////////////////
+/////  Ycoord  /////
+////////////////////
+
+class Ycoord : public BinaryEvaluator {
+
+    public:
+
+    Ycoord(int pos, Evaluator *left, Evaluator *right) : BinaryEvaluator(pos, left, right, false) {}
+
+    Evaluator *clone() {
+        return new Ycoord(tpos, left->clone(), right->clone());
+    }
+
+    void generateCode(GeneratorContext *ctx) {
+        left->generateCode(ctx);
+        right->generateCode(ctx);
+        ctx->addLine(CMD_SWAP);
+        ctx->addLine(CMD_TO_REC);
+        ctx->addLine(CMD_DROP);
     }
 };
 
@@ -2842,11 +3085,13 @@ Evaluator *Parser::parseThing() {
                     || t == "EXP" || t == "EXPM1" || t == "ALOG"
                     || t == "SQRT" || t == "SQ" || t == "INV"
                     || t == "ABS" || t == "FACT" || t == "GAMMA"
-                    || t == "INT" || t == "IP" || t == "FP") {
+                    || t == "INT" || t == "IP" || t == "FP"
+                    || t == "SGN") {
                 nargs = 1;
                 mode = EXPR_LIST_EXPR;
-            } else if (t == "ANGLE" || t == "COMB" || t == "PERM"
-                    || t == "IDIV") {
+            } else if (t == "ANGLE" || t == "RADIUS" || t == "XCOORD"
+                    || t == "YCOORD" || t == "COMB" || t == "PERM"
+                    || t == "IDIV" || t == "RND") {
                 nargs = 2;
                 mode = EXPR_LIST_EXPR;
             } else if (t == "MIN" || t == "MAX") {
@@ -2893,7 +3138,8 @@ Evaluator *Parser::parseThing() {
                     || t == "EXP" || t == "EXPM1" || t == "ALOG"
                     || t == "SQRT" || t == "SQ" || t == "INV"
                     || t == "ABS" || t == "FACT" || t == "GAMMA"
-                    || t == "INT" || t == "IP" || t == "FP") {
+                    || t == "INT" || t == "IP" || t == "FP"
+                    || t == "SGN") {
                 Evaluator *ev = (*evs)[0];
                 delete evs;
                 if (t == "SIN")
@@ -2954,19 +3200,30 @@ Evaluator *Parser::parseThing() {
                     return new Ip(tpos, ev);
                 else if (t == "FP")
                     return new Fp(tpos, ev);
-            } else if (t == "ANGLE" || t == "COMB" || t == "PERM"
-                    || t == "IDIV") {
+                else if (t == "SGN")
+                    return new Sgn(tpos, ev);
+            } else if (t == "ANGLE" || t == "RADIUS" || t == "XCOORD"
+                    || t == "YCOORD" || t == "COMB" || t == "PERM"
+                    || t == "IDIV" || t == "RND") {
                 Evaluator *left = (*evs)[0];
                 Evaluator *right = (*evs)[1];
                 delete evs;
                 if (t == "ANGLE")
                     return new Angle(tpos, left, right);
+                else if (t == "RADIUS")
+                    return new Radius(tpos, left, right);
+                else if (t == "XCOORD")
+                    return new Xcoord(tpos, left, right);
+                else if (t == "YCOORD")
+                    return new Ycoord(tpos, left, right);
                 else if (t == "COMB")
                     return new Comb(tpos, left, right);
                 else if (t == "PERM")
                     return new Perm(tpos, left, right);
                 else if (t == "IDIV")
                     return new Idiv(tpos, left, right);
+                else if (t == "RND")
+                    return new Rnd(tpos, left, right);
             } else if (t == "MAX" || t == "MIN") {
                 if (t == "MAX")
                     return new Max(tpos, evs);
@@ -3032,7 +3289,16 @@ Evaluator *Parser::parseThing() {
             return new Item(tpos, t, ev);
         } else {
             pushback(t2, t2pos);
-            return new Variable(tpos, t);
+            if (t == "PI" || lex->compatMode && t == "\7")
+                return new Pi(tpos);
+            else if (t == "RAN#")
+                return new Random(tpos);
+            else if (t == "CDATE")
+                return new Cdate(tpos);
+            else if (t == "CTIME")
+                return new Ctime(tpos);
+            else
+                return new Variable(tpos, t);
         }
     } else {
         return NULL;

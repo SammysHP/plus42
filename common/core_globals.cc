@@ -1588,7 +1588,7 @@ static bool unpersist_globals() {
 }
 
 static bool make_prgm_space(int n) {
-    if (prgms_and_eqns_count < prgms_capacity)
+    if (prgms_and_eqns_count + n <= prgms_capacity)
         return true;
     int new_prgms_capacity = prgms_capacity + n + 10;
     prgm_struct *new_prgms = (prgm_struct *) realloc(prgms, new_prgms_capacity * sizeof(prgm_struct));

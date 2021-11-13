@@ -159,6 +159,8 @@ class GeneratorContext {
                 arg.type = ARGTYPE_NUM;
                 arg.val.num = line->n;
             } else if (line->cmd == CMD_RCL_ADD
+                    || line->cmd == CMD_0_LT_NN
+                    || line->cmd == CMD_X_EQ_NN
                     || line->cmd == CMD_X_GT_NN) {
                 arg.type = ARGTYPE_STK;
                 arg.val.stk = (char) line->n;
@@ -353,6 +355,29 @@ class And : public BinaryEvaluator {
     }
 };
 
+///////////////////
+/////  Angle  /////
+///////////////////
+
+class Angle : public BinaryEvaluator {
+
+    public:
+
+    Angle(int pos, Evaluator *left, Evaluator *right) : BinaryEvaluator(pos, left, right, false) {}
+
+    Evaluator *clone() {
+        return new Angle(tpos, left->clone(), right->clone());
+    }
+
+    void generateCode(GeneratorContext *ctx) {
+        left->generateCode(ctx);
+        right->generateCode(ctx);
+        ctx->addLine(CMD_SWAP);
+        ctx->addLine(CMD_TO_POL);
+        ctx->addLine(CMD_DROP);
+    }
+};
+
 //////////////////
 /////  Asin  /////
 //////////////////
@@ -487,6 +512,27 @@ class Call : public Evaluator {
             if ((*evs)[i]->howMany(name) != 0)
                 return -1;
         return 0;
+    }
+};
+
+//////////////////
+/////  Comb  /////
+//////////////////
+
+class Comb : public BinaryEvaluator {
+
+    public:
+
+    Comb(int pos, Evaluator *left, Evaluator *right) : BinaryEvaluator(pos, left, right, false) {}
+
+    Evaluator *clone() {
+        return new Comb(tpos, left->clone(), right->clone());
+    }
+
+    void generateCode(GeneratorContext *ctx) {
+        left->generateCode(ctx);
+        right->generateCode(ctx);
+        ctx->addLine(CMD_COMB);
     }
 };
 
@@ -669,6 +715,28 @@ class Cosh : public UnaryEvaluator {
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
         ctx->addLine(CMD_COSH);
+    }
+};
+
+/////////////////
+/////  Deg  /////
+/////////////////
+
+class Deg : public UnaryEvaluator {
+
+    public:
+
+    Deg(int pos, Evaluator *ev) : UnaryEvaluator(pos, ev, true) {}
+
+    Evaluator *clone() {
+        return new Deg(tpos, ev->clone());
+    }
+
+    bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
+
+    void generateCode(GeneratorContext *ctx) {
+        ev->generateCode(ctx);
+        ctx->addLine(CMD_TO_DEG);
     }
 };
 
@@ -857,6 +925,26 @@ class Fact : public UnaryEvaluator {
     }
 };
 
+////////////////
+/////  Fp  /////
+////////////////
+
+class Fp : public UnaryEvaluator {
+
+    public:
+
+    Fp(int pos, Evaluator *ev) : UnaryEvaluator(pos, ev, false) {}
+
+    Evaluator *clone() {
+        return new Fp(tpos, ev->clone());
+    }
+
+    void generateCode(GeneratorContext *ctx) {
+        ev->generateCode(ctx);
+        ctx->addLine(CMD_FP);
+    }
+};
+
 ///////////////////
 /////  Gamma  /////
 ///////////////////
@@ -906,6 +994,28 @@ class Gee : public Evaluator {
 
     int howMany(const std::string *name) {
         return 0;
+    }
+};
+
+//////////////////
+/////  Idiv  /////
+//////////////////
+
+class Idiv : public BinaryEvaluator {
+
+    public:
+
+    Idiv(int pos, Evaluator *left, Evaluator *right) : BinaryEvaluator(pos, left, right, false) {}
+
+    Evaluator *clone() {
+        return new Idiv(tpos, left->clone(), right->clone());
+    }
+
+    void generateCode(GeneratorContext *ctx) {
+        left->generateCode(ctx);
+        right->generateCode(ctx);
+        ctx->addLine(CMD_DIV);
+        ctx->addLine(CMD_IP);
     }
 };
 
@@ -966,6 +1076,54 @@ class If : public Evaluator {
             return -1;
         else
             return 0;
+    }
+};
+
+/////////////////
+/////  Int  /////
+/////////////////
+
+class Int : public UnaryEvaluator {
+
+    public:
+
+    Int(int pos, Evaluator *ev) : UnaryEvaluator(pos, ev, false) {}
+
+    Evaluator *clone() {
+        return new Int(tpos, ev->clone());
+    }
+
+    void generateCode(GeneratorContext *ctx) {
+        ev->generateCode(ctx);
+        ctx->addLine(CMD_IP);
+        ctx->addLine(CMD_X_EQ_NN, 'L');
+        int lbl = ctx->nextLabel();
+        ctx->addLine(CMD_GTOL, lbl);
+        ctx->addLine(CMD_0_LT_NN, 'L');
+        ctx->addLine(CMD_GTOL, lbl);
+        ctx->addLine(CMD_NUMBER, (phloat) 1);
+        ctx->addLine(CMD_SUB);
+        ctx->addLine(CMD_LBL, lbl);
+    }
+};
+
+////////////////
+/////  Ip  /////
+////////////////
+
+class Ip : public UnaryEvaluator {
+
+    public:
+
+    Ip(int pos, Evaluator *ev) : UnaryEvaluator(pos, ev, false) {}
+
+    Evaluator *clone() {
+        return new Ip(tpos, ev->clone());
+    }
+
+    void generateCode(GeneratorContext *ctx) {
+        ev->generateCode(ctx);
+        ctx->addLine(CMD_IP);
     }
 };
 
@@ -1240,6 +1398,27 @@ class Min : public Evaluator {
     }
 };
 
+/////////////////
+/////  Mod  /////
+/////////////////
+
+class Mod : public BinaryEvaluator {
+
+    public:
+
+    Mod(int pos, Evaluator *left, Evaluator *right) : BinaryEvaluator(pos, left, right, false) {}
+
+    Evaluator *clone() {
+        return new Mod(tpos, left->clone(), right->clone());
+    }
+
+    void generateCode(GeneratorContext *ctx) {
+        left->generateCode(ctx);
+        right->generateCode(ctx);
+        ctx->addLine(CMD_MOD);
+    }
+};
+
 /////////////////////
 /////  NameTag  /////
 /////////////////////
@@ -1345,6 +1524,29 @@ class Or : public BinaryEvaluator {
     }
 };
 
+//////////////////
+/////  Perm  /////
+//////////////////
+
+class Perm : public BinaryEvaluator {
+
+    public:
+
+    Perm(int pos, Evaluator *left, Evaluator *right) : BinaryEvaluator(pos, left, right, false) {}
+
+    Evaluator *clone() {
+        return new Perm(tpos, left->clone(), right->clone());
+    }
+
+    bool isBool() { return true; }
+
+    void generateCode(GeneratorContext *ctx) {
+        left->generateCode(ctx);
+        right->generateCode(ctx);
+        ctx->addLine(CMD_PERM);
+    }
+};
+
 ///////////////////
 /////  Power  /////
 ///////////////////
@@ -1411,6 +1613,28 @@ class Quotient : public BinaryEvaluator {
         left->generateCode(ctx);
         right->generateCode(ctx);
         ctx->addLine(CMD_DIV);
+    }
+};
+
+/////////////////
+/////  Rad  /////
+/////////////////
+
+class Rad : public UnaryEvaluator {
+
+    public:
+
+    Rad(int pos, Evaluator *ev) : UnaryEvaluator(pos, ev, true) {}
+
+    Evaluator *clone() {
+        return new Rad(tpos, ev->clone());
+    }
+
+    bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
+
+    void generateCode(GeneratorContext *ctx) {
+        ev->generateCode(ctx);
+        ctx->addLine(CMD_TO_RAD);
     }
 };
 
@@ -1843,6 +2067,12 @@ bool Cosh::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
     return true;
 }
 
+bool Deg::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
+    *lhs = ev;
+    *rhs = new Rad(0, *rhs);
+    return true;
+}
+
 bool Difference::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
     if (left->howMany(name) == 1) {
         *lhs = left;
@@ -1932,6 +2162,12 @@ bool Quotient::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs)
         *lhs = right;
         *rhs = new Quotient(0, left, *rhs);
     }
+    return true;
+}
+
+bool Rad::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
+    *lhs = ev;
+    *rhs = new Deg(0, *rhs);
     return true;
 }
 
@@ -2601,11 +2837,17 @@ Evaluator *Parser::parseThing() {
                     || t == "ASIN" || t == "ACOS" || t == "ATAN"
                     || t == "SINH" || t == "COSH" || t == "TANH"
                     || t == "ASINH" || t == "ACOSH" || t == "ATANH"
-                    || t == "LN" || t == "LN1P" || t == "LOG"
+                    || t == "DEG" || t == "RAD"
+                    || t == "LN" || t == "LNP1" || t == "LOG"
                     || t == "EXP" || t == "EXPM1" || t == "ALOG"
                     || t == "SQRT" || t == "SQ" || t == "INV"
-                    || t == "ABS" || t == "FACT" || t == "GAMMA") {
+                    || t == "ABS" || t == "FACT" || t == "GAMMA"
+                    || t == "INT" || t == "IP" || t == "FP") {
                 nargs = 1;
+                mode = EXPR_LIST_EXPR;
+            } else if (t == "ANGLE" || t == "COMB" || t == "PERM"
+                    || t == "IDIV") {
+                nargs = 2;
                 mode = EXPR_LIST_EXPR;
             } else if (t == "MIN" || t == "MAX") {
                 nargs = -1;
@@ -2646,10 +2888,12 @@ Evaluator *Parser::parseThing() {
                     || t == "ASIN" || t == "ACOS" || t == "ATAN"
                     || t == "SINH" || t == "COSH" || t == "TANH"
                     || t == "ASINH" || t == "ACOSH" || t == "ATANH"
-                    || t == "LN" || t == "LN1P" || t == "LOG"
+                    || t == "DEG" || t == "RAD"
+                    || t == "LN" || t == "LNP1" || t == "LOG"
                     || t == "EXP" || t == "EXPM1" || t == "ALOG"
                     || t == "SQRT" || t == "SQ" || t == "INV"
-                    || t == "ABS" || t == "FACT" || t == "GAMMA") {
+                    || t == "ABS" || t == "FACT" || t == "GAMMA"
+                    || t == "INT" || t == "IP" || t == "FP") {
                 Evaluator *ev = (*evs)[0];
                 delete evs;
                 if (t == "SIN")
@@ -2676,9 +2920,13 @@ Evaluator *Parser::parseThing() {
                     return new Acosh(tpos, ev);
                 else if (t == "ATANH")
                     return new Atanh(tpos, ev);
+                else if (t == "DEG")
+                    return new Deg(tpos, ev);
+                else if (t == "RAD")
+                    return new Rad(tpos, ev);
                 else if (t == "LN")
                     return new Ln(tpos, ev);
-                else if (t == "LN1P")
+                else if (t == "LNP1")
                     return new Ln1p(tpos, ev);
                 else if (t == "LOG")
                     return new Log(tpos, ev);
@@ -2700,6 +2948,25 @@ Evaluator *Parser::parseThing() {
                     return new Fact(tpos, ev);
                 else if (t == "GAMMA")
                     return new Gamma(tpos, ev);
+                else if (t == "INT")
+                    return new Int(tpos, ev);
+                else if (t == "IP")
+                    return new Ip(tpos, ev);
+                else if (t == "FP")
+                    return new Fp(tpos, ev);
+            } else if (t == "ANGLE" || t == "COMB" || t == "PERM"
+                    || t == "IDIV") {
+                Evaluator *left = (*evs)[0];
+                Evaluator *right = (*evs)[1];
+                delete evs;
+                if (t == "ANGLE")
+                    return new Angle(tpos, left, right);
+                else if (t == "COMB")
+                    return new Comb(tpos, left, right);
+                else if (t == "PERM")
+                    return new Perm(tpos, left, right);
+                else if (t == "IDIV")
+                    return new Idiv(tpos, left, right);
             } else if (t == "MAX" || t == "MIN") {
                 if (t == "MAX")
                     return new Max(tpos, evs);
@@ -2855,7 +3122,13 @@ int isolate(vartype *eqn, const char *name, int length) {
     GeneratorContext ctx;
     rhs->generateCode(&ctx);
     delete rhs;
+    // We have to manually bump the refcount, because otherwise, in ctx.store(),
+    // it would end up getting increased to 1 and then decreased to 0, and the
+    // object would be deleted. Of course I could also return a pgm_index object,
+    // that would be cleaner...
+    neqd->refcount++;
     ctx.store(prgms + neq + prgms_count);
+    neqd->refcount--;
     return neq;
 }
 

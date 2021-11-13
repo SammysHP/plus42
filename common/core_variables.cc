@@ -46,6 +46,7 @@ void pgm_index::dec_refcount() {
 }
 void pgm_index::init_eqn(int4 eqn, equation_data *data) {
     uni = (eqn << 1) | 1;
+    data->eqn_index = eqn;
     prgms[eqn + prgms_count].eq_data = data;
     inc_refcount();
 }

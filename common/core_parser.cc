@@ -776,6 +776,52 @@ class Ctime : public Evaluator {
     }
 };
 
+//////////////////
+/////  Date  /////
+//////////////////
+
+class Date : public BinaryEvaluator {
+
+    public:
+
+    Date(int pos, Evaluator *left, Evaluator *right) : BinaryEvaluator(pos, left, right, true) {}
+
+    Evaluator *clone() {
+        return new Date(tpos, left->clone(), right->clone());
+    }
+
+    bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
+
+    void generateCode(GeneratorContext *ctx) {
+        left->generateCode(ctx);
+        right->generateCode(ctx);
+        ctx->addLine(CMD_DATE_PLUS);
+    }
+};
+
+///////////////////
+/////  Ddays  /////
+///////////////////
+
+class Ddays : public BinaryEvaluator {
+
+    public:
+
+    Ddays(int pos, Evaluator *left, Evaluator *right) : BinaryEvaluator(pos, left, right, true) {}
+
+    Evaluator *clone() {
+        return new Ddays(tpos, left->clone(), right->clone());
+    }
+
+    bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
+
+    void generateCode(GeneratorContext *ctx) {
+        left->generateCode(ctx);
+        right->generateCode(ctx);
+        ctx->addLine(CMD_DDAYS);
+    }
+};
+
 /////////////////
 /////  Deg  /////
 /////////////////
@@ -1052,6 +1098,50 @@ class Gee : public Evaluator {
 
     int howMany(const std::string *name) {
         return 0;
+    }
+};
+
+/////////////////
+/////  Hms  /////
+/////////////////
+
+class Hms : public UnaryEvaluator {
+
+    public:
+
+    Hms(int pos, Evaluator *ev) : UnaryEvaluator(pos, ev, true) {}
+
+    Evaluator *clone() {
+        return new Hms(tpos, ev->clone());
+    }
+
+    bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
+
+    void generateCode(GeneratorContext *ctx) {
+        ev->generateCode(ctx);
+        ctx->addLine(CMD_TO_HMS);
+    }
+};
+
+/////////////////
+/////  Hrs  /////
+/////////////////
+
+class Hrs : public UnaryEvaluator {
+
+    public:
+
+    Hrs(int pos, Evaluator *ev) : UnaryEvaluator(pos, ev, true) {}
+
+    Evaluator *clone() {
+        return new Hrs(tpos, ev->clone());
+    }
+
+    bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
+
+    void generateCode(GeneratorContext *ctx) {
+        ev->generateCode(ctx);
+        ctx->addLine(CMD_TO_HR);
     }
 };
 
@@ -1967,6 +2057,27 @@ class Sinh : public UnaryEvaluator {
     }
 };
 
+///////////////////
+/////  Sizes  /////
+///////////////////
+
+class Sizes : public UnaryEvaluator {
+
+    public:
+
+    Sizes(int pos, Evaluator *ev) : UnaryEvaluator(pos, ev, false) {}
+
+    Evaluator *clone() {
+        return new Sizes(tpos, ev->clone());
+    }
+
+    void generateCode(GeneratorContext *ctx) {
+        ev->generateCode(ctx);
+        ctx->addLine(CMD_DIM_T);
+        ctx->addLine(CMD_MUL);
+    }
+};
+
 ////////////////
 /////  Sq  /////
 ////////////////
@@ -2310,6 +2421,28 @@ bool Cosh::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
     return true;
 }
 
+bool Date::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
+    if (left->howMany(name) == 1) {
+        *lhs = left;
+        *rhs = new Date(0, *rhs, new Negative(0, right));
+    } else {
+        *lhs = right;
+        *rhs = new Ddays(0, left, *rhs);
+    }
+    return true;
+}
+
+bool Ddays::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
+    if (left->howMany(name) == 1) {
+        *lhs = left;
+        *rhs = new Date(0, right, new Negative(0, *rhs));
+    } else {
+        *lhs = right;
+        *rhs = new Date(0, left, *rhs);
+    }
+    return true;
+}
+
 bool Deg::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
     *lhs = ev;
     *rhs = new Rad(0, *rhs);
@@ -2342,6 +2475,18 @@ bool Exp::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
 bool Expm1::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
     *lhs = ev;
     *rhs = new Ln1p(0, *rhs);
+    return true;
+}
+
+bool Hms::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
+    *lhs = ev;
+    *rhs = new Hrs(0, *rhs);
+    return true;
+}
+
+bool Hrs::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
+    *lhs = ev;
+    *rhs = new Hms(0, *rhs);
     return true;
 }
 
@@ -3086,12 +3231,14 @@ Evaluator *Parser::parseThing() {
                     || t == "SQRT" || t == "SQ" || t == "INV"
                     || t == "ABS" || t == "FACT" || t == "GAMMA"
                     || t == "INT" || t == "IP" || t == "FP"
+                    || t == "HMS" || t == "HRS" || t == "SIZES"
                     || t == "SGN") {
                 nargs = 1;
                 mode = EXPR_LIST_EXPR;
             } else if (t == "ANGLE" || t == "RADIUS" || t == "XCOORD"
                     || t == "YCOORD" || t == "COMB" || t == "PERM"
-                    || t == "IDIV" || t == "RND") {
+                    || t == "IDIV" || t == "RND" || t == "DATE"
+                    || t == "DDAYS") {
                 nargs = 2;
                 mode = EXPR_LIST_EXPR;
             } else if (t == "MIN" || t == "MAX") {
@@ -3139,6 +3286,7 @@ Evaluator *Parser::parseThing() {
                     || t == "SQRT" || t == "SQ" || t == "INV"
                     || t == "ABS" || t == "FACT" || t == "GAMMA"
                     || t == "INT" || t == "IP" || t == "FP"
+                    || t == "HMS" || t == "HRS" || t == "SIZES"
                     || t == "SGN") {
                 Evaluator *ev = (*evs)[0];
                 delete evs;
@@ -3200,11 +3348,18 @@ Evaluator *Parser::parseThing() {
                     return new Ip(tpos, ev);
                 else if (t == "FP")
                     return new Fp(tpos, ev);
+                else if (t == "HMS")
+                    return new Hms(tpos, ev);
+                else if (t == "HRS")
+                    return new Hrs(tpos, ev);
+                else if (t == "SIZES")
+                    return new Sizes(tpos, ev);
                 else if (t == "SGN")
                     return new Sgn(tpos, ev);
             } else if (t == "ANGLE" || t == "RADIUS" || t == "XCOORD"
                     || t == "YCOORD" || t == "COMB" || t == "PERM"
-                    || t == "IDIV" || t == "RND") {
+                    || t == "IDIV" || t == "RND" || t == "DATE"
+                    || t == "DDAYS") {
                 Evaluator *left = (*evs)[0];
                 Evaluator *right = (*evs)[1];
                 delete evs;
@@ -3224,6 +3379,10 @@ Evaluator *Parser::parseThing() {
                     return new Idiv(tpos, left, right);
                 else if (t == "RND")
                     return new Rnd(tpos, left, right);
+                else if (t == "DATE")
+                    return new Date(tpos, left, right);
+                else if (t == "DDAYS")
+                    return new Ddays(tpos, left, right);
             } else if (t == "MAX" || t == "MIN") {
                 if (t == "MAX")
                     return new Max(tpos, evs);

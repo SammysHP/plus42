@@ -50,6 +50,7 @@ class Evaluator {
     virtual void getSides(const std::string *name, Evaluator **lhs, Evaluator **rhs);
     virtual bool is(const std::string *name) { return false; }
     virtual Evaluator *clone() = 0;
+    virtual void detach() {}
 
     int pos() { return tpos; }
 

@@ -172,23 +172,87 @@ class GeneratorContext {
     }
 };
 
+//////////////////////////////////////////////
+/////  Boilerplate Evaluator subclasses  /////
+//////////////////////////////////////////////
+
+class UnaryEvaluator : public Evaluator {
+
+    protected:
+
+    Evaluator *ev;
+    bool invertible;
+
+    public:
+
+    UnaryEvaluator(int pos, Evaluator *ev, bool invertible) : Evaluator(pos), ev(ev), invertible(invertible) {}
+
+    ~UnaryEvaluator() {
+        delete ev;
+    }
+    
+    void detach() {
+        ev = NULL;
+    }
+
+    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
+        ev->collectVariables(vars, locals);
+    }
+
+    int howMany(const std::string *name) {
+        int n = ev->howMany(name);
+        return n == 0 ? 0 : invertible ? n : -1;
+    }
+};
+
+class BinaryEvaluator : public Evaluator {
+
+    protected:
+
+    Evaluator *left, *right;
+    bool invertible;
+
+    public:
+
+    BinaryEvaluator(int pos, Evaluator *left, Evaluator *right, bool invertible) : Evaluator(pos), left(left), right(right), invertible(invertible) {}
+
+    ~BinaryEvaluator() {
+        delete left;
+        delete right;
+    }
+    
+    void detach() {
+        left = NULL;
+        right = NULL;
+    }
+
+    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
+        left->collectVariables(vars, locals);
+        right->collectVariables(vars, locals);
+    }
+
+    int howMany(const std::string *name) {
+        int a = left->howMany(name);
+        if (a == -1)
+            return -1;
+        int b = right->howMany(name);
+        if (b == -1)
+            return -1;
+        int c = a + b;
+        return c == 0 ? 0 : invertible ? c : -1;
+    }
+};
+
+
 /////////////////
 /////  Abs  /////
 /////////////////
 
-class Abs : public Evaluator {
-
-    private:
-
-    Evaluator *ev;
+class Abs : public UnaryEvaluator {
 
     public:
 
-    Abs(int pos, Evaluator *ev) : Evaluator(pos), ev(ev) {}
-
-    ~Abs() {
-        delete ev;
-    }
+    Abs(int pos, Evaluator *ev) : UnaryEvaluator(pos, ev, false) {}
 
     Evaluator *clone() {
         return new Abs(tpos, ev->clone());
@@ -198,33 +262,17 @@ class Abs : public Evaluator {
         ev->generateCode(ctx);
         ctx->addLine(CMD_ABS);
     }
-
-    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
-        ev->collectVariables(vars, locals);
-    }
-
-    int howMany(const std::string *name) {
-        return ev->howMany(name) == 0 ? 0 : -1;
-    }
 };
 
 //////////////////
 /////  Acos  /////
 //////////////////
 
-class Acos : public Evaluator {
-
-    private:
-
-    Evaluator *ev;
+class Acos : public UnaryEvaluator {
 
     public:
 
-    Acos(int pos, Evaluator *ev) : Evaluator(pos), ev(ev) {}
-
-    ~Acos() {
-        delete ev;
-    }
+    Acos(int pos, Evaluator *ev) : UnaryEvaluator(pos, ev, true) {}
 
     Evaluator *clone() {
         return new Acos(tpos, ev->clone());
@@ -236,13 +284,27 @@ class Acos : public Evaluator {
         ev->generateCode(ctx);
         ctx->addLine(CMD_ACOS);
     }
+};
 
-    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
-        ev->collectVariables(vars, locals);
+///////////////////
+/////  Acosh  /////
+///////////////////
+
+class Acosh : public UnaryEvaluator {
+
+    public:
+
+    Acosh(int pos, Evaluator *ev) : UnaryEvaluator(pos, ev, true) {}
+
+    Evaluator *clone() {
+        return new Acosh(tpos, ev->clone());
     }
 
-    int howMany(const std::string *name) {
-        return ev->howMany(name);
+    bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
+
+    void generateCode(GeneratorContext *ctx) {
+        ev->generateCode(ctx);
+        ctx->addLine(CMD_ACOSH);
     }
 };
 
@@ -250,19 +312,11 @@ class Acos : public Evaluator {
 /////  Alog  /////
 ////////////./////
 
-class Alog : public Evaluator {
-
-    private:
-
-    Evaluator *ev;
+class Alog : public UnaryEvaluator {
 
     public:
 
-    Alog(int pos, Evaluator *ev) : Evaluator(pos), ev(ev) {}
-
-    ~Alog() {
-        delete ev;
-    }
+    Alog(int pos, Evaluator *ev) : UnaryEvaluator(pos, ev, true) {}
 
     Evaluator *clone() {
         return new Alog(tpos, ev->clone());
@@ -274,34 +328,17 @@ class Alog : public Evaluator {
         ev->generateCode(ctx);
         ctx->addLine(CMD_10_POW_X);
     }
-
-    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
-        ev->collectVariables(vars, locals);
-    }
-
-    int howMany(const std::string *name) {
-        return ev->howMany(name);
-    }
 };
 
 /////////////////
 /////  And  /////
 /////////////////
 
-class And : public Evaluator {
-
-    private:
-
-    Evaluator *left, *right;
+class And : public BinaryEvaluator {
 
     public:
 
-    And(int pos, Evaluator *left, Evaluator *right) : Evaluator(pos), left(left), right(right) {}
-
-    ~And() {
-        delete left;
-        delete right;
-    }
+    And(int pos, Evaluator *left, Evaluator *right) : BinaryEvaluator(pos, left, right, false) {}
 
     Evaluator *clone() {
         return new And(tpos, left->clone(), right->clone());
@@ -314,37 +351,17 @@ class And : public Evaluator {
         right->generateCode(ctx);
         ctx->addLine(CMD_GEN_AND);
     }
-
-    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
-        left->collectVariables(vars, locals);
-        right->collectVariables(vars, locals);
-    }
-
-    int howMany(const std::string *name) {
-        if (left->howMany(name) == 0 && right->howMany(name) == 0)
-            return 0;
-        else
-            return -1;
-    }
 };
 
 //////////////////
 /////  Asin  /////
 //////////////////
 
-class Asin : public Evaluator {
-
-    private:
-
-    Evaluator *ev;
+class Asin : public UnaryEvaluator {
 
     public:
 
-    Asin(int pos, Evaluator *ev) : Evaluator(pos), ev(ev) {}
-
-    ~Asin() {
-        delete ev;
-    }
+    Asin(int pos, Evaluator *ev) : UnaryEvaluator(pos, ev, true) {}
 
     Evaluator *clone() {
         return new Asin(tpos, ev->clone());
@@ -356,13 +373,27 @@ class Asin : public Evaluator {
         ev->generateCode(ctx);
         ctx->addLine(CMD_ASIN);
     }
+};
 
-    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
-        ev->collectVariables(vars, locals);
+///////////////////
+/////  Asinh  /////
+///////////////////
+
+class Asinh : public UnaryEvaluator {
+
+    public:
+
+    Asinh(int pos, Evaluator *ev) : UnaryEvaluator(pos, ev, true) {}
+
+    Evaluator *clone() {
+        return new Asinh(tpos, ev->clone());
     }
 
-    int howMany(const std::string *name) {
-        return ev->howMany(name);
+    bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
+
+    void generateCode(GeneratorContext *ctx) {
+        ev->generateCode(ctx);
+        ctx->addLine(CMD_ASINH);
     }
 };
 
@@ -370,19 +401,11 @@ class Asin : public Evaluator {
 /////  Atan  /////
 //////////////////
 
-class Atan : public Evaluator {
-
-    private:
-
-    Evaluator *ev;
+class Atan : public UnaryEvaluator {
 
     public:
 
-    Atan(int pos, Evaluator *ev) : Evaluator(pos), ev(ev) {}
-
-    ~Atan() {
-        delete ev;
-    }
+    Atan(int pos, Evaluator *ev) : UnaryEvaluator(pos, ev, true) {}
 
     Evaluator *clone() {
         return new Atan(tpos, ev->clone());
@@ -394,13 +417,27 @@ class Atan : public Evaluator {
         ev->generateCode(ctx);
         ctx->addLine(CMD_ATAN);
     }
+};
 
-    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
-        ev->collectVariables(vars, locals);
+///////////////////
+/////  Atanh  /////
+///////////////////
+
+class Atanh : public UnaryEvaluator {
+
+    public:
+
+    Atanh(int pos, Evaluator *ev) : UnaryEvaluator(pos, ev, true) {}
+
+    Evaluator *clone() {
+        return new Atanh(tpos, ev->clone());
     }
 
-    int howMany(const std::string *name) {
-        return ev->howMany(name);
+    bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
+
+    void generateCode(GeneratorContext *ctx) {
+        ev->generateCode(ctx);
+        ctx->addLine(CMD_ATANH);
     }
 };
 
@@ -422,6 +459,10 @@ class Call : public Evaluator {
     ~Call() {
         for (int i = 0; i < evs->size(); i++)
             delete (*evs)[i];
+        delete evs;
+    }
+
+    void detach() {
         delete evs;
     }
 
@@ -453,20 +494,11 @@ class Call : public Evaluator {
 /////  CompareEQ  /////
 ///////////////////////
 
-class CompareEQ : public Evaluator {
-
-    private:
-
-    Evaluator *left, *right;
+class CompareEQ : public BinaryEvaluator {
 
     public:
 
-    CompareEQ(int pos, Evaluator *left, Evaluator *right) : Evaluator(pos), left(left), right(right) {}
-
-    ~CompareEQ() {
-        delete left;
-        delete right;
-    }
+    CompareEQ(int pos, Evaluator *left, Evaluator *right) : BinaryEvaluator(pos, left, right, false) {}
 
     Evaluator *clone() {
         return new CompareEQ(tpos, left->clone(), right->clone());
@@ -479,38 +511,17 @@ class CompareEQ : public Evaluator {
         right->generateCode(ctx);
         ctx->addLine(CMD_GEN_EQ);
     }
-
-    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
-        left->collectVariables(vars, locals);
-        right->collectVariables(vars, locals);
-    }
-
-    int howMany(const std::string *name) {
-        if (left->howMany(name) == 0 && right->howMany(name) == 0)
-            return 0;
-        else
-            return -1;
-    }
 };
 
 ///////////////////////
 /////  CompareNE  /////
 ///////////////////////
 
-class CompareNE : public Evaluator {
-
-    private:
-
-    Evaluator *left, *right;
+class CompareNE : public BinaryEvaluator {
 
     public:
 
-    CompareNE(int pos, Evaluator *left, Evaluator *right) : Evaluator(pos), left(left), right(right) {}
-
-    ~CompareNE() {
-        delete left;
-        delete right;
-    }
+    CompareNE(int pos, Evaluator *left, Evaluator *right) : BinaryEvaluator(pos, left, right, false) {}
 
     Evaluator *clone() {
         return new CompareNE(tpos, left->clone(), right->clone());
@@ -523,38 +534,17 @@ class CompareNE : public Evaluator {
         right->generateCode(ctx);
         ctx->addLine(CMD_GEN_NE);
     }
-
-    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
-        left->collectVariables(vars, locals);
-        right->collectVariables(vars, locals);
-    }
-
-    int howMany(const std::string *name) {
-        if (left->howMany(name) == 0 && right->howMany(name) == 0)
-            return 0;
-        else
-            return -1;
-    }
 };
 
 ///////////////////////
 /////  CompareLT  /////
 ///////////////////////
 
-class CompareLT : public Evaluator {
-
-    private:
-
-    Evaluator *left, *right;
+class CompareLT : public BinaryEvaluator {
 
     public:
 
-    CompareLT(int pos, Evaluator *left, Evaluator *right) : Evaluator(pos), left(left), right(right) {}
-
-    ~CompareLT() {
-        delete left;
-        delete right;
-    }
+    CompareLT(int pos, Evaluator *left, Evaluator *right) : BinaryEvaluator(pos, left, right, false) {}
 
     Evaluator *clone() {
         return new CompareLT(tpos, left->clone(), right->clone());
@@ -567,38 +557,17 @@ class CompareLT : public Evaluator {
         right->generateCode(ctx);
         ctx->addLine(CMD_GEN_LT);
     }
-
-    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
-        left->collectVariables(vars, locals);
-        right->collectVariables(vars, locals);
-    }
-
-    int howMany(const std::string *name) {
-        if (left->howMany(name) == 0 && right->howMany(name) == 0)
-            return 0;
-        else
-            return -1;
-    }
 };
 
 ///////////////////////
 /////  CompareLE  /////
 ///////////////////////
 
-class CompareLE : public Evaluator {
-
-    private:
-
-    Evaluator *left, *right;
+class CompareLE : public BinaryEvaluator {
 
     public:
 
-    CompareLE(int pos, Evaluator *left, Evaluator *right) : Evaluator(pos), left(left), right(right) {}
-
-    ~CompareLE() {
-        delete left;
-        delete right;
-    }
+    CompareLE(int pos, Evaluator *left, Evaluator *right) : BinaryEvaluator(pos, left, right, false) {}
 
     Evaluator *clone() {
         return new CompareLE(tpos, left->clone(), right->clone());
@@ -611,38 +580,17 @@ class CompareLE : public Evaluator {
         right->generateCode(ctx);
         ctx->addLine(CMD_GEN_LE);
     }
-
-    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
-        left->collectVariables(vars, locals);
-        right->collectVariables(vars, locals);
-    }
-
-    int howMany(const std::string *name) {
-        if (left->howMany(name) == 0 && right->howMany(name) == 0)
-            return 0;
-        else
-            return -1;
-    }
 };
 
 ///////////////////////
 /////  CompareGT  /////
 ///////////////////////
 
-class CompareGT : public Evaluator {
-
-    private:
-
-    Evaluator *left, *right;
+class CompareGT : public BinaryEvaluator {
 
     public:
 
-    CompareGT(int pos, Evaluator *left, Evaluator *right) : Evaluator(pos), left(left), right(right) {}
-
-    ~CompareGT() {
-        delete left;
-        delete right;
-    }
+    CompareGT(int pos, Evaluator *left, Evaluator *right) : BinaryEvaluator(pos, left, right, false) {}
 
     Evaluator *clone() {
         return new CompareGT(tpos, left->clone(), right->clone());
@@ -655,38 +603,17 @@ class CompareGT : public Evaluator {
         right->generateCode(ctx);
         ctx->addLine(CMD_GEN_GT);
     }
-
-    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
-        left->collectVariables(vars, locals);
-        right->collectVariables(vars, locals);
-    }
-
-    int howMany(const std::string *name) {
-        if (left->howMany(name) == 0 && right->howMany(name) == 0)
-            return 0;
-        else
-            return -1;
-    }
 };
 
 ///////////////////////
 /////  CompareGE  /////
 ///////////////////////
 
-class CompareGE : public Evaluator {
-
-    private:
-
-    Evaluator *left, *right;
+class CompareGE : public BinaryEvaluator {
 
     public:
 
-    CompareGE(int pos, Evaluator *left, Evaluator *right) : Evaluator(pos), left(left), right(right) {}
-
-    ~CompareGE() {
-        delete left;
-        delete right;
-    }
+    CompareGE(int pos, Evaluator *left, Evaluator *right) : BinaryEvaluator(pos, left, right, false) {}
 
     Evaluator *clone() {
         return new CompareGE(tpos, left->clone(), right->clone());
@@ -699,37 +626,17 @@ class CompareGE : public Evaluator {
         right->generateCode(ctx);
         ctx->addLine(CMD_GEN_GE);
     }
-
-    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
-        left->collectVariables(vars, locals);
-        right->collectVariables(vars, locals);
-    }
-
-    int howMany(const std::string *name) {
-        if (left->howMany(name) == 0 && right->howMany(name) == 0)
-            return 0;
-        else
-            return -1;
-    }
 };
 
 /////////////////
 /////  Cos  /////
 /////////////////
 
-class Cos : public Evaluator {
-
-    private:
-
-    Evaluator *ev;
+class Cos : public UnaryEvaluator {
 
     public:
 
-    Cos(int pos, Evaluator *ev) : Evaluator(pos), ev(ev) {}
-
-    ~Cos() {
-        delete ev;
-    }
+    Cos(int pos, Evaluator *ev) : UnaryEvaluator(pos, ev, true) {}
 
     Evaluator *clone() {
         return new Cos(tpos, ev->clone());
@@ -741,13 +648,27 @@ class Cos : public Evaluator {
         ev->generateCode(ctx);
         ctx->addLine(CMD_COS);
     }
+};
 
-    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
-        ev->collectVariables(vars, locals);
+//////////////////
+/////  Cosh  /////
+//////////////////
+
+class Cosh : public UnaryEvaluator {
+
+    public:
+
+    Cosh(int pos, Evaluator *ev) : UnaryEvaluator(pos, ev, true) {}
+
+    Evaluator *clone() {
+        return new Cosh(tpos, ev->clone());
     }
 
-    int howMany(const std::string *name) {
-        return ev->howMany(name);
+    bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
+
+    void generateCode(GeneratorContext *ctx) {
+        ev->generateCode(ctx);
+        ctx->addLine(CMD_COSH);
     }
 };
 
@@ -755,20 +676,11 @@ class Cos : public Evaluator {
 /////  Difference  /////
 ////////////////////////
 
-class Difference : public Evaluator {
-
-    private:
-
-    Evaluator *left, *right;
+class Difference : public BinaryEvaluator {
 
     public:
 
-    Difference(int pos, Evaluator *left, Evaluator *right) : Evaluator(pos), left(left), right(right) {}
-
-    ~Difference() {
-        delete left;
-        delete right;
-    }
+    Difference(int pos, Evaluator *left, Evaluator *right) : BinaryEvaluator(pos, left, right, true) {}
 
     Evaluator *clone() {
         return new Difference(tpos, left->clone(), right->clone());
@@ -781,42 +693,22 @@ class Difference : public Evaluator {
         right->generateCode(ctx);
         ctx->addLine(CMD_SUB);
     }
-
-    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
-        left->collectVariables(vars, locals);
-        right->collectVariables(vars, locals);
-    }
-
-    int howMany(const std::string *name) {
-        int a = left->howMany(name);
-        if (a == -1)
-            return -1;
-        int b = right->howMany(name);
-        if (b == -1)
-            return -1;
-        return a + b;
-    }
 };
 
 /////////////////
 /////  Ell  /////
 /////////////////
 
-class Ell : public Evaluator {
+class Ell : public UnaryEvaluator {
 
     private:
 
     std::string name;
-    Evaluator *ev;
     bool compatMode;
 
     public:
 
-    Ell(int pos, std::string name, Evaluator *ev, bool compatMode) : Evaluator(pos), name(name), ev(ev), compatMode(compatMode) {}
-
-    ~Ell() {
-        delete ev;
-    }
+    Ell(int pos, std::string name, Evaluator *ev, bool compatMode) : UnaryEvaluator(pos, ev, true), name(name), compatMode(compatMode) {}
 
     Evaluator *clone() {
         return new Ell(tpos, name, ev->clone(), compatMode);
@@ -828,34 +720,17 @@ class Ell : public Evaluator {
         ev->generateCode(ctx);
         ctx->addLine(compatMode ? CMD_GSTO : CMD_STO, name);
     }
-
-    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
-        ev->collectVariables(vars, locals);
-    }
-
-    int howMany(const std::string *name) {
-        return ev->howMany(name);
-    }
 };
 
 //////////////////////
 /////  Equation  /////
 //////////////////////
 
-class Equation : public Evaluator {
-
-    private:
-
-    Evaluator *left, *right;
+class Equation : public BinaryEvaluator {
 
     public:
 
-    Equation(int pos, Evaluator *left, Evaluator *right) : Evaluator(pos), left(left), right(right) {}
-
-    ~Equation() {
-        delete left;
-        delete right;
-    }
+    Equation(int pos, Evaluator *left, Evaluator *right) : BinaryEvaluator(pos, left, right, true) {}
 
     Evaluator *clone() {
         return new Equation(tpos, left->clone(), right->clone());
@@ -882,21 +757,6 @@ class Equation : public Evaluator {
         left->generateCode(ctx);
         right->generateCode(ctx);
         ctx->addLine(CMD_SUB);
-    }
-
-    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
-        left->collectVariables(vars, locals);
-        right->collectVariables(vars, locals);
-    }
-
-    int howMany(const std::string *name) {
-        int a = left->howMany(name);
-        if (a == -1)
-            return -1;
-        int b = right->howMany(name);
-        if (b == -1)
-            return -1;
-        return a + b;
     }
 };
 
@@ -937,19 +797,11 @@ class Ess : public Evaluator {
 /////  Exp  /////
 /////////////////
 
-class Exp : public Evaluator {
-
-    private:
-
-    Evaluator *ev;
+class Exp : public UnaryEvaluator {
 
     public:
 
-    Exp(int pos, Evaluator *ev) : Evaluator(pos), ev(ev) {}
-
-    ~Exp() {
-        delete ev;
-    }
+    Exp(int pos, Evaluator *ev) : UnaryEvaluator(pos, ev, true) {}
 
     Evaluator *clone() {
         return new Exp(tpos, ev->clone());
@@ -961,13 +813,67 @@ class Exp : public Evaluator {
         ev->generateCode(ctx);
         ctx->addLine(CMD_E_POW_X);
     }
+};
 
-    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
-        ev->collectVariables(vars, locals);
+///////////////////
+/////  Expm1  /////
+///////////////////
+
+class Expm1 : public UnaryEvaluator {
+
+    public:
+
+    Expm1(int pos, Evaluator *ev) : UnaryEvaluator(pos, ev, true) {}
+
+    Evaluator *clone() {
+        return new Expm1(tpos, ev->clone());
     }
 
-    int howMany(const std::string *name) {
-        return ev->howMany(name);
+    bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
+
+    void generateCode(GeneratorContext *ctx) {
+        ev->generateCode(ctx);
+        ctx->addLine(CMD_E_POW_X_1);
+    }
+};
+
+//////////////////
+/////  Fact  /////
+//////////////////
+
+class Fact : public UnaryEvaluator {
+
+    public:
+
+    Fact(int pos, Evaluator *ev) : UnaryEvaluator(pos, ev, false) {}
+
+    Evaluator *clone() {
+        return new Fact(tpos, ev->clone());
+    }
+
+    void generateCode(GeneratorContext *ctx) {
+        ev->generateCode(ctx);
+        ctx->addLine(CMD_FACT);
+    }
+};
+
+///////////////////
+/////  Gamma  /////
+///////////////////
+
+class Gamma : public UnaryEvaluator {
+
+    public:
+
+    Gamma(int pos, Evaluator *ev) : UnaryEvaluator(pos, ev, false) {}
+
+    Evaluator *clone() {
+        return new Gamma(tpos, ev->clone());
+    }
+
+    void generateCode(GeneratorContext *ctx) {
+        ev->generateCode(ctx);
+        ctx->addLine(CMD_GAMMA);
     }
 };
 
@@ -1003,43 +909,6 @@ class Gee : public Evaluator {
     }
 };
 
-//////////////////////
-/////  Identity  /////
-//////////////////////
-
-class Identity : public Evaluator {
-
-    private:
-
-    Evaluator *ev;
-
-    public:
-
-    Identity(int pos, Evaluator *ev) : Evaluator(pos), ev(ev) {}
-
-    ~Identity() {
-        delete ev;
-    }
-
-    Evaluator *clone() {
-        return new Identity(tpos, ev->clone());
-    }
-
-    bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
-
-    void generateCode(GeneratorContext *ctx) {
-        ev->generateCode(ctx);
-    }
-
-    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
-        ev->collectVariables(vars, locals);
-    }
-
-    int howMany(const std::string *name) {
-        return ev->howMany(name);
-    }
-};
-
 ////////////////
 /////  If  /////
 ////////////////
@@ -1059,6 +928,12 @@ class If : public Evaluator {
         delete condition;
         delete trueEv;
         delete falseEv;
+    }
+
+    void detach() {
+        condition = NULL;
+        trueEv = NULL;
+        falseEv = NULL;
     }
 
     Evaluator *clone() {
@@ -1098,19 +973,11 @@ class If : public Evaluator {
 /////  Inv  /////
 /////////////////
 
-class Inv : public Evaluator {
-
-    private:
-
-    Evaluator *ev;
+class Inv : public UnaryEvaluator {
 
     public:
 
-    Inv(int pos, Evaluator *ev) : Evaluator(pos), ev(ev) {}
-
-    ~Inv() {
-        delete ev;
-    }
+    Inv(int pos, Evaluator *ev) : UnaryEvaluator(pos, ev, true) {}
 
     Evaluator *clone() {
         return new Inv(tpos, ev->clone());
@@ -1122,34 +989,21 @@ class Inv : public Evaluator {
         ev->generateCode(ctx);
         ctx->addLine(CMD_INV);
     }
-
-    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
-        ev->collectVariables(vars, locals);
-    }
-
-    int howMany(const std::string *name) {
-        return ev->howMany(name);
-    }
 };
 
 //////////////////
 /////  Item  /////
 //////////////////
 
-class Item : public Evaluator {
+class Item : public UnaryEvaluator {
 
     private:
 
     std::string name;
-    Evaluator *ev;
 
     public:
 
-    Item(int pos, std::string name, Evaluator *ev) : Evaluator(pos), name(name), ev(ev) {}
-
-    ~Item() {
-        delete ev;
-    }
+    Item(int pos, std::string name, Evaluator *ev) : UnaryEvaluator(pos, ev, false), name(name) {}
 
     Evaluator *clone() {
         return new Item(tpos, name, ev->clone());
@@ -1159,10 +1013,6 @@ class Item : public Evaluator {
         ctx->addLine(CMD_RCL, name);
         ev->generateCode(ctx);
         ctx->addLine(CMD_MATITEM);
-    }
-
-    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
-        ev->collectVariables(vars, locals);
     }
 
     int howMany(const std::string *nam) {
@@ -1208,19 +1058,11 @@ class Literal : public Evaluator {
 /////  Ln  /////
 ////////////////
 
-class Ln : public Evaluator {
-
-    private:
-
-    Evaluator *ev;
+class Ln : public UnaryEvaluator {
 
     public:
 
-    Ln(int pos, Evaluator *ev) : Evaluator(pos), ev(ev) {}
-
-    ~Ln() {
-        delete ev;
-    }
+    Ln(int pos, Evaluator *ev) : UnaryEvaluator(pos, ev, true) {}
 
     Evaluator *clone() {
         return new Ln(tpos, ev->clone());
@@ -1232,13 +1074,27 @@ class Ln : public Evaluator {
         ev->generateCode(ctx);
         ctx->addLine(CMD_LN);
     }
+};
 
-    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
-        ev->collectVariables(vars, locals);
+//////////////////
+/////  Ln1p  /////
+//////////////////
+
+class Ln1p : public UnaryEvaluator {
+
+    public:
+
+    Ln1p(int pos, Evaluator *ev) : UnaryEvaluator(pos, ev, true) {}
+
+    Evaluator *clone() {
+        return new Ln1p(tpos, ev->clone());
     }
 
-    int howMany(const std::string *name) {
-        return ev->howMany(name);
+    bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
+
+    void generateCode(GeneratorContext *ctx) {
+        ev->generateCode(ctx);
+        ctx->addLine(CMD_LN_1_X);
     }
 };
 
@@ -1246,19 +1102,11 @@ class Ln : public Evaluator {
 /////  Log  /////
 /////////////////
 
-class Log : public Evaluator {
-
-    private:
-
-    Evaluator *ev;
+class Log : public UnaryEvaluator {
 
     public:
 
-    Log(int pos, Evaluator *ev) : Evaluator(pos), ev(ev) {}
-
-    ~Log() {
-        delete ev;
-    }
+    Log(int pos, Evaluator *ev) : UnaryEvaluator(pos, ev, true) {}
 
     Evaluator *clone() {
         return new Log(tpos, ev->clone());
@@ -1269,14 +1117,6 @@ class Log : public Evaluator {
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
         ctx->addLine(CMD_LOG);
-    }
-
-    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
-        ev->collectVariables(vars, locals);
-    }
-
-    int howMany(const std::string *name) {
-        return ev->howMany(name);
     }
 };
 
@@ -1297,6 +1137,10 @@ class Max : public Evaluator {
     ~Max() {
         for (int i = 0; i < evs->size(); i++)
             delete (*evs)[i];
+        delete evs;
+    }
+    
+    void detach() {
         delete evs;
     }
 
@@ -1356,6 +1200,10 @@ class Min : public Evaluator {
         delete evs;
     }
 
+    void detach() {
+        delete evs;
+    }
+
     Evaluator *clone() {
         std::vector<Evaluator *> *evs2 = new std::vector<Evaluator *>;
         for (int i = 0; i < evs->size(); i++)
@@ -1396,16 +1244,15 @@ class Min : public Evaluator {
 /////  NameTag  /////
 /////////////////////
 
-class NameTag : public Evaluator {
+class NameTag : public UnaryEvaluator {
     
     private:
     
     std::string name;
-    Evaluator *ev;
     
     public:
     
-    NameTag(int pos, std::string name, Evaluator *ev) : Evaluator(pos), name(name), ev(ev) {}
+    NameTag(int pos, std::string name, Evaluator *ev) : UnaryEvaluator(pos, ev, false), name(name) {}
     
     ~NameTag() {
         delete ev;
@@ -1421,6 +1268,7 @@ class NameTag : public Evaluator {
 
     Evaluator *removeName() {
         Evaluator *ret = ev;
+        ev = NULL;
         delete this;
         return ret;
     }
@@ -1428,33 +1276,17 @@ class NameTag : public Evaluator {
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
     }
-
-    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
-        ev->collectVariables(vars, locals);
-    }
-
-    int howMany(const std::string *name) {
-        return ev->howMany(name);
-    }
 };
 
 //////////////////////
 /////  Negative  /////
 //////////////////////
 
-class Negative : public Evaluator {
-
-    private:
-
-    Evaluator *ev;
+class Negative : public UnaryEvaluator {
 
     public:
 
-    Negative(int pos, Evaluator *ev) : Evaluator(pos), ev(ev) {}
-
-    ~Negative() {
-        delete ev;
-    }
+    Negative(int pos, Evaluator *ev) : UnaryEvaluator(pos, ev, true) {}
 
     Evaluator *clone() {
         return new Negative(tpos, ev->clone());
@@ -1466,33 +1298,17 @@ class Negative : public Evaluator {
         ev->generateCode(ctx);
         ctx->addLine(CMD_CHS);
     }
-
-    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
-        ev->collectVariables(vars, locals);
-    }
-
-    int howMany(const std::string *name) {
-        return ev->howMany(name);
-    }
 };
 
 /////////////////
 /////  Not  /////
 /////////////////
 
-class Not : public Evaluator {
-
-    private:
-
-    Evaluator *ev;
+class Not : public UnaryEvaluator {
 
     public:
 
-    Not(int pos, Evaluator *ev) : Evaluator(pos), ev(ev) {}
-
-    ~Not() {
-        delete ev;
-    }
+    Not(int pos, Evaluator *ev) : UnaryEvaluator(pos, ev, false) {}
 
     Evaluator *clone() {
         return new Not(tpos, ev->clone());
@@ -1504,34 +1320,17 @@ class Not : public Evaluator {
         ev->generateCode(ctx);
         ctx->addLine(CMD_GEN_NOT);
     }
-
-    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
-        ev->collectVariables(vars, locals);
-    }
-
-    int howMany(const std::string *name) {
-        return ev->howMany(name) == 0 ? 0 : -1;
-    }
 };
 
 ////////////////
 /////  Or  /////
 ////////////////
 
-class Or : public Evaluator {
-
-    private:
-
-    Evaluator *left, *right;
+class Or : public BinaryEvaluator {
 
     public:
 
-    Or(int pos, Evaluator *left, Evaluator *right) : Evaluator(pos), left(left), right(right) {}
-
-    ~Or() {
-        delete left;
-        delete right;
-    }
+    Or(int pos, Evaluator *left, Evaluator *right) : BinaryEvaluator(pos, left, right, false) {}
 
     Evaluator *clone() {
         return new Or(tpos, left->clone(), right->clone());
@@ -1544,75 +1343,17 @@ class Or : public Evaluator {
         right->generateCode(ctx);
         ctx->addLine(CMD_GEN_OR);
     }
-
-    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
-        left->collectVariables(vars, locals);
-        right->collectVariables(vars, locals);
-    }
-
-    int howMany(const std::string *name) {
-        if (left->howMany(name) == 0 && right->howMany(name) == 0)
-            return 0;
-        else
-            return -1;
-    }
-};
-
-//////////////////////
-/////  Positive  /////
-//////////////////////
-
-class Positive : public Evaluator {
-
-    private:
-
-    Evaluator *ev;
-
-    public:
-
-    Positive(int pos, Evaluator *ev) : Evaluator(pos), ev(ev) {}
-
-    ~Positive() {
-        delete ev;
-    }
-
-    Evaluator *clone() {
-        return new Positive(tpos, ev->clone());
-    }
-
-    bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
-
-    void generateCode(GeneratorContext *ctx) {
-        ev->generateCode(ctx);
-    }
-
-    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
-        ev->collectVariables(vars, locals);
-    }
-
-    int howMany(const std::string *name) {
-        return ev->howMany(name);
-    }
 };
 
 ///////////////////
 /////  Power  /////
 ///////////////////
 
-class Power : public Evaluator {
-
-    private:
-
-    Evaluator *left, *right;
+class Power : public BinaryEvaluator {
 
     public:
 
-    Power(int pos, Evaluator *left, Evaluator *right) : Evaluator(pos), left(left), right(right) {}
-
-    ~Power() {
-        delete left;
-        delete right;
-    }
+    Power(int pos, Evaluator *left, Evaluator *right) : BinaryEvaluator(pos, left, right, true) {}
 
     Evaluator *clone() {
         return new Power(tpos, left->clone(), right->clone());
@@ -1625,41 +1366,17 @@ class Power : public Evaluator {
         right->generateCode(ctx);
         ctx->addLine(CMD_Y_POW_X);
     }
-
-    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
-        left->collectVariables(vars, locals);
-        right->collectVariables(vars, locals);
-    }
-
-    int howMany(const std::string *name) {
-        int a = left->howMany(name);
-        if (a == -1)
-            return -1;
-        int b = right->howMany(name);
-        if (b == -1)
-            return -1;
-        return a + b;
-    }
 };
 
 /////////////////////
 /////  Product  /////
 /////////////////////
 
-class Product : public Evaluator {
-
-    private:
-
-    Evaluator *left, *right;
+class Product : public BinaryEvaluator {
 
     public:
 
-    Product(int pos, Evaluator *left, Evaluator *right) : Evaluator(pos), left(left), right(right) {}
-
-    ~Product() {
-        delete left;
-        delete right;
-    }
+    Product(int pos, Evaluator *left, Evaluator *right) : BinaryEvaluator(pos, left, right, true) {}
 
     Evaluator *clone() {
         return new Product(tpos, left->clone(), right->clone());
@@ -1672,41 +1389,17 @@ class Product : public Evaluator {
         right->generateCode(ctx);
         ctx->addLine(CMD_MUL);
     }
-
-    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
-        left->collectVariables(vars, locals);
-        right->collectVariables(vars, locals);
-    }
-
-    int howMany(const std::string *name) {
-        int a = left->howMany(name);
-        if (a == -1)
-            return -1;
-        int b = right->howMany(name);
-        if (b == -1)
-            return -1;
-        return a + b;
-    }
 };
 
 //////////////////////
 /////  Quotient  /////
 //////////////////////
 
-class Quotient : public Evaluator {
-
-    private:
-
-    Evaluator *left, *right;
+class Quotient : public BinaryEvaluator {
 
     public:
 
-    Quotient(int pos, Evaluator *left, Evaluator *right) : Evaluator(pos), left(left), right(right) {}
-
-    ~Quotient() {
-        delete left;
-        delete right;
-    }
+    Quotient(int pos, Evaluator *left, Evaluator *right) : BinaryEvaluator(pos, left, right, true) {}
 
     Evaluator *clone() {
         return new Quotient(tpos, left->clone(), right->clone());
@@ -1718,21 +1411,6 @@ class Quotient : public Evaluator {
         left->generateCode(ctx);
         right->generateCode(ctx);
         ctx->addLine(CMD_DIV);
-    }
-
-    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
-        left->collectVariables(vars, locals);
-        right->collectVariables(vars, locals);
-    }
-
-    int howMany(const std::string *name) {
-        int a = left->howMany(name);
-        if (a == -1)
-            return -1;
-        int b = right->howMany(name);
-        if (b == -1)
-            return -1;
-        return a + b;
     }
 };
 
@@ -1760,6 +1438,13 @@ class Sigma : public Evaluator {
         delete to;
         delete step;
         delete ev;
+    }
+
+    void detach() {
+        from = NULL;
+        to = NULL;
+        step = NULL;
+        ev = NULL;
     }
 
     Evaluator *clone() {
@@ -1822,19 +1507,11 @@ class Sigma : public Evaluator {
 /////  Sin  /////
 /////////////////
 
-class Sin : public Evaluator {
-
-    private:
-
-    Evaluator *ev;
+class Sin : public UnaryEvaluator {
 
     public:
 
-    Sin(int pos, Evaluator *ev) : Evaluator(pos), ev(ev) {}
-
-    ~Sin() {
-        delete ev;
-    }
+    Sin(int pos, Evaluator *ev) : UnaryEvaluator(pos, ev, true) {}
 
     Evaluator *clone() {
         return new Sin(tpos, ev->clone());
@@ -1846,13 +1523,27 @@ class Sin : public Evaluator {
         ev->generateCode(ctx);
         ctx->addLine(CMD_SIN);
     }
+};
 
-    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
-        ev->collectVariables(vars, locals);
+//////////////////
+/////  Sinh  /////
+//////////////////
+
+class Sinh : public UnaryEvaluator {
+
+    public:
+
+    Sinh(int pos, Evaluator *ev) : UnaryEvaluator(pos, ev, true) {}
+
+    Evaluator *clone() {
+        return new Sinh(tpos, ev->clone());
     }
 
-    int howMany(const std::string *name) {
-        return ev->howMany(name);
+    bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
+
+    void generateCode(GeneratorContext *ctx) {
+        ev->generateCode(ctx);
+        ctx->addLine(CMD_SINH);
     }
 };
 
@@ -1860,19 +1551,11 @@ class Sin : public Evaluator {
 /////  Sq  /////
 ////////////////
 
-class Sq : public Evaluator {
-
-    private:
-
-    Evaluator *ev;
+class Sq : public UnaryEvaluator {
 
     public:
 
-    Sq(int pos, Evaluator *ev) : Evaluator(pos), ev(ev) {}
-
-    ~Sq() {
-        delete ev;
-    }
+    Sq(int pos, Evaluator *ev) : UnaryEvaluator(pos, ev, true) {}
 
     Evaluator *clone() {
         return new Sq(tpos, ev->clone());
@@ -1884,33 +1567,17 @@ class Sq : public Evaluator {
         ev->generateCode(ctx);
         ctx->addLine(CMD_SQUARE);
     }
-
-    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
-        ev->collectVariables(vars, locals);
-    }
-
-    int howMany(const std::string *name) {
-        return ev->howMany(name);
-    }
 };
 
 //////////////////
 /////  Sqrt  /////
 //////////////////
 
-class Sqrt : public Evaluator {
-
-    private:
-
-    Evaluator *ev;
+class Sqrt : public UnaryEvaluator {
 
     public:
 
-    Sqrt(int pos, Evaluator *ev) : Evaluator(pos), ev(ev) {}
-
-    ~Sqrt() {
-        delete ev;
-    }
+    Sqrt(int pos, Evaluator *ev) : UnaryEvaluator(pos, ev, true) {}
 
     Evaluator *clone() {
         return new Sqrt(tpos, ev->clone());
@@ -1922,34 +1589,17 @@ class Sqrt : public Evaluator {
         ev->generateCode(ctx);
         ctx->addLine(CMD_SQRT);
     }
-
-    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
-        ev->collectVariables(vars, locals);
-    }
-
-    int howMany(const std::string *name) {
-        return ev->howMany(name);
-    }
 };
 
 /////////////////
 /////  Sum  /////
 /////////////////
 
-class Sum : public Evaluator {
-
-    private:
-
-    Evaluator *left, *right;
+class Sum : public BinaryEvaluator {
 
     public:
 
-    Sum(int pos, Evaluator *left, Evaluator *right) : Evaluator(pos), left(left), right(right) {}
-
-    ~Sum() {
-        delete left;
-        delete right;
-    }
+    Sum(int pos, Evaluator *left, Evaluator *right) : BinaryEvaluator(pos, left, right, true) {}
 
     Evaluator *clone() {
         return new Sum(tpos, left->clone(), right->clone());
@@ -1962,40 +1612,17 @@ class Sum : public Evaluator {
         right->generateCode(ctx);
         ctx->addLine(CMD_ADD);
     }
-
-    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
-        left->collectVariables(vars, locals);
-        right->collectVariables(vars, locals);
-    }
-
-    int howMany(const std::string *name) {
-        int a = left->howMany(name);
-        if (a == -1)
-            return -1;
-        int b = right->howMany(name);
-        if (b == -1)
-            return -1;
-        return a + b;
-    }
 };
 
 /////////////////
 /////  Tan  /////
 /////////////////
 
-class Tan : public Evaluator {
-
-    private:
-
-    Evaluator *ev;
+class Tan : public UnaryEvaluator {
 
     public:
 
-    Tan(int pos, Evaluator *ev) : Evaluator(pos), ev(ev) {}
-
-    ~Tan() {
-        delete ev;
-    }
+    Tan(int pos, Evaluator *ev) : UnaryEvaluator(pos, ev, true) {}
 
     Evaluator *clone() {
         return new Tan(tpos, ev->clone());
@@ -2007,13 +1634,27 @@ class Tan : public Evaluator {
         ev->generateCode(ctx);
         ctx->addLine(CMD_TAN);
     }
+};
 
-    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
-        ev->collectVariables(vars, locals);
+//////////////////
+/////  Tanh  /////
+//////////////////
+
+class Tanh : public UnaryEvaluator {
+
+    public:
+
+    Tanh(int pos, Evaluator *ev) : UnaryEvaluator(pos, ev, true) {}
+
+    Evaluator *clone() {
+        return new Tanh(tpos, ev->clone());
     }
 
-    int howMany(const std::string *name) {
-        return ev->howMany(name);
+    bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
+
+    void generateCode(GeneratorContext *ctx) {
+        ev->generateCode(ctx);
+        ctx->addLine(CMD_TANH);
     }
 };
 
@@ -2079,6 +1720,10 @@ class Xeq : public Evaluator {
         delete evs;
     }
 
+    void detach() {
+        delete evs;
+    }
+
     Evaluator *clone() {
         std::vector<Evaluator *> *evs2 = new std::vector<Evaluator *>;
         for (int i = 0; i < evs->size(); i++)
@@ -2121,20 +1766,11 @@ class Xeq : public Evaluator {
 /////  Xor  /////
 /////////////////
 
-class Xor : public Evaluator {
-
-    private:
-
-    Evaluator *left, *right;
+class Xor : public BinaryEvaluator {
 
     public:
 
-    Xor(int pos, Evaluator *left, Evaluator *right) : Evaluator(pos), left(left), right(right) {}
-
-    ~Xor() {
-        delete left;
-        delete right;
-    }
+    Xor(int pos, Evaluator *left, Evaluator *right) : BinaryEvaluator(pos, left, right, false) {}
 
     Evaluator *clone() {
         return new Xor(tpos, left->clone(), right->clone());
@@ -2147,18 +1783,6 @@ class Xor : public Evaluator {
         right->generateCode(ctx);
         ctx->addLine(CMD_GEN_XOR);
     }
-
-    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
-        left->collectVariables(vars, locals);
-        right->collectVariables(vars, locals);
-    }
-
-    int howMany(const std::string *name) {
-        if (left->howMany(name) == 0 && right->howMany(name) == 0)
-            return 0;
-        else
-            return -1;
-    }
 };
 
 /* Methods that can't be defined in their class declarations
@@ -2168,40 +1792,54 @@ class Xor : public Evaluator {
 bool Acos::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
     *lhs = ev;
     *rhs = new Cos(0, *rhs);
-    ev = NULL;
-    delete this;
+    return true;
+}
+
+bool Acosh::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
+    *lhs = ev;
+    *rhs = new Cosh(0, *rhs);
     return true;
 }
 
 bool Alog::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
     *lhs = ev;
     *rhs = new Log(0, *rhs);
-    ev = NULL;
-    delete this;
     return true;
 }
 
 bool Asin::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
     *lhs = ev;
     *rhs = new Sin(0, *rhs);
-    ev = NULL;
-    delete this;
+    return true;
+}
+
+bool Asinh::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
+    *lhs = ev;
+    *rhs = new Sinh(0, *rhs);
     return true;
 }
 
 bool Atan::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
     *lhs = ev;
     *rhs = new Tan(0, *rhs);
-    ev = NULL;
-    delete this;
+    return true;
+}
+
+bool Atanh::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
+    *lhs = ev;
+    *rhs = new Tanh(0, *rhs);
     return true;
 }
 
 bool Cos::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
     *lhs = ev;
     *rhs = new Acos(0, *rhs);
-    ev = NULL;
-    delete this;
+    return true;
+}
+
+bool Cosh::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
+    *lhs = ev;
+    *rhs = new Acosh(0, *rhs);
     return true;
 }
 
@@ -2213,73 +1851,54 @@ bool Difference::invert(const std::string *name, Evaluator **lhs, Evaluator **rh
         *lhs = right;
         *rhs = new Difference(0, left, *rhs);
     }
-    left = NULL;
-    right = NULL;
-    delete this;
     return true;
 }
 
 bool Ell::invert(const std::string *n, Evaluator **lhs, Evaluator **rhs) {
     *lhs = ev;
     *rhs = new Ell(0, name, *rhs, compatMode);
-    ev = NULL;
-    delete this;
     return true;
 }
 
 bool Exp::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
     *lhs = ev;
     *rhs = new Ln(0, *rhs);
-    ev = NULL;
-    delete this;
     return true;
 }
 
-bool Identity::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
+bool Expm1::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
     *lhs = ev;
-    *rhs = new Identity(0, *rhs);
-    ev = NULL;
-    delete this;
+    *rhs = new Ln1p(0, *rhs);
     return true;
 }
 
 bool Inv::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
     *lhs = ev;
     *rhs = new Inv(0, *rhs);
-    ev = NULL;
-    delete this;
     return true;
 }
 
 bool Ln::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
     *lhs = ev;
     *rhs = new Exp(0, *rhs);
-    ev = NULL;
-    delete this;
+    return true;
+}
+
+bool Ln1p::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
+    *lhs = ev;
+    *rhs = new Expm1(0, *rhs);
     return true;
 }
 
 bool Log::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
     *lhs = ev;
     *rhs = new Alog(0, *rhs);
-    ev = NULL;
-    delete this;
     return true;
 }
 
 bool Negative::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
     *lhs = ev;
     *rhs = new Negative(0, *rhs);
-    ev = NULL;
-    delete this;
-    return true;
-}
-
-bool Positive::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
-    *lhs = ev;
-    *rhs = new Positive(0, *rhs);
-    ev = NULL;
-    delete this;
     return true;
 }
 
@@ -2291,9 +1910,6 @@ bool Power::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
         *lhs = right;
         *rhs = new Quotient(0, new Ln(0, *rhs), new Ln(0, left));
     }
-    left = NULL;
-    right = NULL;
-    delete this;
     return true;
 }
 
@@ -2305,9 +1921,6 @@ bool Product::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) 
         *lhs = right;
         *rhs = new Quotient(0, *rhs, left);
     }
-    left = NULL;
-    right = NULL;
-    delete this;
     return true;
 }
 
@@ -2319,33 +1932,30 @@ bool Quotient::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs)
         *lhs = right;
         *rhs = new Quotient(0, left, *rhs);
     }
-    left = NULL;
-    right = NULL;
-    delete this;
     return true;
 }
 
 bool Sin::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
     *lhs = ev;
     *rhs = new Asin(0, *rhs);
-    ev = NULL;
-    delete this;
+    return true;
+}
+
+bool Sinh::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
+    *lhs = ev;
+    *rhs = new Asinh(0, *rhs);
     return true;
 }
 
 bool Sq::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
     *lhs = ev;
     *rhs = new Sqrt(0, *rhs);
-    ev = NULL;
-    delete this;
     return true;
 }
 
 bool Sqrt::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
     *lhs = ev;
     *rhs = new Sq(0, *rhs);
-    ev = NULL;
-    delete this;
     return true;
 }
 
@@ -2357,17 +1967,18 @@ bool Sum::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
         *lhs = right;
         *rhs = new Difference(0, *rhs, left);
     }
-    left = NULL;
-    right = NULL;
-    delete this;
     return true;
 }
 
 bool Tan::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
     *lhs = ev;
     *rhs = new Atan(0, *rhs);
-    ev = NULL;
-    delete this;
+    return true;
+}
+
+bool Tanh::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
+    *lhs = ev;
+    *rhs = new Atanh(0, *rhs);
     return true;
 }
 
@@ -2818,7 +2429,7 @@ Evaluator *Parser::parseTerm() {
             return NULL;
         }
         if (t == "+")
-            return new Positive(tpos, ev);
+            return ev;
         else
             return new Negative(tpos, ev);
     } else {
@@ -2960,7 +2571,7 @@ Evaluator *Parser::parseThing() {
             return NULL;
         }
         if (t == "+")
-            return new Positive(tpos, ev);
+            return ev;
         else
             return new Negative(tpos, ev);
     }
@@ -2977,7 +2588,7 @@ Evaluator *Parser::parseThing() {
             delete ev;
             return NULL;
         }
-        return new Identity(tpos, ev);
+        return ev;
     } else if (lex->isIdentifier(t)) {
         std::string t2;
         int t2pos;
@@ -2988,8 +2599,12 @@ Evaluator *Parser::parseThing() {
             int mode;
             if (t == "SIN" || t == "COS" || t == "TAN"
                     || t == "ASIN" || t == "ACOS" || t == "ATAN"
-                    || t == "LOG" || t == "EXP" || t == "SQRT"
-                    || t == "SQ" || t == "INV" || t == "ABS") {
+                    || t == "SINH" || t == "COSH" || t == "TANH"
+                    || t == "ASINH" || t == "ACOSH" || t == "ATANH"
+                    || t == "LN" || t == "LN1P" || t == "LOG"
+                    || t == "EXP" || t == "EXPM1" || t == "ALOG"
+                    || t == "SQRT" || t == "SQ" || t == "INV"
+                    || t == "ABS" || t == "FACT" || t == "GAMMA") {
                 nargs = 1;
                 mode = EXPR_LIST_EXPR;
             } else if (t == "MIN" || t == "MAX") {
@@ -3029,9 +2644,12 @@ Evaluator *Parser::parseThing() {
             }
             if (t == "SIN" || t == "COS" || t == "TAN"
                     || t == "ASIN" || t == "ACOS" || t == "ATAN"
-                    || t == "LN" || t == "LOG" || t == "EXP"
-                    || t == "ALOG" || t == "SQRT" 
-                    || t == "SQ" || t == "INV" || t == "ABS") {
+                    || t == "SINH" || t == "COSH" || t == "TANH"
+                    || t == "ASINH" || t == "ACOSH" || t == "ATANH"
+                    || t == "LN" || t == "LN1P" || t == "LOG"
+                    || t == "EXP" || t == "EXPM1" || t == "ALOG"
+                    || t == "SQRT" || t == "SQ" || t == "INV"
+                    || t == "ABS" || t == "FACT" || t == "GAMMA") {
                 Evaluator *ev = (*evs)[0];
                 delete evs;
                 if (t == "SIN")
@@ -3046,12 +2664,28 @@ Evaluator *Parser::parseThing() {
                     return new Acos(tpos, ev);
                 else if (t == "ATAN")
                     return new Atan(tpos, ev);
+                else if (t == "SINH")
+                    return new Sinh(tpos, ev);
+                else if (t == "COSH")
+                    return new Cosh(tpos, ev);
+                else if (t == "TANH")
+                    return new Tanh(tpos, ev);
+                else if (t == "ASINH")
+                    return new Asinh(tpos, ev);
+                else if (t == "ACOSH")
+                    return new Acosh(tpos, ev);
+                else if (t == "ATANH")
+                    return new Atanh(tpos, ev);
                 else if (t == "LN")
                     return new Ln(tpos, ev);
+                else if (t == "LN1P")
+                    return new Ln1p(tpos, ev);
                 else if (t == "LOG")
                     return new Log(tpos, ev);
                 else if (t == "EXP")
                     return new Exp(tpos, ev);
+                else if (t == "EXPM1")
+                    return new Expm1(tpos, ev);
                 else if (t == "ALOG")
                     return new Alog(tpos, ev);
                 else if (t == "SQ")
@@ -3060,8 +2694,12 @@ Evaluator *Parser::parseThing() {
                     return new Sqrt(tpos, ev);
                 else if (t == "INV")
                     return new Inv(tpos, ev);
-                else // t == "ABS"
+                else if (t == "ABS")
                     return new Abs(tpos, ev);
+                else if (t == "FACT")
+                    return new Fact(tpos, ev);
+                else if (t == "GAMMA")
+                    return new Gamma(tpos, ev);
             } else if (t == "MAX" || t == "MIN") {
                 if (t == "MAX")
                     return new Max(tpos, evs);
@@ -3187,7 +2825,11 @@ int isolate(vartype *eqn, const char *name, int length) {
     ev->getSides(&n, &lhs, &rhs);
 
     while (!lhs->is(&n)) {
-        if (!lhs->invert(&n, &lhs, &rhs)) {
+        Evaluator *left = lhs;
+        if (left->invert(&n, &lhs, &rhs)) {
+            left->detach();
+            delete left;
+        } else {
             // Shouldn't happen
             delete lhs;
             fail:
@@ -3198,11 +2840,15 @@ int isolate(vartype *eqn, const char *name, int length) {
     delete lhs;
 
     int4 neq = new_eqn_idx(-1);
-    if (neq == -1)
-        goto fail;
+    if (neq == -1) {
+        delete rhs;
+        return -1;
+    }
     equation_data *neqd = new equation_data;
-    if (neqd == NULL)
-        goto fail;
+    if (neqd == NULL) {
+        delete rhs;
+        return -1;
+    }
     prgms[neq + prgms_count].eq_data = neqd;
     neqd->compatMode = eqd->compatMode;
     neqd->eqn_index = neq;

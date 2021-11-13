@@ -148,6 +148,8 @@
 /gtk/core_math1.h
 /gtk/core_math2.cc
 /gtk/core_math2.h
+/gtk/core_parser.cc
+/gtk/core_parser.h
 /gtk/core_phloat.cc
 /gtk/core_phloat.h
 /gtk/core_sto_rcl.cc

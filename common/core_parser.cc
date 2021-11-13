@@ -471,6 +471,207 @@ class Atanh : public UnaryEvaluator {
 };
 
 //////////////////
+/////  Badd  /////
+//////////////////
+
+class Badd : public BinaryEvaluator {
+
+    public:
+
+    Badd(int pos, Evaluator *left, Evaluator *right) : BinaryEvaluator(pos, left, right, true) {}
+
+    Evaluator *clone() {
+        return new Badd(tpos, left->clone(), right->clone());
+    }
+
+    bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
+
+    void generateCode(GeneratorContext *ctx) {
+        left->generateCode(ctx);
+        right->generateCode(ctx);
+        ctx->addLine(CMD_BASEADD);
+    }
+};
+
+//////////////////
+/////  Band  /////
+//////////////////
+
+class Band : public BinaryEvaluator {
+
+    public:
+
+    Band(int pos, Evaluator *left, Evaluator *right) : BinaryEvaluator(pos, left, right, false) {}
+
+    Evaluator *clone() {
+        return new Band(tpos, left->clone(), right->clone());
+    }
+
+    void generateCode(GeneratorContext *ctx) {
+        left->generateCode(ctx);
+        right->generateCode(ctx);
+        ctx->addLine(CMD_AND);
+    }
+};
+
+//////////////////
+/////  Bdiv  /////
+//////////////////
+
+class Bdiv : public BinaryEvaluator {
+
+    public:
+
+    Bdiv(int pos, Evaluator *left, Evaluator *right) : BinaryEvaluator(pos, left, right, true) {}
+
+    Evaluator *clone() {
+        return new Bdiv(tpos, left->clone(), right->clone());
+    }
+
+    bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
+
+    void generateCode(GeneratorContext *ctx) {
+        left->generateCode(ctx);
+        right->generateCode(ctx);
+        ctx->addLine(CMD_BASEDIV);
+    }
+};
+
+//////////////////
+/////  Bmul  /////
+//////////////////
+
+class Bmul : public BinaryEvaluator {
+
+    public:
+
+    Bmul(int pos, Evaluator *left, Evaluator *right) : BinaryEvaluator(pos, left, right, true) {}
+
+    Evaluator *clone() {
+        return new Bmul(tpos, left->clone(), right->clone());
+    }
+
+    bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
+
+    void generateCode(GeneratorContext *ctx) {
+        left->generateCode(ctx);
+        right->generateCode(ctx);
+        ctx->addLine(CMD_BASEMUL);
+    }
+};
+
+//////////////////
+/////  Bneg  /////
+//////////////////
+
+class Bneg : public UnaryEvaluator {
+
+    public:
+
+    Bneg(int pos, Evaluator *ev) : UnaryEvaluator(pos, ev, true) {}
+
+    Evaluator *clone() {
+        return new Bneg(tpos, ev->clone());
+    }
+
+    bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
+
+    void generateCode(GeneratorContext *ctx) {
+        ev->generateCode(ctx);
+        ctx->addLine(CMD_BASECHS);
+    }
+};
+
+//////////////////
+/////  Bnot  /////
+//////////////////
+
+class Bnot : public UnaryEvaluator {
+
+    public:
+
+    Bnot(int pos, Evaluator *ev) : UnaryEvaluator(pos, ev, true) {}
+
+    Evaluator *clone() {
+        return new Bnot(tpos, ev->clone());
+    }
+
+    bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
+
+    void generateCode(GeneratorContext *ctx) {
+        ev->generateCode(ctx);
+        ctx->addLine(CMD_NOT);
+    }
+};
+
+/////////////////
+/////  Bor  /////
+/////////////////
+
+class Bor : public BinaryEvaluator {
+
+    public:
+
+    Bor(int pos, Evaluator *left, Evaluator *right) : BinaryEvaluator(pos, left, right, false) {}
+
+    Evaluator *clone() {
+        return new Bor(tpos, left->clone(), right->clone());
+    }
+
+    void generateCode(GeneratorContext *ctx) {
+        left->generateCode(ctx);
+        right->generateCode(ctx);
+        ctx->addLine(CMD_OR);
+    }
+};
+
+//////////////////
+/////  Bsub  /////
+//////////////////
+
+class Bsub : public BinaryEvaluator {
+
+    public:
+
+    Bsub(int pos, Evaluator *left, Evaluator *right) : BinaryEvaluator(pos, left, right, true) {}
+
+    Evaluator *clone() {
+        return new Bsub(tpos, left->clone(), right->clone());
+    }
+
+    bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
+
+    void generateCode(GeneratorContext *ctx) {
+        left->generateCode(ctx);
+        right->generateCode(ctx);
+        ctx->addLine(CMD_BASESUB);
+    }
+};
+
+//////////////////
+/////  Bxor  /////
+//////////////////
+
+class Bxor : public BinaryEvaluator {
+
+    public:
+
+    Bxor(int pos, Evaluator *left, Evaluator *right) : BinaryEvaluator(pos, left, right, true) {}
+
+    Evaluator *clone() {
+        return new Bxor(tpos, left->clone(), right->clone());
+    }
+
+    bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
+
+    void generateCode(GeneratorContext *ctx) {
+        left->generateCode(ctx);
+        right->generateCode(ctx);
+        ctx->addLine(CMD_BASEMUL);
+    }
+};
+
+//////////////////
 /////  Call  /////
 //////////////////
 
@@ -823,6 +1024,28 @@ class Ddays : public BinaryEvaluator {
 };
 
 /////////////////
+/////  Dec  /////
+/////////////////
+
+class Dec : public UnaryEvaluator {
+
+    public:
+
+    Dec(int pos, Evaluator *ev) : UnaryEvaluator(pos, ev, true) {}
+
+    Evaluator *clone() {
+        return new Dec(tpos, ev->clone());
+    }
+
+    bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
+
+    void generateCode(GeneratorContext *ctx) {
+        ev->generateCode(ctx);
+        ctx->addLine(CMD_TO_DEC);
+    }
+};
+
+/////////////////
 /////  Deg  /////
 /////////////////
 
@@ -1120,6 +1343,52 @@ class Hms : public UnaryEvaluator {
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
         ctx->addLine(CMD_TO_HMS);
+    }
+};
+
+////////////////////
+/////  Hmsadd  /////
+////////////////////
+
+class Hmsadd : public BinaryEvaluator {
+
+    public:
+
+    Hmsadd(int pos, Evaluator *left, Evaluator *right) : BinaryEvaluator(pos, left, right, true) {}
+
+    Evaluator *clone() {
+        return new Hmsadd(tpos, left->clone(), right->clone());
+    }
+
+    bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
+
+    void generateCode(GeneratorContext *ctx) {
+        left->generateCode(ctx);
+        right->generateCode(ctx);
+        ctx->addLine(CMD_HMSADD);
+    }
+};
+
+////////////////////
+/////  Hmssub  /////
+////////////////////
+
+class Hmssub : public BinaryEvaluator {
+
+    public:
+
+    Hmssub(int pos, Evaluator *left, Evaluator *right) : BinaryEvaluator(pos, left, right, true) {}
+
+    Evaluator *clone() {
+        return new Hmssub(tpos, left->clone(), right->clone());
+    }
+
+    bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
+
+    void generateCode(GeneratorContext *ctx) {
+        left->generateCode(ctx);
+        right->generateCode(ctx);
+        ctx->addLine(CMD_HMSSUB);
     }
 };
 
@@ -1627,6 +1896,60 @@ class Negative : public UnaryEvaluator {
     }
 };
 
+////////////////////
+/////  Newstr  /////
+////////////////////
+
+class Newstr : public Evaluator {
+
+    public:
+
+    Newstr(int pos) : Evaluator(pos) {}
+
+    Evaluator *clone() {
+        return new Newstr(tpos);
+    }
+
+    void generateCode(GeneratorContext *ctx) {
+        ctx->addLine(CMD_NEWSTR);
+    }
+
+    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
+        // nope
+    }
+
+    int howMany(const std::string *name) {
+        return 0;
+    }
+};
+
+/////////////////////
+/////  Newlist  /////
+/////////////////////
+
+class Newlist : public Evaluator {
+
+    public:
+
+    Newlist(int pos) : Evaluator(pos) {}
+
+    Evaluator *clone() {
+        return new Newlist(tpos);
+    }
+
+    void generateCode(GeneratorContext *ctx) {
+        ctx->addLine(CMD_NEWLIST);
+    }
+
+    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
+        // nope
+    }
+
+    int howMany(const std::string *name) {
+        return 0;
+    }
+};
+
 /////////////////
 /////  Not  /////
 /////////////////
@@ -1646,6 +1969,28 @@ class Not : public UnaryEvaluator {
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
         ctx->addLine(CMD_GEN_NOT);
+    }
+};
+
+/////////////////
+/////  Oct  /////
+/////////////////
+
+class Oct : public UnaryEvaluator {
+
+    public:
+
+    Oct(int pos, Evaluator *ev) : UnaryEvaluator(pos, ev, true) {}
+
+    Evaluator *clone() {
+        return new Oct(tpos, ev->clone());
+    }
+
+    bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
+
+    void generateCode(GeneratorContext *ctx) {
+        ev->generateCode(ctx);
+        ctx->addLine(CMD_TO_OCT);
     }
 };
 
@@ -2409,6 +2754,73 @@ bool Atanh::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
     return true;
 }
 
+bool Badd::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
+    if (left->howMany(name) == 1) {
+        *lhs = left;
+        *rhs = new Bsub(0, *rhs, right);
+    } else {
+        *lhs = right;
+        *rhs = new Bsub(0, *rhs, left);
+    }
+    return true;
+}
+
+bool Bdiv::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
+    if (left->howMany(name) == 1) {
+        *lhs = left;
+        *rhs = new Bmul(0, *rhs, right);
+    } else {
+        *lhs = right;
+        *rhs = new Bdiv(0, left, *rhs);
+    }
+    return true;
+}
+
+bool Bmul::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
+    if (left->howMany(name) == 1) {
+        *lhs = left;
+        *rhs = new Bdiv(0, *rhs, right);
+    } else {
+        *lhs = right;
+        *rhs = new Bdiv(0, *rhs, left);
+    }
+    return true;
+}
+
+bool Bneg::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
+    *lhs = ev;
+    *rhs = new Bneg(0, *rhs);
+    return true;
+}
+
+bool Bnot::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
+    *lhs = ev;
+    *rhs = new Bnot(0, *rhs);
+    return true;
+}
+
+bool Bsub::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
+    if (left->howMany(name) == 1) {
+        *lhs = left;
+        *rhs = new Badd(0, *rhs, right);
+    } else {
+        *lhs = right;
+        *rhs = new Bsub(0, left, *rhs);
+    }
+    return true;
+}
+
+bool Bxor::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
+    if (left->howMany(name) == 1) {
+        *lhs = left;
+        *rhs = new Bxor(0, *rhs, right);
+    } else {
+        *lhs = right;
+        *rhs = new Bxor(0, left, *rhs);
+    }
+    return true;
+}
+
 bool Cos::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
     *lhs = ev;
     *rhs = new Acos(0, *rhs);
@@ -2440,6 +2852,12 @@ bool Ddays::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
         *lhs = right;
         *rhs = new Date(0, left, *rhs);
     }
+    return true;
+}
+
+bool Dec::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
+    *lhs = ev;
+    *rhs = new Oct(0, *rhs);
     return true;
 }
 
@@ -2484,6 +2902,28 @@ bool Hms::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
     return true;
 }
 
+bool Hmsadd::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
+    if (left->howMany(name) == 1) {
+        *lhs = left;
+        *rhs = new Hmssub(0, *rhs, right);
+    } else {
+        *lhs = right;
+        *rhs = new Hmssub(0, *rhs, left);
+    }
+    return true;
+}
+
+bool Hmssub::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
+    if (left->howMany(name) == 1) {
+        *lhs = left;
+        *rhs = new Hmsadd(0, *rhs, right);
+    } else {
+        *lhs = right;
+        *rhs = new Hmssub(0, left, *rhs);
+    }
+    return true;
+}
+
 bool Hrs::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
     *lhs = ev;
     *rhs = new Hms(0, *rhs);
@@ -2517,6 +2957,12 @@ bool Log::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
 bool Negative::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
     *lhs = ev;
     *rhs = new Negative(0, *rhs);
+    return true;
+}
+
+bool Oct::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
+    *lhs = ev;
+    *rhs = new Dec(0, *rhs);
     return true;
 }
 
@@ -3232,13 +3678,17 @@ Evaluator *Parser::parseThing() {
                     || t == "ABS" || t == "FACT" || t == "GAMMA"
                     || t == "INT" || t == "IP" || t == "FP"
                     || t == "HMS" || t == "HRS" || t == "SIZES"
-                    || t == "SGN") {
+                    || t == "SGN" || t == "DEC" || t == "OCT"
+                    || t == "BNOT" || t == "BNEG") {
                 nargs = 1;
                 mode = EXPR_LIST_EXPR;
             } else if (t == "ANGLE" || t == "RADIUS" || t == "XCOORD"
                     || t == "YCOORD" || t == "COMB" || t == "PERM"
                     || t == "IDIV" || t == "RND" || t == "DATE"
-                    || t == "DDAYS") {
+                    || t == "DDAYS" || t == "BAND" || t == "BOR"
+                    || t == "BXOR" || t == "BADD" || t == "BSUB"
+                    || t == "BMUL" || t == "BDIV" || t == "HMSADD"
+                    || t == "HMSSUB") {
                 nargs = 2;
                 mode = EXPR_LIST_EXPR;
             } else if (t == "MIN" || t == "MAX") {
@@ -3287,7 +3737,8 @@ Evaluator *Parser::parseThing() {
                     || t == "ABS" || t == "FACT" || t == "GAMMA"
                     || t == "INT" || t == "IP" || t == "FP"
                     || t == "HMS" || t == "HRS" || t == "SIZES"
-                    || t == "SGN") {
+                    || t == "SGN" || t == "DEC" || t == "OCT"
+                    || t == "BNOT" || t == "BNEG") {
                 Evaluator *ev = (*evs)[0];
                 delete evs;
                 if (t == "SIN")
@@ -3356,10 +3807,21 @@ Evaluator *Parser::parseThing() {
                     return new Sizes(tpos, ev);
                 else if (t == "SGN")
                     return new Sgn(tpos, ev);
+                else if (t == "DEC")
+                    return new Dec(tpos, ev);
+                else if (t == "OCT")
+                    return new Oct(tpos, ev);
+                else if (t == "BNOT")
+                    return new Bnot(tpos, ev);
+                else if (t == "BNEG")
+                    return new Bneg(tpos, ev);
             } else if (t == "ANGLE" || t == "RADIUS" || t == "XCOORD"
                     || t == "YCOORD" || t == "COMB" || t == "PERM"
                     || t == "IDIV" || t == "RND" || t == "DATE"
-                    || t == "DDAYS") {
+                    || t == "DDAYS" || t == "BAND" || t == "BOR"
+                    || t == "BXOR" || t == "BADD" || t == "BSUB"
+                    || t == "BMUL" || t == "BDIV" || t == "HMSADD"
+                    || t == "HMSSUB") {
                 Evaluator *left = (*evs)[0];
                 Evaluator *right = (*evs)[1];
                 delete evs;
@@ -3383,6 +3845,24 @@ Evaluator *Parser::parseThing() {
                     return new Date(tpos, left, right);
                 else if (t == "DDAYS")
                     return new Ddays(tpos, left, right);
+                else if (t == "BAND")
+                    return new Band(tpos, left, right);
+                else if (t == "BOR")
+                    return new Bor(tpos, left, right);
+                else if (t == "BXOR")
+                    return new Bxor(tpos, left, right);
+                else if (t == "BADD")
+                    return new Badd(tpos, left, right);
+                else if (t == "BSUB")
+                    return new Bsub(tpos, left, right);
+                else if (t == "BMUL")
+                    return new Bmul(tpos, left, right);
+                else if (t == "BDIV")
+                    return new Bdiv(tpos, left, right);
+                else if (t == "HMSADD")
+                    return new Hmsadd(tpos, left, right);
+                else if (t == "HMSSUB")
+                    return new Hmssub(tpos, left, right);
             } else if (t == "MAX" || t == "MIN") {
                 if (t == "MAX")
                     return new Max(tpos, evs);
@@ -3456,6 +3936,10 @@ Evaluator *Parser::parseThing() {
                 return new Cdate(tpos);
             else if (t == "CTIME")
                 return new Ctime(tpos);
+            else if (t == "NEWSTR")
+                return new Newstr(tpos);
+            else if (t == "NEWLIST")
+                return new Newlist(tpos);
             else
                 return new Variable(tpos, t);
         }

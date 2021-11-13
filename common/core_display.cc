@@ -2420,7 +2420,7 @@ struct prp_data_struct {
 static prp_data_struct *prp_data;
 static int print_program_worker(bool interrupted);
 
-int print_program(int prgm_index, int4 pc, int4 lines, bool normal) {
+int print_program(pgm_index prgm, int4 pc, int4 lines, bool normal) {
     prp_data_struct *dat = (prp_data_struct *) malloc(sizeof(prp_data_struct));
     if (dat == NULL)
         return ERR_INSUFFICIENT_MEMORY;
@@ -2444,7 +2444,7 @@ int print_program(int prgm_index, int4 pc, int4 lines, bool normal) {
         dat->full_xstr = true;
     }
 
-    current_prgm.set_prgm(prgm_index);
+    current_prgm = prgm;
     prp_data = dat;
 
     if (normal) {
@@ -2578,8 +2578,8 @@ static int print_program_worker(bool interrupted) {
     return ERR_STOP;
 }
 
-void print_program_line(int prgm_index, int4 pc) {
-    print_program(prgm_index, pc, 1, true);
+void print_program_line(pgm_index prgm, int4 pc) {
+    print_program(prgm, pc, 1, true);
 }
 
 int command2buf(char *buf, int len, int cmd, const arg_struct *arg) {

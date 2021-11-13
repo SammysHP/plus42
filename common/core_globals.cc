@@ -1834,8 +1834,8 @@ int label_has_mvar(int lblindex) {
     return command == CMD_MVAR;
 }
 
-int get_command_length(int prgm_index, int4 pc) {
-    prgm_struct *prgm = prgms + prgm_index;
+int get_command_length(pgm_index idx, int4 pc) {
+    prgm_struct *prgm = prgms + idx.index();
     int4 pc2 = pc;
     int command = prgm->text[pc2++];
     int argtype = prgm->text[pc2++];
@@ -2052,7 +2052,9 @@ void rebuild_label_table() {
                 newlabel->prgm = prgm_index;
                 newlabel->pc = pc;
             }
-            pc += get_command_length(prgm_index, pc);
+            pgm_index idx;
+            idx.set_prgm(prgm_index);
+            pc += get_command_length(idx, pc);
         }
     }
 }

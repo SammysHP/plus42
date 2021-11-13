@@ -887,7 +887,7 @@ int docmd_pgmslv(arg_struct *arg) {
     if (err != ERR_NONE)
         return err;
     if (eq != NULL)
-        return set_solve_eqn(eq->data);
+        return set_solve_eqn(prgms[eq->data.index()].eq_data);
 
     if (arg->type == ARGTYPE_IND_NUM
             || arg->type == ARGTYPE_IND_STK
@@ -897,7 +897,7 @@ int docmd_pgmslv(arg_struct *arg) {
             return err;
     }
     if (arg->type == ARGTYPE_STR) {
-        int prgm;
+        pgm_index prgm;
         int4 pc;
         if (!find_global_label(arg, &prgm, &pc))
             return ERR_LABEL_NOT_FOUND;
@@ -913,7 +913,7 @@ int docmd_pgmint(arg_struct *arg) {
     if (err != ERR_NONE)
         return err;
     if (eq != NULL)
-        return set_integ_eqn(eq->data);
+        return set_integ_eqn(prgms[eq->data.index()].eq_data);
 
     if (arg->type == ARGTYPE_IND_NUM
             || arg->type == ARGTYPE_IND_STK
@@ -923,7 +923,7 @@ int docmd_pgmint(arg_struct *arg) {
             return err;
     }
     if (arg->type == ARGTYPE_STR) {
-        int prgm;
+        pgm_index prgm;
         int4 pc;
         if (!find_global_label(arg, &prgm, &pc))
             return ERR_LABEL_NOT_FOUND;

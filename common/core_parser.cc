@@ -114,8 +114,8 @@ class GeneratorContext {
                 line->n = label2line[line->n];
         }
         // Label resolution done
-        int saved_prgm = current_prgm;
-        current_prgm = prgm->eq_data->prgm_index;
+        pgm_index saved_prgm = current_prgm;
+        current_prgm.set_eqn(prgm->eq_data->eqn_index);
         prgm->text = NULL;
         prgm->size = 0;
         prgm->capacity = 0;
@@ -3150,7 +3150,7 @@ void Parser::pushback(std::string o, int p) {
 }
 
 void get_varmenu_row_for_eqn(vartype *eqn, int *rows, int *row, char ktext[6][7], int klen[6]) {
-    Evaluator *ev = ((vartype_equation *) eqn)->data->ev;
+    Evaluator *ev = prgms[((vartype_equation *) eqn)->data.index()].eq_data->ev;
     std::vector<std::string> vars;
     std::vector<std::string> locals;
     ev->collectVariables(&vars, &locals);
@@ -3177,7 +3177,8 @@ int isolate(vartype *eqn, const char *name, int length) {
     if (eqn == NULL || eqn->type != TYPE_EQUATION)
         return -1;
     vartype_equation *eq = (vartype_equation *) eqn;
-    Evaluator *ev = eq->data->ev;
+    equation_data *eqd = prgms[eq->data.index()].eq_data;
+    Evaluator *ev = eqd->ev;
     std::string n(name, length);
     if (ev->howMany(&n) != 1)
         return -1;
@@ -3189,23 +3190,27 @@ int isolate(vartype *eqn, const char *name, int length) {
         if (!lhs->invert(&n, &lhs, &rhs)) {
             // Shouldn't happen
             delete lhs;
+            fail:
             delete rhs;
             return -1;
         }
     }
     delete lhs;
 
-    int errpos;
-    // Dummy equation, just to reserve a program slot
-    vartype_equation *neq = (vartype_equation *) new_equation("A", 1, eq->data->compatMode, &errpos);
-    // That's why I'm using free() here, not free_vartype()...
-    equation_data *eqd = neq->data;
-    free(neq);
+    int4 neq = new_eqn_idx(-1);
+    if (neq == -1)
+        goto fail;
+    equation_data *neqd = new equation_data;
+    if (neqd == NULL)
+        goto fail;
+    prgms[neq + prgms_count].eq_data = neqd;
+    neqd->compatMode = eqd->compatMode;
+    neqd->eqn_index = neq;
     GeneratorContext ctx;
     rhs->generateCode(&ctx);
     delete rhs;
-    ctx.store(prgms + eqd->prgm_index);
-    return eqd->prgm_index;
+    ctx.store(prgms + neq + prgms_count);
+    return neq;
 }
 
 bool has_parameters(equation_data *eqdata) {

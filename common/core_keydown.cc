@@ -1902,8 +1902,8 @@ void keydown_alpha_mode(int shift, int key) {
             } else {
                 int4 line = pc2line(pc);
                 if (line != 0
-                        && (current_prgm != prgms_count - 1
-                            || prgms[current_prgm].text[pc] != CMD_END)) {
+                        && (current_prgm.index() != prgms_count - 1
+                            || prgms[current_prgm.index()].text[pc] != CMD_END)) {
                     delete_command(pc);
                     pc = line2pc(line - 1);
                 }
@@ -2027,7 +2027,7 @@ void keydown_normal_mode(int shift, int key) {
         /* Entering number entry mode */
         if (deferred_print)
             print_command(CMD_NULL, NULL);
-        if (flags.f.prgm_mode && current_prgm >= prgms_count) {
+        if (flags.f.prgm_mode && current_prgm.is_eqn()) {
             display_error(ERR_RESTRICTED_OPERATION, false);
             redisplay();
             return;
@@ -2041,7 +2041,7 @@ void keydown_normal_mode(int shift, int key) {
         if (flags.f.prgm_mode) {
             if (pc == -1)
                 pc = 0;
-            else if (prgms[current_prgm].text[pc] != CMD_END)
+            else if (prgms[current_prgm.index()].text[pc] != CMD_END)
                 pc += get_command_length(current_prgm, pc);
             prgm_highlight_row = 1;
             if (cmdline_row == 1)
@@ -2078,11 +2078,11 @@ void keydown_normal_mode(int shift, int key) {
         int4 line = pc2line(pc);
         if (line == 0)
             return;
-        if (current_prgm >= prgms_count) {
+        if (current_prgm.is_eqn()) {
             display_error(ERR_RESTRICTED_OPERATION, false);
         } else {
-            if (current_prgm != prgms_count - 1
-                    || prgms[current_prgm].text[pc] != CMD_END)
+            if (current_prgm.index() != prgms_count - 1
+                    || prgms[current_prgm.index()].text[pc] != CMD_END)
                 delete_command(pc);
             pc = line2pc(line - 1);
             prgm_highlight_row = 0;
@@ -2240,7 +2240,7 @@ void keydown_normal_mode(int shift, int key) {
                     if (length == 0)
                         squeak();
                     else {
-                        int dummyprgm;
+                        pgm_index dummyprgm;
                         int4 dummypc;
                         int i;
                         pending_command_arg.type = ARGTYPE_STR;

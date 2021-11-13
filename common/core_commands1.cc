@@ -749,7 +749,7 @@ int docmd_clrg(arg_struct *arg) {
 int docmd_del(arg_struct *arg) {
     if (arg->type != ARGTYPE_NUM)
         return ERR_INVALID_TYPE;
-    if (current_prgm >= prgms_count)
+    if (!current_prgm.is_prgm())
         return ERR_RESTRICTED_OPERATION;
     clear_prgm_lines(arg->val.num);
     return ERR_NONE;

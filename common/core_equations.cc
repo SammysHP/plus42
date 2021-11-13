@@ -362,7 +362,8 @@ static int print_eq_worker(bool interrupted) {
             print_lines(s->txt(), s->length, 1);
         } else if (v->type == TYPE_EQUATION) {
             vartype_equation *eq = (vartype_equation *) v;
-            print_lines(eq->data->text, eq->data->length, 1);
+            equation_data *eqd = prgms[eq->data.index()].eq_data;
+            print_lines(eqd->text, eqd->length, 1);
         } else {
             print_lines("<Invalid>", 9, 1);
         }
@@ -495,8 +496,9 @@ char *eqn_copy() {
                 len = s->length;
             } else if (v->type == TYPE_EQUATION) {
                 vartype_equation *eq = (vartype_equation *) v;
-                text = eq->data->text;
-                len = eq->data->length;
+                equation_data *eqd = prgms[eq->data.index()].eq_data;
+                text = eqd->text;
+                len = eqd->length;
                 tb_write(&tb, buf, len);
             } else {
                 text = "<Invalid>";
@@ -683,8 +685,9 @@ bool eqn_draw() {
                 len = s->length;
             } else if (v->type == TYPE_EQUATION) {
                 vartype_equation *eq = (vartype_equation *) v;
-                text = eq->data->text;
-                len = eq->data->length;
+                equation_data *eqd = prgms[eq->data.index()].eq_data;
+                text = eqd->text;
+                len = eqd->length;
             } else {
                 text = "<Invalid>";
                 len = 9;
@@ -1201,8 +1204,9 @@ static bool get_equation() {
         len = s->length;
     } else if (v->type == TYPE_EQUATION) {
         vartype_equation *eq = (vartype_equation *) v;
-        text = eq->data->text;
-        len = eq->data->length;
+        equation_data *eqd = prgms[eq->data.index()].eq_data;
+        text = eqd->text;
+        len = eqd->length;
     } else {
         text = "<Invalid>";
         len = 9;
@@ -1432,7 +1436,7 @@ static int keydown_list(int key, bool shift, int *repeat) {
             }
 
             pending_command_arg.type = ARGTYPE_EQN;
-            pending_command_arg.val.num = ((vartype_equation *) v)->data->prgm_index;
+            pending_command_arg.val.num = ((vartype_equation *) v)->data.index();
             if (menu_whence == CATSECT_PGM_SOLVE)
                 pending_command = CMD_PGMSLVi;
             else if (menu_whence == CATSECT_PGM_INTEG)
@@ -2013,8 +2017,9 @@ static int keydown_edit_2(int key, bool shift, int *repeat) {
                             orig_len = s->length;
                         } else if (v->type == TYPE_EQUATION) {
                             vartype_equation *eq = (vartype_equation *) v;
-                            orig_text = eq->data->text;
-                            orig_len = eq->data->length;
+                            equation_data *eqd = prgms[eq->data.index()].eq_data;
+                            orig_text = eqd->text;
+                            orig_len = eqd->length;
                         } else {
                             orig_text = "<Invalid>";
                             orig_len = 9;

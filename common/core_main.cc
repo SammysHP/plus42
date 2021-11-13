@@ -553,8 +553,7 @@ bool core_keyup() {
             vartype_equation *eq = (vartype_equation *) malloc(sizeof(vartype_equation));
             if (eq != NULL) {
                 eq->type = TYPE_EQUATION;
-                eq->data = eqdata;
-                eq->data->refcount++;
+                eq->data.set_eqn(eqdata->eqn_index);
             }
             v = (vartype *) eq;
         } else {
@@ -848,7 +847,7 @@ static void export_hp42s(int index) {
     int4 pc = 0;
     int cmd;
     arg_struct arg;
-    int saved_prgm = current_prgm;
+    pgm_index saved_prgm = current_prgm;
     unsigned char code_flags, code_name, code_std_1, code_std_2;
     char cmdbuf[50];
     int cmdlen;
@@ -856,7 +855,7 @@ static void export_hp42s(int index) {
     int buflen = 0;
     int i;
 
-    current_prgm = index;
+    current_prgm.set_prgm(index);
     do {
         const char *orig_num;
         get_next_command(&pc, &cmd, &arg, 0, &orig_num);
@@ -1174,12 +1173,12 @@ int4 core_program_size(int prgm_index) {
     int4 pc = 0;
     int cmd;
     arg_struct arg;
-    int saved_prgm = current_prgm;
+    pgm_index saved_prgm = current_prgm;
     unsigned char code_flags, code_std_1, code_std_2;
     //unsigned char code_name;
     int4 size = 0;
 
-    current_prgm = prgm_index;
+    current_prgm.set_prgm(prgm_index);
     do {
         const char *orig_num;
         get_next_command(&pc, &cmd, &arg, 0, &orig_num);
@@ -2039,8 +2038,8 @@ void core_import_programs(int num_progs, const char *raw_file_name) {
         goto_dot_dot(true);
         pending_end = false;
     } else {
-        set_current_prgm_gto(prgms_count - 1);
-        pc = prgms[current_prgm].size - 2;
+        current_prgm.set_prgm(prgms_count - 1);
+        pc = prgms[current_prgm.index()].size - 2;
         // No initial END needed if last program is empty
         pending_end = pc > 0;
     }
@@ -2564,9 +2563,10 @@ static void serialize_list(textbuf *tb, vartype_list *list, int indent) {
                     d = '"';
                 } else {
                     vartype_equation *eq = (vartype_equation *) elem;
-                    text = eq->data->text;
-                    length = eq->data->length;
-                    d = eq->data->compatMode ? '`' : '\'';
+                    equation_data *eqd = prgms[eq->data.index()].eq_data;
+                    text = eqd->text;
+                    length = eqd->length;
+                    d = eqd->compatMode ? '`' : '\'';
                 }
                 tb_indent(tb, indent);
                 tb_write(tb, &d, 1);
@@ -2777,8 +2777,9 @@ char *core_copy() {
         goto textbuf_finish;
     } else if (stack[sp]->type == TYPE_EQUATION) {
         vartype_equation *eq = (vartype_equation *) stack[sp];
-        char *buf = (char *) malloc(5 * eq->data->length + 1);
-        int bufptr = hp2ascii(buf, eq->data->text, eq->data->length);
+        equation_data *eqd = prgms[eq->data.index()].eq_data;
+        char *buf = (char *) malloc(5 * eqd->length + 1);
+        int bufptr = hp2ascii(buf, eqd->text, eqd->length);
         buf[bufptr] = 0;
         return buf;
     } else {
@@ -4741,7 +4742,7 @@ void do_interactive(int command) {
             incomplete_saved_highlight_row = prgm_highlight_row;
             if (pc == -1)
                 pc = 0;
-            else if (prgms[current_prgm].text[pc] != CMD_END)
+            else if (prgms[current_prgm.index()].text[pc] != CMD_END)
                 pc += get_command_length(current_prgm, pc);       
             prgm_highlight_row = 1;
             start_incomplete_command(command);
@@ -4767,7 +4768,7 @@ static void continue_running() {
         oldpc = pc;
         if (pc == -1)
             pc = 0;
-        else if (pc >= prgms[current_prgm].size) {
+        else if (pc >= prgms[current_prgm.index()].size) {
             pc = -1;
             set_running(false);
             return;
@@ -4894,7 +4895,7 @@ int find_builtin(const char *name, int namelen) {
 }
 
 void sst() {
-    if (pc >= prgms[current_prgm].size - 2) {
+    if (pc >= prgms[current_prgm.index()].size - 2) {
         pc = -1;
         prgm_highlight_row = 0;
     } else {
@@ -4909,7 +4910,7 @@ void sst() {
 void bst() {
     int4 line = pc2line(pc);
     if (line == 0) {
-        pc = prgms[current_prgm].size - 2;
+        pc = prgms[current_prgm.index()].size - 2;
         prgm_highlight_row = 1;
     } else {
         pc = line2pc(line - 1);
@@ -5127,7 +5128,7 @@ void finish_command_entry(bool refresh) {
 }
 
 void finish_xeq() {
-    int prgm;
+    pgm_index prgm;
     int4 pc;
     int cmd;
 
@@ -5180,13 +5181,13 @@ void finish_xeq() {
 }
 
 bool start_alpha_prgm_line() {
-    if (flags.f.prgm_mode && current_prgm >= prgms_count)
+    if (flags.f.prgm_mode && current_prgm.is_eqn())
         return false;
     incomplete_saved_pc = pc;
     incomplete_saved_highlight_row = prgm_highlight_row;
     if (pc == -1)
         pc = 0;
-    else if (prgms[current_prgm].text[pc] != CMD_END)
+    else if (prgms[current_prgm.index()].text[pc] != CMD_END)
         pc += get_command_length(current_prgm, pc);
     prgm_highlight_row = 1;
     if (cmdline_row == 1)
@@ -5246,10 +5247,10 @@ static int handle_error(int error) {
                 || error == ERR_STOP)
             flags.f.stack_lift_disable = mode_disable_stack_lift;
         if (error == ERR_NO) {
-            if (prgms[current_prgm].text[pc] != CMD_END)
+            if (prgms[current_prgm.index()].text[pc] != CMD_END)
                 pc += get_command_length(current_prgm, pc);
         } else if (error == ERR_STOP) {
-            if (pc >= prgms[current_prgm].size)
+            if (pc >= prgms[current_prgm.index()].size)
                 pc = -1;
             set_running(false);
             return 0;
@@ -5289,13 +5290,13 @@ static int handle_error(int error) {
                 || error == ERR_STOP)
             flags.f.stack_lift_disable = mode_disable_stack_lift;
         if (error == ERR_NO) {
-            if (prgms[current_prgm].text[pc] != CMD_END)
+            if (prgms[current_prgm.index()].text[pc] != CMD_END)
                 pc += get_command_length(current_prgm, pc);
             goto noerr;
         } else if (error == ERR_NONE || error == ERR_YES || error == ERR_STOP) {
             noerr:
             error = ERR_NONE;
-            if (pc > prgms[current_prgm].size)
+            if (pc > prgms[current_prgm.index()].size)
                 pc = -1;
         } else if (error == ERR_NUMBER_TOO_LARGE
                 || error == ERR_NUMBER_TOO_SMALL) {

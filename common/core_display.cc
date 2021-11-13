@@ -1008,13 +1008,13 @@ static int prgmline2buf(char *buf, int len, int4 line, int highlight,
             char2buf(buf, len, &bufptr, '0');
         bufptr += int2string(line, buf + bufptr, len - bufptr);
         if (highlight)
-            char2buf(buf, len, &bufptr, current_prgm < prgms_count ? 6 : 134);
+            char2buf(buf, len, &bufptr, current_prgm.is_prgm() ? 6 : 134);
         else
             char2buf(buf, len, &bufptr, ' ');
     }
 
     if (line == 0) {
-        int4 size = core_program_size(current_prgm);
+        int4 size = core_program_size(current_prgm.index());
         string2buf(buf, len, &bufptr, "{ ", 2);
         bufptr += int2string(size, buf + bufptr, len - bufptr);
         string2buf(buf, len, &bufptr, "-Byte Prgm }", 12);
@@ -1030,7 +1030,7 @@ static int prgmline2buf(char *buf, int len, int4 line, int highlight,
         }
         char2buf(buf, len, &bufptr, '_');
     } else if (highlight_final_end && cmd == CMD_END
-                    && current_prgm == prgms_count - 1) {
+                    && current_prgm.index() == prgms_count - 1) {
         string2buf(buf, len, &bufptr, ".END.", 5);
     } else if (cmd == CMD_NUMBER) {
         const char *num;
@@ -1458,8 +1458,7 @@ void config_varmenu_lbl(const char *name, int len) {
 void config_varmenu_eqn(equation_data *eqdata) {
     vartype_equation *eq = (vartype_equation *) malloc(sizeof(vartype_equation));
     eq->type = TYPE_EQUATION;
-    eq->data = eqdata;
-    eq->data->refcount++;
+    eq->data.init_eqn(eqdata->eqn_index);
     free_vartype(varmenu_eqn);
     varmenu_eqn = (vartype *) eq;
 }
@@ -1485,7 +1484,7 @@ void draw_varmenu() {
         }
     } else {
         arg_struct arg;
-        int saved_prgm, prgm;
+        pgm_index saved_prgm, prgm;
         int4 pc, pc2;
         int command, i, row, key;
         int num_mvars = 0;
@@ -2366,7 +2365,7 @@ void redisplay() {
                     if (pc == -1)
                         prgm_highlight_row = 0;
                     else {
-                        if (prgms[current_prgm].text[pc] == CMD_END)
+                        if (prgms[current_prgm.index()].text[pc] == CMD_END)
                             prgm_highlight_row = 1;
                     }
                     if (prgm_highlight_row == 0) {
@@ -2405,7 +2404,7 @@ void print_display() {
 struct prp_data_struct {
     char buf[100];
     int len;
-    int saved_prgm;
+    pgm_index saved_prgm;
     int cmd;
     arg_struct arg;
     int4 line;
@@ -2428,7 +2427,7 @@ int print_program(int prgm_index, int4 pc, int4 lines, bool normal) {
 
     shell_annunciators(-1, -1, 1, -1, -1, -1);
     dat->len = 0;
-    dat->saved_prgm = current_prgm;
+    dat->saved_prgm.init_copy(current_prgm);
     dat->cmd = CMD_NONE;
     dat->line = pc2line(pc);
     dat->pc = pc;
@@ -2445,7 +2444,7 @@ int print_program(int prgm_index, int4 pc, int4 lines, bool normal) {
         dat->full_xstr = true;
     }
 
-    current_prgm = prgm_index;
+    current_prgm.set_prgm(prgm_index);
     prp_data = dat;
 
     if (normal) {
@@ -3073,7 +3072,8 @@ void assign_prgm_key(int keynum, bool is_gto, const arg_struct *arg) {
 }
 
 void do_prgm_menu_key(int keynum) {
-    int err, oldprgm;
+    int err;
+    pgm_index oldprgm;
     int4 oldpc;
     keynum--;
     if (keynum == 8)
@@ -3090,30 +3090,18 @@ void do_prgm_menu_key(int keynum) {
                                                 &progmenu_arg[keynum]);
     oldprgm = current_prgm;
     oldpc = pc;
-    if (oldprgm >= prgms_count)
-        // In case it's an XEQ; we'll undo this if the docmd_gto() fails,
-        // if the operation is GTO, or if it's an XEQ but pushing the RTN
-        // address fails.
-        inc_eqn_refcount(oldprgm);
     set_running(true);
     progmenu_arg[keynum].target = -1; /* Force docmd_gto() to search */
     err = docmd_gto(&progmenu_arg[keynum]);
     if (err != ERR_NONE) {
-        if (oldprgm >= prgms_count)
-            dec_eqn_refcount(oldprgm);
         set_running(false);
         display_error(err, true);
         flush_display();
         return;
     }
-    if (progmenu_is_gto[keynum]) {
-        if (oldprgm >= prgms_count)
-            dec_eqn_refcount(oldprgm);
-    } else {
+    if (!progmenu_is_gto[keynum]) {
         err = push_rtn_addr(oldprgm, oldpc == -1 ? 0 : oldpc);
         if (err != ERR_NONE) {
-            if (oldprgm >= prgms_count)
-                dec_eqn_refcount(oldprgm);
             current_prgm = oldprgm;
             pc = oldpc;
             set_running(false);

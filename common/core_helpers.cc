@@ -553,10 +553,12 @@ bool vartype_equals(const vartype *v1, const vartype *v2) {
             return true;
         }
         case TYPE_EQUATION: {
-            const vartype_equation *x = (const vartype_equation *) v1;
-            const vartype_equation *y = (const vartype_equation *) v2;
-            return x->data->compatMode == y->data->compatMode
-                && string_equals(x->data->text, x->data->length, y->data->text, y->data->length);
+            vartype_equation *x = (vartype_equation *) v1;
+            equation_data *xd = prgms[x->data.index()].eq_data;
+            vartype_equation *y = (vartype_equation *) v2;
+            equation_data *yd = prgms[y->data.index()].eq_data;
+            return xd->compatMode == yd->compatMode
+                && string_equals(xd->text, xd->length, yd->text, yd->length);
         }
         default:
             /* Looks like someone added a type that we're not handling yet! */
@@ -1720,12 +1722,13 @@ int vartype2string(const vartype *v, char *buf, int buflen, int max_mant_digits)
 
         case TYPE_EQUATION: {
             vartype_equation *eq = (vartype_equation *) v;
+            equation_data *eqd = prgms[eq->data.index()].eq_data;
             int i;
             int chars_so_far = 0;
-            char d = eq->data->compatMode ? '`' : '\'';
+            char d = eqd->compatMode ? '`' : '\'';
             char2buf(buf, buflen, &chars_so_far, d);
-            for (i = 0; i < eq->data->length; i++)
-                char2buf(buf, buflen, &chars_so_far, eq->data->text[i]);
+            for (i = 0; i < eqd->length; i++)
+                char2buf(buf, buflen, &chars_so_far, eqd->text[i]);
             char2buf(buf, buflen, &chars_so_far, d);
             return chars_so_far;
         }

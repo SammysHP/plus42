@@ -24,6 +24,113 @@
 /* Variable data types */
 /***********************/
 
+class Evaluator;
+
+class equation_data {
+    public:
+    int refcount;
+    equation_data() : refcount(0), text(NULL), ev(NULL) {}
+    ~equation_data();
+    int4 length;
+    char *text;
+    Evaluator *ev;
+    bool compatMode;
+    int eqn_index;
+};
+
+class pgm_index {
+    private:
+    // The unified program index combines these possibilities:
+    // Special values: -1 = none, -2 = solve, -3 = integ
+    // Program indices: even nonnegative, index = unified >> 1
+    // Equation indices: odd nonnegative, index = (unified >> 1) + prgms_count
+    int4 uni;
+    public:
+    void inc_refcount();
+    void dec_refcount();
+    pgm_index() {
+        uni = -1;
+    }
+    pgm_index(const pgm_index &that) {
+        uni = that.uni;
+        inc_refcount();
+    }
+    ~pgm_index() {
+        dec_refcount();
+    }
+    void init_copy(const pgm_index &that) {
+        uni = that.uni;
+        inc_refcount();
+    }
+    void init_eqn_from_state(int4 eqn) {
+        uni = (eqn << 1) | 1;
+    }
+    void init_unified_from_state(int4 unified) {
+        this->uni = unified;
+    }
+    void init_eqn(int4 eqn) {
+        uni = (eqn << 1) | 1;
+        inc_refcount();
+    }
+    void init_eqn(int4 eqn, equation_data *data);
+    void clear() {
+        dec_refcount();
+        uni = -1;
+    }
+    void set_special(int4 special) {
+        dec_refcount();
+        this->uni = special;
+    }
+    void set_prgm(int4 prgm) {
+        dec_refcount();
+        uni = prgm << 1;
+    }
+    void set_eqn(int4 eqn) {
+        dec_refcount();
+        uni = (eqn << 1) | 1;
+        inc_refcount();
+    }
+    void set_unified(int4 unified) {
+        dec_refcount();
+        this->uni = unified;
+        inc_refcount();
+    }
+    bool is_eqn() {
+        return uni > 0 && (uni & 1) != 0;
+    }
+    bool is_prgm() {
+        return uni >= 0 && (uni & 1) == 0;
+    }
+    bool is_special() {
+        return uni < 0;
+    }
+    int special() {
+        return uni;
+    }
+    int4 eqn() {
+        return uni >> 1;
+    }
+    int4 prgm() {
+        return uni >> 1;
+    }
+    int4 index();
+    int4 unified() {
+        return uni;
+    }
+    pgm_index &operator=(const pgm_index &that) {
+        dec_refcount();
+        uni = that.uni;
+        inc_refcount();
+        return *this;
+    }
+    bool operator==(const pgm_index &that) {
+        return uni == that.uni;
+    }
+    bool operator!=(const pgm_index &that) {
+        return uni != that.uni;
+    }
+};
+
 #define TYPE_NULL 0
 #define TYPE_REAL 1
 #define TYPE_COMPLEX 2
@@ -112,20 +219,9 @@ struct vartype_list {
 };
 
 
-class Evaluator;
-
-struct equation_data {
-    int refcount;
-    int4 length;
-    char *text;
-    Evaluator *ev;
-    bool compatMode;
-    int prgm_index;
-};
-
 struct vartype_equation {
     int type;
-    equation_data *data;
+    pgm_index data;
 };
 
 
@@ -135,7 +231,7 @@ vartype *new_string(const char *s, int slen);
 vartype *new_realmatrix(int4 rows, int4 columns);
 vartype *new_complexmatrix(int4 rows, int4 columns);
 vartype *new_list(int4 size);
-vartype *new_equation(const char *text, int4 length, bool compat_mode, int *errpos, int prgm_index = -1);
+vartype *new_equation(const char *text, int4 length, bool compat_mode, int *errpos, int eqn_index = -1);
 void free_vartype(vartype *v);
 void clean_vartype_pools();
 void free_long_strings(char *is_string, phloat *data, int4 n);

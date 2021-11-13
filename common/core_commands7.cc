@@ -1298,7 +1298,7 @@ int docmd_prmvar(arg_struct *arg) {
     if (err != ERR_NONE)
         return err;
     if (eq != NULL) {
-        std::vector<std::string> params = get_parameters(eq->data);
+        std::vector<std::string> params = get_parameters(prgms[eq->data.index()].eq_data);
         if (params.size() == 0)
             return ERR_NO_MENU_VARIABLES;
         shell_annunciators(-1, -1, 1, -1, -1, -1);
@@ -1321,12 +1321,12 @@ int docmd_prmvar(arg_struct *arg) {
     if (arg->type != ARGTYPE_STR)
         return ERR_INVALID_TYPE;
 
-    int prgm;
+    pgm_index prgm;
     int4 pc;
     if (!find_global_label(arg, &prgm, &pc))
         return ERR_LABEL_NOT_FOUND;
     pc += get_command_length(prgm, pc);
-    int saved_prgm = current_prgm;
+    pgm_index saved_prgm = current_prgm;
     current_prgm = prgm;
     bool found = false;
 
@@ -1972,7 +1972,8 @@ int docmd_parse(arg_struct *arg) {
 
 int docmd_unparse(arg_struct *arg) {
     vartype_equation *eq = (vartype_equation *) stack[sp];
-    vartype *v = new_string(eq->data->text, eq->data->length);
+    equation_data *eqd = prgms[eq->data.index()].eq_data;
+    vartype *v = new_string(eqd->text, eqd->length);
     if (v == NULL)
         return ERR_INSUFFICIENT_MEMORY;
     unary_result(v);
@@ -1985,12 +1986,12 @@ int docmd_eval(arg_struct *arg) {
         int err = push_rtn_addr(current_prgm, pc);
         if (err != ERR_NONE)
             return err;
-        set_current_prgm_xeq(eq->data->prgm_index);
+        current_prgm = eq->data;
         pc = 0;
         return ERR_NONE;
     } else {
         clear_all_rtns();
-        set_current_prgm_gto(eq->data->prgm_index);
+        current_prgm = eq->data;
         pc = 0;
         return ERR_RUN;
     }
@@ -2027,11 +2028,9 @@ int docmd_xeql(arg_struct *arg) {
         int err = push_rtn_addr(current_prgm, pc);
         if (err != ERR_NONE)
             return err;
-        inc_eqn_refcount(current_prgm);
         err = docmd_gtol(arg);
         if (err != ERR_NONE) {
-            dec_eqn_refcount(current_prgm);
-            int dummy1;
+            pgm_index dummy1;
             int4 dummy2;
             bool dummy3;
             pop_rtn_addr(&dummy1, &dummy2, &dummy3);

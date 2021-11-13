@@ -25,6 +25,39 @@
 #include "core_variables.h"
 
 
+equation_data::~equation_data() {
+    free(text);
+    delete ev;
+}
+
+void pgm_index::inc_refcount() {
+    if (uni > 0 && (uni & 1) != 0)
+        prgms[(uni >> 1) + prgms_count].eq_data->refcount++;
+}
+void pgm_index::dec_refcount() {
+    if (uni > 0 && (uni & 1) != 0) {
+        int4 i = (uni >> 1) + prgms_count;
+        equation_data *eqd = prgms[i].eq_data;
+        if (--eqd->refcount == 0) {
+            delete eqd;
+            prgms[i].eq_data = NULL;
+        }
+    }
+}
+void pgm_index::init_eqn(int4 eqn, equation_data *data) {
+    uni = (eqn << 1) | 1;
+    prgms[eqn + prgms_count].eq_data = data;
+    inc_refcount();
+}
+int4 pgm_index::index() {
+    if (uni < 0)
+        return uni;
+    else if ((uni & 1) != 0)
+        return (uni >> 1) + prgms_count;
+    else
+        return uni >> 1;
+}
+
 // We cache vartype_real, vartype_complex, and vartype_string instances, to
 // cut down on the malloc/free overhead.
 
@@ -184,79 +217,35 @@ vartype *new_list(int4 size) {
     return (vartype *) list;
 }
 
-vartype *new_equation(const char *text, int4 len, bool compat_mode, int *errpos, int prgm_index) {
-    int new_prgms_and_eqns_count = prgms_and_eqns_count;
-    if (prgm_index == -1) {
-        for (int i = prgms_count; i < prgms_and_eqns_count; i++)
-            if (prgms[i].eq_data == NULL) {
-                prgm_index = i;
-                break;
-            }
-        if (prgm_index == -1) {
-            if (prgms_and_eqns_count == prgms_capacity) {
-                int new_prgms_capacity = prgms_capacity + 10;
-                prgm_struct *new_prgms = (prgm_struct *) realloc(prgms, new_prgms_capacity * sizeof(prgm_struct));
-                if (new_prgms == NULL)
-                    return NULL;
-                prgms = new_prgms;
-                prgms_capacity = new_prgms_capacity;
-            }
-            prgm_index = new_prgms_and_eqns_count++;
-            prgms[prgm_index].eq_data = NULL;
-        }
-    } else {
-        // Loading an equation at a pre-determined program index
-        // This is used while reading the state file; we want to
-        // maintain program indexes here in order to be consistent
-        // with the RTN stack.
-        if (prgm_index >= prgms_capacity) {
-            int new_prgms_capacity = prgm_index + 10;
-            prgm_struct *new_prgms = (prgm_struct *) realloc(prgms, new_prgms_capacity * sizeof(prgm_struct));
-            if (new_prgms == NULL)
-                return NULL;
-            prgms = new_prgms;
-            prgms_capacity = new_prgms_capacity;
-        }
-        if (prgm_index >= prgms_and_eqns_count) {
-            for (int i = prgms_and_eqns_count; i <= prgm_index; i++)
-                prgms[i].eq_data = NULL;
-            new_prgms_and_eqns_count = prgm_index + 1;
-        }
-    }
-
+vartype *new_equation(const char *text, int4 len, bool compat_mode, int *errpos, int eqn_index) {
+    eqn_index = new_eqn_idx(eqn_index);
+    if (eqn_index == -1)
+        return NULL;
+    equation_data *eqd = new equation_data;
     *errpos = -1;
+    eqd->length = len;
+    eqd->text = (char *) malloc(len);
+    if (eqd->text == NULL) {
+        delete eqd;
+        return NULL;
+    }
+    memcpy(eqd->text, text, len);
+    eqd->ev = Parser::parse(std::string(text, len), compat_mode, errpos);
+    if (eqd->ev == NULL) {
+        delete eqd;
+        return NULL;
+    }
+    eqd->compatMode = compat_mode;
+
     vartype_equation *eq = (vartype_equation *) malloc(sizeof(vartype_equation));
-    if (eq == NULL)
+    if (eq == NULL) {
+        delete eqd;
         return NULL;
+    }
     eq->type = TYPE_EQUATION;
-    eq->data = (equation_data *) malloc(sizeof(equation_data));
-    if (eq->data == NULL) {
-        free(eq);
-        return NULL;
-    }
-    eq->data->length = len;
-    eq->data->text = (char *) malloc(len);
-    if (eq->data->text == NULL) {
-        free(eq->data);
-        free(eq);
-        return NULL;
-    }
-    memcpy(eq->data->text, text, len);
-    eq->data->ev = Parser::parse(std::string(text, len), compat_mode, errpos);
-    if (eq->data->ev == NULL) {
-        free(eq->data->text);
-        free(eq->data);
-        free(eq);
-        return NULL;
-    }
-    eq->data->compatMode = compat_mode;
-    eq->data->refcount = 1;
-    eq->data->prgm_index = prgm_index;
-    prgms[prgm_index].eq_data = eq->data;
-    Parser::generateCode(eq->data->ev, prgms + prgm_index);
+    eq->data.init_eqn(eqn_index, eqd);
+    Parser::generateCode(eqd->ev, prgms + eq->data.index());
     // TODO: Error handling. Have generateCode() signal failure by setting 'text' to NULL or something.
-    prgms_and_eqns_count = new_prgms_and_eqns_count;
-    fprintf(stderr, "created equation %d %s\n", prgm_index, std::string(text, len).c_str());
     return (vartype *) eq;
 }
 
@@ -322,16 +311,7 @@ void free_vartype(vartype *v) {
         }
         case TYPE_EQUATION: {
             vartype_equation *eq = (vartype_equation *) v;
-            fprintf(stderr, "delete eq %d %s (%d)\n", eq->data->prgm_index, std::string(eq->data->text, eq->data->length).c_str(), eq->data->refcount);
-            if (--(eq->data->refcount) == 0) {
-                prgms[eq->data->prgm_index].eq_data = NULL;
-                free(prgms[eq->data->prgm_index].text);
-                while (prgms_and_eqns_count > prgms_count && prgms[prgms_and_eqns_count - 1].eq_data == NULL)
-                    prgms_and_eqns_count--;
-                free(eq->data->text);
-                delete eq->data->ev;
-                free(eq->data);
-            }
+            eq->data.clear();
             free(eq);
             break;
         }
@@ -447,12 +427,11 @@ vartype *dup_vartype(const vartype *v) {
         }
         case TYPE_EQUATION: {
             vartype_equation *eq = (vartype_equation *) v;
-            fprintf(stderr, "duplicate eq %d %s (%d)\n", eq->data->prgm_index, std::string(eq->data->text, eq->data->length).c_str(), eq->data->refcount);
             vartype_equation *eq2 = (vartype_equation *) malloc(sizeof(vartype_equation));
             if (eq2 == NULL)
                 return NULL;
-            *eq2 = *eq;
-            eq->data->refcount++;
+            eq2->type = TYPE_EQUATION;
+            eq2->data.init_copy(eq->data);
             return (vartype *) eq2;
         }
         default:

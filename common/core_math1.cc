@@ -43,7 +43,7 @@ struct solve_state {
     char var_name[7];
     int var_length;
     int keep_running;
-    int prev_prgm;
+    pgm_index prev_prgm;
     int4 prev_pc;
     int state;
     int which;
@@ -80,7 +80,7 @@ struct integ_state {
     char var_name[7];
     int var_length;
     int keep_running;
-    int prev_prgm;
+    pgm_index prev_prgm;
     int4 prev_pc;
     int state;
     phloat llim, ulim, acc;
@@ -115,7 +115,7 @@ bool persist_math() {
     if (fwrite(solve.var_name, 1, 7, gfile) != 7) return false;
     if (!write_int(solve.var_length)) return false;
     if (!write_int(solve.keep_running)) return false;
-    if (!write_int(solve.prev_prgm)) return false;
+    if (!write_int4(solve.prev_prgm.unified())) return false;
     if (!write_int4(solve.prev_pc)) return false;
     if (!write_int(solve.state)) return false;
     if (!write_int(solve.which)) return false;
@@ -154,7 +154,7 @@ bool persist_math() {
     if (fwrite(integ.var_name, 1, 7, gfile) != 7) return false;
     if (!write_int(integ.var_length)) return false;
     if (!write_int(integ.keep_running)) return false;
-    if (!write_int(integ.prev_prgm)) return false;
+    if (!write_int4(integ.prev_prgm.unified())) return false;
     if (!write_int4(integ.prev_pc)) return false;
     if (!write_int(integ.state)) return false;
     if (!write_phloat(integ.llim)) return false;
@@ -194,7 +194,9 @@ bool unpersist_math(int ver, bool discard) {
     if (fread(solve.var_name, 1, 7, gfile) != 7) return false;
     if (!read_int(&solve.var_length)) return false;
     if (!read_int(&solve.keep_running)) return false;
-    if (!read_int(&solve.prev_prgm)) return false;
+    int4 idx;
+    if (!read_int4(&idx)) return false;
+    solve.prev_prgm.init_unified_from_state(idx);
     if (!read_int4(&solve.prev_pc)) return false;
     if (!read_int(&solve.state)) return false;
     if (!read_int(&solve.which)) return false;
@@ -233,7 +235,8 @@ bool unpersist_math(int ver, bool discard) {
     if (fread(integ.var_name, 1, 7, gfile) != 7) return false;
     if (!read_int(&integ.var_length)) return false;
     if (!read_int(&integ.keep_running)) return false;
-    if (!read_int(&integ.prev_prgm)) return false;
+    if (!read_int4(&idx)) return false;
+    integ.prev_prgm.init_unified_from_state(idx);
     if (!read_int4(&integ.prev_pc)) return false;
     if (!read_int(&integ.state)) return false;
     if (!read_phloat(&integ.llim)) return false;
@@ -289,6 +292,7 @@ static void reset_solve() {
     solve.state = 0;
     if (mode_appmenu == MENU_SOLVE)
         set_menu_return_err(MENULEVEL_APP, MENU_NONE, true);
+    solve.prev_prgm.clear();
 }
 
 static int find_shadow(const char *name, int length) {
@@ -352,8 +356,7 @@ int set_solve_eqn(equation_data *eqdata) {
     if (eq == NULL)
         return ERR_INSUFFICIENT_MEMORY;
     eq->type = TYPE_EQUATION;
-    eq->data = eqdata;
-    eq->data->refcount++;
+    eq->data.init_eqn(eqdata->eqn_index);
     free_vartype(solve.eq);
     solve.eq = (vartype *) eq;
     return ERR_NONE;
@@ -395,10 +398,12 @@ static int call_solve_fn(int which, int state) {
     } else {
         clean_stack(solve.prev_sp);
         vartype_equation *eq = (vartype_equation *) solve.active_eq;
-        set_current_prgm_gto(eq->data->prgm_index);
+        current_prgm = eq->data;
         pc = 0;
     }
-    err = push_rtn_addr(-2, 0);
+    pgm_index solve_index;
+    solve_index.set_special(-2);
+    err = push_rtn_addr(solve_index, 0);
     if (err != ERR_NONE) {
         current_prgm = solve.prev_prgm;
         pc = solve.prev_pc;
@@ -414,12 +419,10 @@ int start_solve(const char *name, int length, phloat x1, phloat x2) {
         if (idx != -1) {
             if (program_running()) {
                 int err = push_rtn_addr(current_prgm, pc);
-                if (err != ERR_NONE) {
-                    dec_eqn_refcount(idx);
+                if (err != ERR_NONE)
                     return err;
-                }
             }
-            current_prgm = idx;
+            current_prgm.set_eqn(idx);
             pc = 0;
             return program_running() ? ERR_NONE : ERR_RUN;
         }
@@ -1015,11 +1018,6 @@ bool is_solve_var(const char *name, int length) {
     return string_equals(solve.var_name, solve.var_length, name, length);
 }
 
-void dec_solve_caller_refcount() {
-    if (solve.prev_prgm >= prgms_count)
-        dec_eqn_refcount(solve.prev_prgm);
-}
-
 static void reset_integ() {
     free_vartype(integ.eq);
     integ.eq = NULL;
@@ -1030,6 +1028,7 @@ static void reset_integ() {
     integ.state = 0;
     if (mode_appmenu == MENU_INTEG || mode_appmenu == MENU_INTEG_PARAMS)
         set_menu_return_err(MENULEVEL_APP, MENU_NONE, true);
+    integ.prev_prgm.clear();
 }
 
 void set_integ_prgm(const char *name, int length) {
@@ -1043,8 +1042,7 @@ int set_integ_eqn(equation_data *eqdata) {
     if (eq == NULL)
         return ERR_INSUFFICIENT_MEMORY;
     eq->type = TYPE_EQUATION;
-    eq->data = eqdata;
-    eq->data->refcount++;
+    eq->data.init_eqn(eqdata->eqn_index);
     free_vartype(integ.eq);
     integ.eq = (vartype *) eq;
     return ERR_NONE;
@@ -1095,10 +1093,12 @@ static int call_integ_fn() {
     } else {
         clean_stack(integ.prev_sp);
         vartype_equation *eq = (vartype_equation *) integ.active_eq;
-        set_current_prgm_gto(eq->data->prgm_index);
+        current_prgm = eq->data;
         pc = 0;
     }
-    err = push_rtn_addr(-3, 0);
+    pgm_index integ_index;
+    integ_index.set_special(-3);
+    err = push_rtn_addr(integ_index, 0);
     if (err != ERR_NONE) {
         current_prgm = integ.prev_prgm;
         pc = integ.prev_pc;
@@ -1295,9 +1295,4 @@ int return_to_integ(bool stop) {
     default:
         return ERR_INTERNAL_ERROR;
     }
-}
-
-void dec_integ_caller_refcount() {
-    if (integ.prev_prgm >= prgms_count)
-        dec_eqn_refcount(integ.prev_prgm);
 }

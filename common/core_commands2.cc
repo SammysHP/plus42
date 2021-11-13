@@ -513,11 +513,9 @@ int docmd_xeq(arg_struct *arg) {
         int err = push_rtn_addr(current_prgm, pc);
         if (err != ERR_NONE)
             return err;
-        inc_eqn_refcount(current_prgm);
         err = docmd_gto(arg);
         if (err != ERR_NONE) {
-            dec_eqn_refcount(current_prgm);
-            int dummy1;
+            pgm_index dummy1;
             int4 dummy2;
             bool dummy3;
             pop_rtn_addr(&dummy1, &dummy2, &dummy3);
@@ -908,12 +906,13 @@ int docmd_varmenu(arg_struct *arg) {
     if (err != ERR_NONE)
         return err;
     if (eq != NULL) {
-        if (!has_parameters(eq->data))
+        equation_data *eqd = prgms[eq->data.index()].eq_data;
+        if (!has_parameters(eqd))
             return ERR_NO_MENU_VARIABLES;
-        config_varmenu_eqn(eq->data);
+        config_varmenu_eqn(eqd);
     } else {
-        int saved_prgm = current_prgm;
-        int prgm;
+        pgm_index saved_prgm = current_prgm;
+        pgm_index prgm;
         int4 pc;
         int command;
         arg_struct arg2;
@@ -1081,22 +1080,22 @@ int docmd_prsigma(arg_struct *arg) {
 }
 
 int docmd_prp(arg_struct *arg) {
-    int prgm_index;
+    pgm_index prgm;
     if (arg->type == ARGTYPE_LBLINDEX)
-        prgm_index = labels[arg->val.num].prgm;
+        prgm.set_prgm(labels[arg->val.num].prgm);
     else if (arg->type == ARGTYPE_STR) {
         if (arg->length == 0)
-            prgm_index = current_prgm;
+            prgm = current_prgm;
         else {
             int4 pc;
-            if (!find_global_label(arg, &prgm_index, &pc))
+            if (!find_global_label(arg, &prgm, &pc))
                 return ERR_LABEL_NOT_FOUND;
         }
     } else
         return ERR_INVALID_TYPE;
     if (!flags.f.printer_exists)
         return ERR_PRINTING_IS_DISABLED;
-    return print_program(prgm_index, -1, -1, false);
+    return print_program(prgm, -1, -1, false);
 }
 
 static vartype *prv_var;
@@ -1137,8 +1136,9 @@ int docmd_prv(arg_struct *arg) {
                 d = '"';
             } else {
                 vartype_equation *eq = (vartype_equation *) v;
-                text = eq->data->text;
-                length = eq->data->length;
+                equation_data *eqd = prgms[eq->data.index()].eq_data;
+                text = eqd->text;
+                length = eqd->length;
                 d = '\'';
             }
             char *sbuf = (char *) malloc(length + 2);
@@ -1372,8 +1372,9 @@ int docmd_prx(arg_struct *arg) {
                 d = '"';
             } else {
                 vartype_equation *eq = (vartype_equation *) stack[sp];
-                text = eq->data->text;
-                length = eq->data->length;
+                equation_data *eqd = prgms[eq->data.index()].eq_data;
+                text = eqd->text;
+                length = eqd->length;
                 d = '\'';
             }
             char *lbuf = (char *) malloc(length + 2);
@@ -1602,10 +1603,10 @@ int docmd_gto(arg_struct *arg) {
     }
 
     if (arg->type == ARGTYPE_STR) {
-        int new_prgm;
+        pgm_index new_prgm;
         int4 new_pc;
         if (find_global_label(arg, &new_prgm, &new_pc)) {
-            set_current_prgm_gto(new_prgm);
+            current_prgm = new_prgm;
             pc = new_pc;
             prgm_highlight_row = 1;
             return ERR_NONE;
@@ -1628,10 +1629,10 @@ int docmd_gto(arg_struct *arg) {
                 return ERR_NONE;
             }
         } else {
-            int newprgm;
+            pgm_index newprgm;
             int4 newpc;
             if (find_global_label(arg, &newprgm, &newpc)) {
-                set_current_prgm_gto(newprgm);
+                current_prgm = newprgm;
                 pc = newpc;
                 prgm_highlight_row = 1;
                 return ERR_NONE;
@@ -1642,7 +1643,7 @@ int docmd_gto(arg_struct *arg) {
 
     if (arg->type == ARGTYPE_LBLINDEX) {
         int labelindex = arg->val.num;
-        set_current_prgm_gto(labels[labelindex].prgm);
+        current_prgm.set_prgm(labels[labelindex].prgm);
         pc = labels[labelindex].pc;
         prgm_highlight_row = 1;
         return ERR_NONE;
@@ -1689,10 +1690,10 @@ int docmd_gtodot(arg_struct *arg) {
         prgm_highlight_row = 1;
         return ERR_NONE;
     } else if (arg->type == ARGTYPE_STR) {
-        int new_prgm;
+        pgm_index new_prgm;
         int4 new_pc;
         if (find_global_label(arg, &new_prgm, &new_pc)) {
-            set_current_prgm_gto(new_prgm);
+            current_prgm = new_prgm;
             pc = new_pc;
             clear_all_rtns();
             prgm_highlight_row = 1;
@@ -1701,7 +1702,7 @@ int docmd_gtodot(arg_struct *arg) {
             return ERR_LABEL_NOT_FOUND;
     } else if (arg->type == ARGTYPE_LBLINDEX) {
         int labelindex = arg->val.num;
-        set_current_prgm_gto(labels[labelindex].prgm);
+        current_prgm.set_prgm(labels[labelindex].prgm);
         pc = labels[labelindex].pc;
         clear_all_rtns();
         prgm_highlight_row = 1;

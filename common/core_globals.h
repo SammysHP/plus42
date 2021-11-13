@@ -22,6 +22,7 @@
 #include <stdio.h>
 
 #include "free42.h"
+#include "core_parser.h"
 #include "core_phloat.h"
 #include "core_tables.h"
 #include "core_variables.h"
@@ -224,6 +225,7 @@ extern const menu_spec menus[];
 /* Suppress menu updates while state loading is in progress */
 extern bool loading_state;
 
+
 /* Registers */
 #define REG_T 0
 #define REG_Z 1
@@ -350,12 +352,6 @@ struct prgm_struct {
     unsigned char *text;
     equation_data *eq_data;
 };
-struct prgm_struct_32bit {
-    int4 capacity;
-    int4 size;
-    int lclbl_invalid;
-    int4 text;
-};
 extern int prgms_capacity;
 extern int prgms_count;
 extern int prgms_and_eqns_count;
@@ -370,7 +366,7 @@ extern int labels_capacity;
 extern int labels_count;
 extern label_struct *labels;
 
-extern int current_prgm;
+extern pgm_index current_prgm;
 extern int4 pc;
 extern int prgm_highlight_row;
 
@@ -516,14 +512,16 @@ extern bool no_keystrokes_yet;
 /* Utility functions */
 /*********************/
 
+int4 new_prgm_idx(int4 idx);
+int4 new_eqn_idx(int4 idx);
 void clear_rtns_vars_and_prgms();
 int clear_prgm(const arg_struct *arg);
-int clear_prgm_by_index(int prgm_index);
+int clear_prgm_by_index(pgm_index prgm);
 void clear_prgm_lines(int4 count);
 void goto_dot_dot(bool force_new);
 int mvar_prgms_exist();
 int label_has_mvar(int lblindex);
-int get_command_length(int prgm, int4 pc);
+int get_command_length(pgm_index prgm, int4 pc);
 void get_next_command(int4 *pc, int *command, arg_struct *arg, int find_target, const char **num_str);
 void rebuild_label_table();
 void delete_command(int4 pc);
@@ -534,9 +532,9 @@ int a2line(bool append);
 int4 pc2line(int4 pc);
 int4 line2pc(int4 line);
 int4 find_local_label(const arg_struct *arg);
-int find_global_label(const arg_struct *arg, int *prgm, int4 *pc);
+int find_global_label(const arg_struct *arg, pgm_index *prgm, int4 *pc);
 int find_global_label_index(const arg_struct *arg, int *idx);
-int push_rtn_addr(int prgm, int4 pc);
+int push_rtn_addr(pgm_index prgm, int4 pc);
 int push_indexed_matrix();
 int push_func_state(int n);
 int push_stack_state(bool big);
@@ -546,19 +544,13 @@ void step_over();
 bool should_i_stop_at_this_level();
 int rtn(int err);
 int rtn_with_error(int err);
-void pop_rtn_addr(int *prgm, int4 *pc, bool *stop);
+void pop_rtn_addr(pgm_index *prgm, int4 *pc, bool *stop);
 void pop_indexed_matrix(const char *name, int namelen);
 void clear_all_rtns();
 int get_rtn_level();
 bool solve_active();
 bool integ_active();
 bool unwind_stack_until_solve();
-
-void inc_eqn_refcount(int prgm_index);
-void dec_eqn_refcount(int prgm_index);
-void set_current_prgm_gto(int prgm_index);
-void set_current_prgm_xeq(int prgm_index);
-void set_current_prgm_rtn(int prgm_index);
 
 bool read_bool(bool *b);
 bool write_bool(bool b);

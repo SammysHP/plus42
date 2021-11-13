@@ -20,6 +20,7 @@
 #include "core_linalg2.h"
 #include "core_globals.h"
 #include "core_main.h"
+#include "core_variables.h"
 
 
 #define STATE(s)             \

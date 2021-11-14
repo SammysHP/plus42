@@ -1004,22 +1004,54 @@ class Date : public BinaryEvaluator {
 /////  Ddays  /////
 ///////////////////
 
-class Ddays : public BinaryEvaluator {
+class Ddays : public Evaluator {
+
+    private:
+
+    Evaluator *date1;
+    Evaluator *date2;
+    Evaluator *cal;
 
     public:
 
-    Ddays(int pos, Evaluator *left, Evaluator *right) : BinaryEvaluator(pos, left, right, true) {}
+    Ddays(int pos, Evaluator *date1, Evaluator *date2, Evaluator *cal) : Evaluator(pos), date1(date1), date2(date2), cal(cal) {}
 
     Evaluator *clone() {
-        return new Ddays(tpos, left->clone(), right->clone());
+        return new Ddays(tpos, date1->clone(), date2->clone(), cal->clone());
     }
 
-    bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
+    ~Ddays() {
+        delete date1;
+        delete date2;
+        delete cal;
+    }
+
+    void detach() {
+        date1 = NULL;
+        date2 = NULL;
+        cal = NULL;
+    }
 
     void generateCode(GeneratorContext *ctx) {
-        left->generateCode(ctx);
-        right->generateCode(ctx);
-        ctx->addLine(CMD_DDAYS);
+        date1->generateCode(ctx);
+        date2->generateCode(ctx);
+        cal->generateCode(ctx);
+        ctx->addLine(CMD_DDAYSC);
+    }
+
+    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
+        date1->collectVariables(vars, locals);
+        date2->collectVariables(vars, locals);
+        cal->collectVariables(vars, locals);
+    }
+
+    int howMany(const std::string *name) {
+        if (date1->howMany(name) != 0
+                || date2->howMany(name) != 0
+                || cal->howMany(name) != 0)
+            return -1;
+        else
+            return 0;
     }
 };
 
@@ -2215,12 +2247,16 @@ class Random : public Evaluator {
 
 class Rnd : public BinaryEvaluator {
 
+    private:
+
+    bool trunc;
+
     public:
 
-    Rnd(int pos, Evaluator *left, Evaluator *right) : BinaryEvaluator(pos, left, right, false) {}
+    Rnd(int pos, Evaluator *left, Evaluator *right, bool trunc) : BinaryEvaluator(pos, left, right, false), trunc(trunc) {}
 
     Evaluator *clone() {
-        return new Rnd(tpos, left->clone(), right->clone());
+        return new Rnd(tpos, left->clone(), right->clone(), trunc);
     }
 
     void generateCode(GeneratorContext *ctx) {
@@ -2240,7 +2276,7 @@ class Rnd : public BinaryEvaluator {
         ctx->addLine(CMD_SCI);
         ctx->addLine(CMD_LBL, lbl2);
         ctx->addLine(CMD_DROP);
-        ctx->addLine(CMD_RND);
+        ctx->addLine(trunc ? CMD_TRUNC : CMD_RND);
         ctx->addLine(CMD_SWAP);
         ctx->addLine(CMD_NUMBER, (phloat) 36.41);
         ctx->addLine(CMD_STOFLAG);
@@ -2839,18 +2875,7 @@ bool Date::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
         *rhs = new Date(0, *rhs, new Negative(0, right));
     } else {
         *lhs = right;
-        *rhs = new Ddays(0, left, *rhs);
-    }
-    return true;
-}
-
-bool Ddays::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
-    if (left->howMany(name) == 1) {
-        *lhs = left;
-        *rhs = new Date(0, right, new Negative(0, *rhs));
-    } else {
-        *lhs = right;
-        *rhs = new Date(0, left, *rhs);
+        *rhs = new Ddays(0, left, *rhs, new Literal(0, 1));
     }
     return true;
 }
@@ -3684,12 +3709,15 @@ Evaluator *Parser::parseThing() {
                 mode = EXPR_LIST_EXPR;
             } else if (t == "ANGLE" || t == "RADIUS" || t == "XCOORD"
                     || t == "YCOORD" || t == "COMB" || t == "PERM"
-                    || t == "IDIV" || t == "RND" || t == "DATE"
-                    || t == "DDAYS" || t == "BAND" || t == "BOR"
+                    || t == "IDIV" || t == "RND" || t == "TRN"
+                    || t == "DATE" || t == "BAND" || t == "BOR"
                     || t == "BXOR" || t == "BADD" || t == "BSUB"
                     || t == "BMUL" || t == "BDIV" || t == "HMSADD"
                     || t == "HMSSUB") {
                 nargs = 2;
+                mode = EXPR_LIST_EXPR;
+            } else if (t == "DDAYS") {
+                nargs = 3;
                 mode = EXPR_LIST_EXPR;
             } else if (t == "MIN" || t == "MAX") {
                 nargs = -1;
@@ -3817,8 +3845,8 @@ Evaluator *Parser::parseThing() {
                     return new Bneg(tpos, ev);
             } else if (t == "ANGLE" || t == "RADIUS" || t == "XCOORD"
                     || t == "YCOORD" || t == "COMB" || t == "PERM"
-                    || t == "IDIV" || t == "RND" || t == "DATE"
-                    || t == "DDAYS" || t == "BAND" || t == "BOR"
+                    || t == "IDIV" || t == "RND" || t == "TRN"
+                    || t == "DATE" || t == "BAND" || t == "BOR"
                     || t == "BXOR" || t == "BADD" || t == "BSUB"
                     || t == "BMUL" || t == "BDIV" || t == "HMSADD"
                     || t == "HMSSUB") {
@@ -3840,11 +3868,11 @@ Evaluator *Parser::parseThing() {
                 else if (t == "IDIV")
                     return new Idiv(tpos, left, right);
                 else if (t == "RND")
-                    return new Rnd(tpos, left, right);
+                    return new Rnd(tpos, left, right, false);
+                else if (t == "TRN")
+                    return new Rnd(tpos, left, right, true);
                 else if (t == "DATE")
                     return new Date(tpos, left, right);
-                else if (t == "DDAYS")
-                    return new Ddays(tpos, left, right);
                 else if (t == "BAND")
                     return new Band(tpos, left, right);
                 else if (t == "BOR")
@@ -3863,6 +3891,12 @@ Evaluator *Parser::parseThing() {
                     return new Hmsadd(tpos, left, right);
                 else if (t == "HMSSUB")
                     return new Hmssub(tpos, left, right);
+            } else if (t == "DDAYS") {
+                Evaluator *date1 = (*evs)[0];
+                Evaluator *date2 = (*evs)[1];
+                Evaluator *cal = (*evs)[2];
+                delete evs;
+                return new Ddays(tpos, date1, date2, cal);
             } else if (t == "MAX" || t == "MIN") {
                 if (t == "MAX")
                     return new Max(tpos, evs);

@@ -85,6 +85,7 @@ int docmd_to_pol(arg_struct *arg);
 int docmd_ip(arg_struct *arg);
 int docmd_fp(arg_struct *arg);
 int docmd_rnd(arg_struct *arg);
+int docmd_trunc(arg_struct *arg);
 int docmd_abs(arg_struct *arg);
 int docmd_sign(arg_struct *arg);
 int docmd_mod(arg_struct *arg);

@@ -249,12 +249,22 @@ static phloat comps2date(int4 y, int4 m, int4 d) {
  * Algorithm due to Henry F. Fliegel and Thomas C. Van Flandern,
  * Communications of the ACM, Vol. 11, No. 10 (October, 1968).
  */
-static int greg2jd(int4 y, int4 m, int4 d, int4 *jd) {
-    *jd = ( 1461 * ( y + 4800 + ( m - 14 ) / 12 ) ) / 4 +
-          ( 367 * ( m - 2 - 12 * ( ( m - 14 ) / 12 ) ) ) / 12 -
-          ( 3 * ( ( y + 4900 + ( m - 14 ) / 12 ) / 100 ) ) / 4 +
-          d - 32075;
-    return ERR_NONE;
+static int4 greg2jd(int4 y, int4 m, int4 d) {
+    return ( 1461 * ( y + 4800 + ( m - 14 ) / 12 ) ) / 4 +
+           ( 367 * ( m - 2 - 12 * ( ( m - 14 ) / 12 ) ) ) / 12 -
+           ( 3 * ( ( y + 4900 + ( m - 14 ) / 12 ) / 100 ) ) / 4 +
+           d - 32075;
+}
+
+/* Calendar without leap years */
+static int4 MOFF[] = { 0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334 };
+static int4 noleap(int4 y, int4 m, int4 d) {
+    return 365 * y + MOFF[m - 1] + d - 1;
+}
+
+/* 30-day-month calendar */
+static int4 thirtyday(int4 y, int4 m, int4 d) {
+    return 360 * y + 30 * (m - 1) + d - 1;
 }
 
 static int jd2greg(int4 jd, int4 *y, int4 *m, int4 *d) {
@@ -541,9 +551,7 @@ int docmd_date_plus(arg_struct *arg) {
     int err = date2comps(date, &y, &m, &d);
     if (err != ERR_NONE)
         return err;
-    err = greg2jd(y, m, d, &jd);
-    if (err != ERR_NONE)
-        return err;
+    jd = greg2jd(y, m, d);
     jd += to_int4(floor(days));
     err = jd2greg(jd, &y, &m, &d);
     if (err != ERR_NONE)
@@ -556,31 +564,50 @@ int docmd_date_plus(arg_struct *arg) {
     return binary_result(new_x);
 }
 
-int docmd_ddays(arg_struct *arg) {
-    phloat date1 = ((vartype_real *) stack[sp - 1])->x;
+static int ddays_helper(int offset, int4 (*daynum)(int4 y, int4 m, int4 d)) {
+    phloat date1 = ((vartype_real *) stack[sp - offset - 1])->x;
     if (date1 < 0 || date1 > (flags.f.ymd ? 10000 : 100))
         return ERR_INVALID_DATA;
-    phloat date2 = ((vartype_real *) stack[sp])->x;
+    phloat date2 = ((vartype_real *) stack[sp - offset])->x;
     if (date2 < 0 || date2 > (flags.f.ymd ? 10000 : 100))
         return ERR_INVALID_DATA;
     int4 y, m, d, jd1, jd2;
     int err = date2comps(date1, &y, &m, &d);
     if (err != ERR_NONE)
         return err;
-    err = greg2jd(y, m, d, &jd1);
-    if (err != ERR_NONE)
-        return err;
+    jd1 = daynum(y, m, d);
     err = date2comps(date2, &y, &m, &d);
     if (err != ERR_NONE)
         return err;
-    err = greg2jd(y, m, d, &jd2);
-    if (err != ERR_NONE)
-        return err;
-
+    jd2 = daynum(y, m, d);
     vartype *new_x = new_real(jd2 - jd1);
     if (new_x == NULL)
         return ERR_INSUFFICIENT_MEMORY;
-    return binary_result(new_x);
+    if (offset == 0)
+        return binary_result(new_x);
+    else
+        return ternary_result(new_x);
+}
+
+int docmd_ddays(arg_struct *arg) {
+    return ddays_helper(0, greg2jd);
+}
+
+int docmd_ddaysc(arg_struct *arg) {
+    phloat c = ((vartype_real *) stack[sp])->x;
+    if (c < 1 || c > 3)
+        return ERR_INVALID_DATA;
+    int cal = to_int(c);
+    if (c != cal)
+        return ERR_INVALID_DATA;
+    int4 (*daynum)(int4 y, int4 m, int4 d);
+    if (cal == 1)
+        daynum = greg2jd;
+    else if (cal == 2)
+        daynum = noleap;
+    else
+        daynum = thirtyday;
+    return ddays_helper(1, daynum);
 }
 
 int docmd_dmy(arg_struct *arg) {
@@ -598,9 +625,7 @@ int docmd_dow(arg_struct *arg) {
     int err = date2comps(x, &y, &m, &d);
     if (err != ERR_NONE)
         return err;
-    err = greg2jd(y, m, d, &jd);
-    if (err != ERR_NONE)
-        return err;
+    jd = greg2jd(y, m, d);
     jd = (jd + 1) % 7;
 
     vartype *new_x = new_real(jd);

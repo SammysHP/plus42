@@ -521,8 +521,10 @@
 #define CMD_GEN_XOR     465
 #define CMD_GEN_NOT     466
 #define CMD_IF_T        467
+#define CMD_TRUNC       468
+#define CMD_DDAYSC      469
 
-#define CMD_SENTINEL    468
+#define CMD_SENTINEL    470
 
 
 /* command_spec.argtype */

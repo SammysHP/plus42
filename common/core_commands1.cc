@@ -1106,6 +1106,7 @@ int docmd_fp(arg_struct *arg) {
 }
 
 static phloat rnd_multiplier;
+static phloat rnd_h;
 
 static int mappable_rnd_r(phloat x, phloat *y) {
     if (flags.f.fix_or_all) {
@@ -1119,7 +1120,7 @@ static int mappable_rnd_r(phloat x, phloat *y) {
             if (t >= ALWAYS_INT_FROM)
                 *y = x;
             else {
-                t = floor(t * rnd_multiplier + 0.5) / rnd_multiplier;
+                t = floor(t * rnd_multiplier + rnd_h) / rnd_multiplier;
                 *y = neg ? -t : t;
             }
         }
@@ -1145,7 +1146,7 @@ static int mappable_rnd_r(phloat x, phloat *y) {
                  */
                 scale /= 10;
             }
-            t = floor(t / scale * rnd_multiplier + 0.5)
+            t = floor(t / scale * rnd_multiplier + rnd_h)
                                             / rnd_multiplier * scale;
             if (p_isinf(t)) {
                 if (flags.f.range_error_ignore)
@@ -1166,7 +1167,7 @@ static int mappable_rnd_c(phloat xre, phloat xim, phloat *yre, phloat *yim) {
     return mappable_rnd_r(xim, yim);
 }
 
-int docmd_rnd(arg_struct *arg) {
+static bool rnd_helper(arg_struct *arg, bool trunc) {
     vartype *v;
     int err;
     int digits = 0;
@@ -1175,10 +1176,19 @@ int docmd_rnd(arg_struct *arg) {
     if (flags.f.digits_bit1) digits += 2;
     if (flags.f.digits_bit0) digits += 1;
     rnd_multiplier = pow(10.0, digits);
+    rnd_h = trunc ? 0.0 : 0.5;
     err = map_unary(stack[sp], &v, mappable_rnd_r, mappable_rnd_c);
     if (err == ERR_NONE)
         unary_result(v);
     return err;
+}
+
+int docmd_rnd(arg_struct *arg) {
+    return rnd_helper(arg, false);
+}
+
+int docmd_trunc(arg_struct *arg) {
+    return rnd_helper(arg, true);
 }
 
 int docmd_abs(arg_struct *arg) {

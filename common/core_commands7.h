@@ -33,6 +33,7 @@ int docmd_clk24(arg_struct *arg);
 int docmd_date(arg_struct *arg);
 int docmd_date_plus(arg_struct *arg);
 int docmd_ddays(arg_struct *arg);
+int docmd_ddaysc(arg_struct *arg);
 int docmd_dmy(arg_struct *arg);
 int docmd_dow(arg_struct *arg);
 int docmd_mdy(arg_struct *arg);

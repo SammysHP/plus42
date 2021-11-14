@@ -561,7 +561,9 @@ const command_spec cmd_array[] =
     { /* GEN_OR */     docmd_gen_or,      "||",                  0x00, 0x00, 0xa7, 0xb0,  2, ARG_NONE,   2, 0x01 },
     { /* GEN_XOR */    docmd_gen_xor,     "^^",                  0x00, 0x00, 0xa7, 0xb1,  2, ARG_NONE,   2, 0x01 },
     { /* GEN_NOT */    docmd_gen_not,     "!",                   0x00, 0x00, 0xa7, 0xb2,  1, ARG_NONE,   1, 0x01 },
-    { /* IF_T */       docmd_if_t,        "IF?",                 0x00, 0x00, 0xa7, 0xb3,  3, ARG_NONE,   1, 0x01 }
+    { /* IF_T */       docmd_if_t,        "IF?",                 0x00, 0x00, 0xa7, 0xb3,  3, ARG_NONE,   1, 0x01 },
+    { /* TRUNC */      docmd_trunc,       "TR\325NC",            0x00, 0x00, 0xa7, 0xb4,  5, ARG_NONE,   1, 0x0f },
+    { /* DDAYSC */     docmd_ddaysc,      "DD\301YSC",           0x00, 0x00, 0xa7, 0xb5,  6, ARG_NONE,   3, 0x01 }
 };
 
 /*

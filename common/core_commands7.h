@@ -139,5 +139,7 @@ int docmd_gen_or(arg_struct *arg);
 int docmd_gen_xor(arg_struct *arg);
 int docmd_gen_not(arg_struct *arg);
 int docmd_if_t(arg_struct *arg);
+int docmd_geteqn(arg_struct *arg);
+int docmd_to_par(arg_struct *arg);
 
 #endif

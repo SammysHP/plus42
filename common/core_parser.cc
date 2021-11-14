@@ -1877,21 +1877,28 @@ class NameTag : public UnaryEvaluator {
     private:
     
     std::string name;
+    std::vector<std::string> *params;
     
     public:
     
-    NameTag(int pos, std::string name, Evaluator *ev) : UnaryEvaluator(pos, ev, false), name(name) {}
+    NameTag(int pos, std::string name, std::vector<std::string> *params, Evaluator *ev)
+            : UnaryEvaluator(pos, ev, false), name(name), params(params) {}
     
     ~NameTag() {
         delete ev;
+        delete params;
     }
 
     Evaluator *clone() {
-        return new NameTag(tpos, name, ev->clone());
+        return new NameTag(tpos, name, new std::vector<std::string>(*params), ev->clone());
     }
     
     std::string eqnName() {
         return name;
+    }
+
+    std::vector<std::string> *eqnParamNames() {
+        return params;
     }
 
     Evaluator *removeName() {
@@ -3272,6 +3279,7 @@ class Lexer {
 
 /* static */ Evaluator *Parser::parse(std::string expr, bool compatMode, int *errpos) {
     std::string t, t2, eqnName;
+    std::vector<std::string> *paramNames = new std::vector<std::string>;
     int tpos;
     
     // Look for equation name
@@ -3282,12 +3290,37 @@ class Lexer {
         goto no_name;
     if (!lex->nextToken(&t2, &tpos))
         goto no_name;
-    if (t2 != ":")
+    if (t2 != ":" && t2 != "(")
         goto no_name;
+    if (t2 == "(") {
+        while (true) {
+            if (!lex->nextToken(&t2, &tpos))
+                goto no_name;
+            if (!lex->isIdentifier(t2))
+                goto no_name;
+            paramNames->push_back(t2);
+            if (!lex->nextToken(&t2, &tpos))
+                goto no_name;
+            if (t2 == ":")
+                continue;
+            else if (t2 == ")") {
+                if (!lex->nextToken(&t2, &tpos))
+                    goto no_name;
+                if (t2 == ":")
+                    break;
+                else
+                    goto no_name;
+            } else
+                goto no_name;
+        }
+    }
+
     eqnName = t;
     goto name_done;
     no_name:
     lex->reset();
+    delete paramNames;
+    paramNames = NULL;
     name_done:
     
     Parser pz(lex);
@@ -3304,7 +3337,7 @@ class Lexer {
     if (t == "") {
         // Text consumed completely; this is the good scenario
         if (eqnName != "")
-            ev = new NameTag(0, eqnName, ev);
+            ev = new NameTag(0, eqnName, paramNames, ev);
         return ev;
     } else {
         // Trailing garbage

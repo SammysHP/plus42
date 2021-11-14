@@ -523,8 +523,10 @@
 #define CMD_IF_T        467
 #define CMD_TRUNC       468
 #define CMD_DDAYSC      469
+#define CMD_GETEQN      470
+#define CMD_TO_PAR      471
 
-#define CMD_SENTINEL    470
+#define CMD_SENTINEL    472
 
 
 /* command_spec.argtype */

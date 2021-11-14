@@ -243,6 +243,8 @@ int disentangle(vartype *v);
 int lookup_var(const char *name, int namelength);
 vartype *recall_var(const char *name, int namelength);
 vartype *recall_global_var(const char *name, int namelength);
+equation_data *find_equation_data(const char *name, int namelength);
+int store_params();
 bool ensure_var_space(int n);
 int store_var(const char *name, int namelength, vartype *value, bool local = false, bool global = false);
 void purge_var(const char *name, int namelength);

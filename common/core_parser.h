@@ -46,6 +46,7 @@ class Evaluator {
     virtual bool isEquation() { return false; }
     virtual std::string name() { return ""; }
     virtual std::string eqnName() { return ""; }
+    virtual std::vector<std::string> *eqnParamNames() { return NULL; }
     virtual Evaluator *removeName() { return this; }
     virtual void getSides(const std::string *name, Evaluator **lhs, Evaluator **rhs);
     virtual bool is(const std::string *name) { return false; }

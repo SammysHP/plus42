@@ -2273,3 +2273,21 @@ int docmd_if_t(arg_struct *arg) {
     int err = unary_no_result();
     return err != ERR_NONE ? err : ret ? ERR_YES : ERR_NO;
 }
+
+int docmd_geteqn(arg_struct *arg) {
+    vartype_string *s = (vartype_string *) stack[sp];
+    equation_data *eqd = find_equation_data(s->txt(), s->length);
+    if (eqd == NULL)
+        return ERR_NONEXISTENT;
+    vartype_equation *eq = (vartype_equation *) malloc(sizeof(vartype_equation));
+    if (eq == NULL)
+        return ERR_INSUFFICIENT_MEMORY;
+    eq->type = TYPE_EQUATION;
+    eq->data.init_eqn(eqd->eqn_index);
+    unary_result((vartype *) eq);
+    return ERR_NONE;
+}
+
+int docmd_to_par(arg_struct *arg) {
+    return store_params();
+}

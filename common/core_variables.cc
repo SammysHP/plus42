@@ -603,6 +603,26 @@ vartype *recall_global_var(const char *name, int namelength) {
         return vars[varindex].value;
 }
 
+equation_data *find_equation_data(const char *name, int namelength) {
+    for (int i = prgms_count; i < prgms_and_eqns_count; i++) {
+        equation_data *eqd = prgms[i].eq_data;
+        if (eqd != NULL && eqd->ev != NULL) {
+            std::string s = eqd->ev->eqnName();
+            if (s.length() > 0 && string_equals(s.c_str(), s.length(), name, namelength))
+                return eqd;
+        }
+    }
+    return NULL;
+}
+
+int store_params() {
+    if (stack[sp]->type == TYPE_STRING) {
+        return ERR_NOT_YET_IMPLEMENTED;
+    } else { // TYPE_EQUATION
+        return ERR_NOT_YET_IMPLEMENTED;
+    }
+}
+
 bool ensure_var_space(int n) {
     int nc = vars_count + n;
     if (nc > vars_capacity) {

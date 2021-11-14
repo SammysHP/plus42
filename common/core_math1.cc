@@ -412,27 +412,46 @@ static int call_solve_fn(int which, int state) {
         return ERR_RUN;
 }
 
-int start_solve(const char *name, int length, phloat x1, phloat x2) {
-    // Try direct solution
-    if (solve.eq != NULL) {
-        int idx = isolate(solve.eq, name, length);
-        if (idx != -1) {
-            if (program_running()) {
-                int err = push_rtn_addr(current_prgm, pc);
-                if (err != ERR_NONE)
-                    return err;
-            }
-            current_prgm.set_eqn(idx);
-            pc = 0;
-            return program_running() ? ERR_NONE : ERR_RUN;
-        }
-    }
+static int start_solve_2(phloat x1, phloat x2);
 
+int start_solve(const char *name, int length, phloat x1, phloat x2) {
     if (solve_active())
         return ERR_SOLVE_SOLVE;
     string_copy(solve.var_name, &solve.var_length, name, length);
     string_copy(solve.active_prgm_name, &solve.active_prgm_length,
                 solve.prgm_name, solve.prgm_length);
+
+    // Try direct solution
+    if (solve.eq != NULL) {
+        int idx = isolate(solve.eq, name, length);
+        if (idx != -1) {
+            solve.prev_prgm = current_prgm;
+            solve.prev_pc = pc;
+            solve.prev_sp = flags.f.big_stack ? sp : -2;
+            solve.keep_running = !should_i_stop_at_this_level() && program_running();
+            solve.x1 = x1;
+            solve.x2 = x2;
+
+            solve.state = 8;
+            clean_stack(solve.prev_sp);
+            current_prgm.set_eqn(idx);
+            pc = 0;
+
+            pgm_index solve_index;
+            solve_index.set_special(-2);
+            int err = push_rtn_addr(solve_index, 0);
+            if (err != ERR_NONE) {
+                current_prgm = solve.prev_prgm;
+                pc = solve.prev_pc;
+                return err;
+            } else
+                return ERR_RUN;
+        }
+    }
+    return start_solve_2(x1, x2);
+}
+
+static int start_solve_2(phloat x1, phloat x2) {
     if (solve.eq != NULL) {
         vartype *eq = dup_vartype(solve.eq);
         if (eq == NULL)
@@ -610,6 +629,35 @@ int return_to_solve(int failure, bool stop) {
 
     if (stop)
         solve.keep_running = 0;
+
+    if (solve.state == 8) {
+        // Direct solution
+        if (failure)
+            // Proceed to numerical solver
+            // TODO: What about stack state? Is it OK like this?
+            return start_solve_2(solve.x1, solve.x2);
+        if (sp == -1)
+            return ERR_TOO_FEW_ARGUMENTS;
+        int err = store_var(solve.var_name, solve.var_length, stack[sp]);
+        if (err != ERR_NONE)
+            return ERR_INSUFFICIENT_MEMORY;
+
+        if (!solve.keep_running) {
+            arg_struct arg;
+            arg.type = ARGTYPE_STR;
+            int len;
+            string_copy(arg.val.text, &len, solve.var_name, solve.var_length);
+            arg.length = len;
+
+            int print = flags.f.trace_print && flags.f.printer_exists;
+            view_helper(&arg, print);
+        }
+
+        // TODO: The numerical solver puts stuff on the stack,
+        // we should do something here as well
+
+        return solve.keep_running ? ERR_NONE : ERR_STOP;
+    }
 
     if (solve.state == 0)
         return ERR_INTERNAL_ERROR;

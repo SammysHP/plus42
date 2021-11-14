@@ -36,6 +36,8 @@ void pgm_index::inc_refcount() {
                 (uni >> 1) + prgms_count,
                 prgms[(uni >> 1) + prgms_count].eq_data->refcount,
                 prgms[(uni >> 1) + prgms_count].eq_data->refcount + 1);
+        if (prgms[(uni >> 1) + prgms_count].eq_data->refcount == 0)
+            fprintf(stderr, "Increasing refcount from 0!\n");
         prgms[(uni >> 1) + prgms_count].eq_data->refcount++;
     }
 }

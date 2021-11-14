@@ -18,6 +18,7 @@
 #ifndef CORE_VARIABLES_H
 #define CORE_VARIABLES_H 1
 
+#include <stdio.h>
 #include "core_phloat.h"
 
 /***********************/
@@ -64,9 +65,11 @@ class pgm_index {
     }
     void init_eqn_from_state(int4 eqn) {
         uni = (eqn << 1) | 1;
+        fprintf(stderr, "creating ref to %d\n", eqn);
     }
     void init_unified_from_state(int4 unified) {
         this->uni = unified;
+        fprintf(stderr, "creating unified ref to %d\n", unified);
     }
     void init_eqn(int4 eqn) {
         uni = (eqn << 1) | 1;

@@ -3283,6 +3283,7 @@ void pop_rtn_addr(pgm_index *prgm, int4 *pc, bool *stop) {
         rtn_sp--;
         rtn_level--;
         prgm->set_unified(rtn_stack[rtn_sp].get_prgm());
+        prgm->dec_refcount();
         *pc = rtn_stack[rtn_sp].pc;
         if (rtn_stop_level >= rtn_level) {
             *stop = true;
@@ -3356,7 +3357,6 @@ void clear_all_rtns() {
     while (rtn_level > 0) {
         get_saved_stack_mode(&st_mode);
         pop_rtn_addr(&prgm, &dummy1, &dummy2);
-        prgm.dec_refcount();
     }
     get_saved_stack_mode(&st_mode);
     pop_rtn_addr(&prgm, &dummy1, &dummy2);
@@ -3392,7 +3392,6 @@ bool unwind_stack_until_solve() {
         pop_rtn_addr(&prgm, &pc, &stop);
         if (prgm.unified() == -2)
             break;
-        prgm.dec_refcount();
     }
     return stop;
 }

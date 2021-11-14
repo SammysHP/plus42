@@ -1907,7 +1907,6 @@ class NameTag : public UnaryEvaluator {
             : UnaryEvaluator(pos, ev, false), name(name), params(params) {}
     
     ~NameTag() {
-        delete ev;
         delete params;
     }
 

@@ -2478,9 +2478,10 @@ void core_import_programs(int num_progs, const char *raw_file_name) {
     }
 
     done:
-    rebuild_label_table();
-    if (!loading_state)
+    if (!loading_state) {
+        rebuild_label_table();
         update_catalog();
+    }
 
     flags.f.trace_print = saved_trace;
     flags.f.normal_print = saved_normal;

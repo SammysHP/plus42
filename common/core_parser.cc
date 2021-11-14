@@ -146,6 +146,13 @@ class GeneratorContext {
                 if (arg.length > 7)
                     arg.length = 7;
                 memcpy(arg.val.text, line->s->c_str(), arg.length);
+            } else if (line->cmd == CMD_XSTR) {
+                arg.type = ARGTYPE_XSTR;
+                int len = line->s->length();
+                if (len > 65535)
+                    len = 65535;
+                arg.length = len;
+                arg.val.xstr = line->s->c_str();
             } else if (line->cmd == CMD_NUMBER) {
                 arg.type = ARGTYPE_DOUBLE;
                 arg.val_d = line->d;
@@ -704,7 +711,22 @@ class Call : public Evaluator {
     }
 
     void generateCode(GeneratorContext *ctx) {
-        // TODO - gonna need an EVAL-by-name thingy for this
+        // Wrapping the equation call in another subroutine,
+        // so ->PAR can create locals for the parameters without
+        // stepping on any alread-existing locals with the
+        // same name.
+        int lbl = ctx->nextLabel();
+        for (int i = 0; i < evs->size(); i++)
+            (*evs)[i]->generateCode(ctx);
+        ctx->addLine(CMD_XEQL, lbl);
+        ctx->pushSubroutine();
+        ctx->addLine(CMD_LBL, lbl);
+        ctx->addLine(CMD_XSTR, name);
+        ctx->addLine(CMD_GETEQN);
+        ctx->addLine(CMD_TO_PAR);
+        ctx->addLine(CMD_LASTX);
+        ctx->addLine(CMD_EVAL);
+        ctx->popSubroutine();
     }
 
     void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
@@ -2676,18 +2698,17 @@ class Xeq : public Evaluator {
 
     void generateCode(GeneratorContext *ctx) {
         // Wrapping the subroutine call in another subroutine,
-        // so we can make sure the XEQ doesn't leave any junk behind.
-        // Of course, if the subroutine goes and tramples the stack,
-        // we can't do anything about that. If that level of
-        // robustness is needed, we'll need a special kind of
-        // XEQ, that sets aside the entire stack.
+        // so ->PAR can create locals for the parameters without
+        // stepping on any alread-existing locals with the
+        // same name.
         int lbl = ctx->nextLabel();
+        for (int i = 0; i < evs->size(); i++)
+            (*evs)[i]->generateCode(ctx);
         ctx->addLine(CMD_XEQL, lbl);
         ctx->pushSubroutine();
         ctx->addLine(CMD_LBL, lbl);
-        ctx->addLine(CMD_FUNC, 1);
-        for (int i = 0; i < evs->size(); i++)
-            (*evs)[i]->generateCode(ctx);
+        ctx->addLine(CMD_XSTR, name);
+        ctx->addLine(CMD_TO_PAR);
         ctx->addLine(CMD_XEQ, name);
         ctx->popSubroutine();
     }
@@ -3772,10 +3793,8 @@ Evaluator *Parser::parseThing() {
                 mode = EXPR_LIST_NAME;
             } else {
                 // Call
-                // Not allowed, for now
-                //nargs = -1;
-                //mode = EXPR_LIST_EXPR;
-                return NULL;
+                nargs = -1;
+                mode = EXPR_LIST_EXPR;
             }
             std::vector<Evaluator *> *evs = parseExprList(nargs, mode);
             if (evs == NULL)
@@ -3876,6 +3895,9 @@ Evaluator *Parser::parseThing() {
                     return new Bnot(tpos, ev);
                 else if (t == "BNEG")
                     return new Bneg(tpos, ev);
+                else
+                    // Shouldn't get here
+                    return NULL;
             } else if (t == "ANGLE" || t == "RADIUS" || t == "XCOORD"
                     || t == "YCOORD" || t == "COMB" || t == "PERM"
                     || t == "IDIV" || t == "RND" || t == "TRN"
@@ -3924,6 +3946,9 @@ Evaluator *Parser::parseThing() {
                     return new Hmsadd(tpos, left, right);
                 else if (t == "HMSSUB")
                     return new Hmssub(tpos, left, right);
+                else
+                    // Shouldn't get here
+                    return NULL;
             } else if (t == "DDAYS") {
                 Evaluator *date1 = (*evs)[0];
                 Evaluator *date2 = (*evs)[1];

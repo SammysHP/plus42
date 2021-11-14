@@ -31,11 +31,20 @@ equation_data::~equation_data() {
 }
 
 void pgm_index::inc_refcount() {
-    if (uni > 0 && (uni & 1) != 0)
+    if (uni > 0 && (uni & 1) != 0) {
+        fprintf(stderr, "inc refcount %d : %d -> %d\n",
+                (uni >> 1) + prgms_count,
+                prgms[(uni >> 1) + prgms_count].eq_data->refcount,
+                prgms[(uni >> 1) + prgms_count].eq_data->refcount + 1);
         prgms[(uni >> 1) + prgms_count].eq_data->refcount++;
+    }
 }
 void pgm_index::dec_refcount() {
     if (uni > 0 && (uni & 1) != 0) {
+        fprintf(stderr, "dec refcount %d : %d -> %d\n",
+                (uni >> 1) + prgms_count,
+                prgms[(uni >> 1) + prgms_count].eq_data->refcount,
+                prgms[(uni >> 1) + prgms_count].eq_data->refcount - 1);
         int4 i = (uni >> 1) + prgms_count;
         equation_data *eqd = prgms[i].eq_data;
         if (--eqd->refcount == 0) {
@@ -615,11 +624,73 @@ equation_data *find_equation_data(const char *name, int namelength) {
     return NULL;
 }
 
+static int store_params2(std::vector<std::string> *params) {
+    int nparams = params == NULL ? 0 : params->size();
+    if (sp < nparams)
+        return ERR_TOO_FEW_ARGUMENTS;
+    if (!ensure_var_space(nparams))
+        return ERR_INSUFFICIENT_MEMORY;
+    vartype *tdups[4];
+    int tdups_count = 0;
+    if (!flags.f.big_stack) {
+        int needed = nparams + 1;
+        while (needed > 0) {
+            vartype *t = dup_vartype(stack[REG_T]);
+            if (t == NULL) {
+                for (int i = 0; i < tdups_count; i++)
+                    free(tdups[i]);
+                return ERR_INSUFFICIENT_MEMORY;
+            }
+            tdups[tdups_count++] = t;
+            needed--;
+        }
+    }
+    int vsp = sp - nparams;
+    for (int i = 0; i < nparams; i++) {
+        std::string p = (*params)[i];
+        store_var(p.c_str(), p.length(), stack[vsp++], true);
+    }
+    free_vartype(lastx);
+    lastx = stack[sp];
+    if (flags.f.big_stack) {
+        sp -= nparams + 1;
+    } else {
+        for (int i = 0; i < 4 - tdups_count; i++)
+            stack[sp - i] = stack[sp - i - tdups_count];
+        for (int i = 0; i < tdups_count; i++)
+            stack[sp - 3 + i] = tdups[i];
+    }
+    return ERR_NONE;
+}
+
 int store_params() {
     if (stack[sp]->type == TYPE_STRING) {
-        return ERR_NOT_YET_IMPLEMENTED;
+        vartype_string *name = (vartype_string *) stack[sp];
+        if (name->length > 7)
+            return ERR_NAME_TOO_LONG;
+        arg_struct arg;
+        arg.type = ARGTYPE_STR;
+        int len;
+        string_copy(arg.val.text, &len, name->txt(), name->length);
+        arg.length = len;
+        pgm_index prgm;
+        int4 pc;
+        if (!find_global_label(&arg, &prgm, &pc))
+            return ERR_LABEL_NOT_FOUND;
+        pgm_index saved_prgm = current_prgm;
+        current_prgm = prgm;
+        int cmd;
+        pc += get_command_length(current_prgm, pc);
+        std::vector<std::string> params;
+        while (get_next_command(&pc, &cmd, &arg, 0, NULL), cmd == CMD_MVAR)
+            params.push_back(std::string(arg.val.text, arg.length));
+        current_prgm = saved_prgm;
+        return store_params2(&params);
     } else { // TYPE_EQUATION
-        return ERR_NOT_YET_IMPLEMENTED;
+        vartype_equation *eq = (vartype_equation *) stack[sp];
+        equation_data *eqd = prgms[eq->data.index()].eq_data;
+        std::vector<std::string> *params = eqd->ev->eqnParamNames();
+        return store_params2(params);
     }
 }
 

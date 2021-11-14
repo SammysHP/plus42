@@ -42,6 +42,10 @@ void pgm_index::inc_refcount() {
     }
 }
 void pgm_index::dec_refcount() {
+    if (prgms == NULL)
+        // Can happen while cleaning up, due to static
+        // destructors running after prgms has been freed
+        return;
     if (uni > 0 && (uni & 1) != 0) {
         fprintf(stderr, "dec refcount %d : %d -> %d\n",
                 (uni >> 1) + prgms_count,

@@ -1371,6 +1371,12 @@ static void start_edit(int pos) {
         new_eq = false;
         edit_pos = pos;
         display_pos = 0;
+        if (pos > 12) {
+            display_pos = pos - 12;
+            int slop = edit_len - display_pos - 22;
+            if (slop < 0)
+                display_pos -= slop;
+        }
         update_menu(MENU_NONE);
         restart_cursor();
         eqn_draw();

@@ -1227,6 +1227,8 @@ class Ess : public Evaluator {
         return new Ess(tpos, name);
     }
 
+    bool isBool() { return true; }
+    
     void generateCode(GeneratorContext *ctx) {
         ctx->addLine(CMD_NUMBER, (phloat) 0);
         ctx->addLine(CMD_SVAR_T, name);

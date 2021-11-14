@@ -125,6 +125,8 @@ class GeneratorContext {
         // users from editing generated code.
         char saved_prgm_mode = flags.f.prgm_mode;
         flags.f.prgm_mode = false;
+        bool prev_printer_exists = flags.f.printer_exists;
+        flags.f.printer_exists = false;
         // First, the end. Doing this before anything else prevents the program count from being bumped.
         arg_struct arg;
         arg.type = ARGTYPE_NONE;
@@ -182,6 +184,7 @@ class GeneratorContext {
         }
         current_prgm = saved_prgm;
         flags.f.prgm_mode = saved_prgm_mode;
+        flags.f.printer_exists = prev_printer_exists;
     }
 };
 

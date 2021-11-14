@@ -2661,6 +2661,13 @@ int command2buf(char *buf, int len, int cmd, const arg_struct *arg) {
             string2buf(buf, len, &bufptr, arg->val.xstr,
                                             arg->length);
             char2buf(buf, len, &bufptr, '"');
+        } else if (arg->type == ARGTYPE_EQN) {
+            equation_data *eqd = prgms[arg->val.num].eq_data;
+            char d = eqd->compatMode ? '`' : '\'';
+            char2buf(buf, len, &bufptr, d);
+            string2buf(buf, len, &bufptr, eqd->text,
+                                            eqd->length);
+            char2buf(buf, len, &bufptr, d);
         } else /* ARGTYPE_COMMAND; for backward compatibility only */ {
             const command_spec *cs = &cmd_array[arg->val.cmd];
             char2buf(buf, len, &bufptr, '"');

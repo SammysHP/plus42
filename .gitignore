@@ -189,6 +189,18 @@
 /iphone/Free42.xcodeproj/project.xcworkspace/xcshareddata/*.xccheckout
 /iphone/Free42.xcodeproj/project.xcworkspace/xcshareddata/*.xcscmblueprint
 
+# /iphone/Plus42.xcodeproj/
+/iphone/Plus42.xcodeproj/*.mode1v3
+/iphone/Plus42.xcodeproj/*.pbxuser
+/iphone/Plus42.xcodeproj/xcuserdata
+
+# /iphone/Plus42.xcodeproj/project.xcworkspace/
+/iphone/Plus42.xcodeproj/project.xcworkspace/xcuserdata
+
+# /iphone/Plus42.xcodeproj/project.xcworkspace/xcshareddata/
+/iphone/Plus42.xcodeproj/project.xcworkspace/xcshareddata/*.xccheckout
+/iphone/Plus42.xcodeproj/project.xcworkspace/xcshareddata/*.xcscmblueprint
+
 # /iphone/simpleserver/
 /iphone/simpleserver/icons.c
 /iphone/simpleserver/icon2c

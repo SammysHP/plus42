@@ -1735,6 +1735,12 @@ int clear_prgm_by_index(pgm_index prgm) {
     return ERR_NONE;
 }
 
+int clear_prgm_by_int_index(int prgm) {
+    pgm_index idx;
+    idx.set_prgm(prgm);
+    return clear_prgm_by_index(idx);
+}
+
 void clear_prgm_lines(int4 count) {
     int4 frompc, deleted, i, j;
     if (pc == -1)

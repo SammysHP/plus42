@@ -26,7 +26,7 @@ int main(int argc, char *argv[]) {
     
     NSLog(@"Plus42 %s, built %s %s", [Free42AppDelegate getVersion], __DATE__, __TIME__);
     
-    // This is so that the remainder of the Free42 code can assume that the current
+    // This is so that the remainder of the Plus42 code can assume that the current
     // directory is the home directory; this will also be the top-level directory that
     // users can navigate with the built-in HTTP server.
     NSString *homedir = [NSString stringWithFormat:@"%@/Documents", NSHomeDirectory()];

@@ -1229,7 +1229,7 @@ void do_post(int csock, const char *url) {
                                         if (sscanf(tb.buf, "%d", &prgm_index) == 1) {
                                             prgm_index -= program_index_offset;
                                             pthread_mutex_lock(&shell_mutex);
-                                            if (clear_prgm_by_index(prgm_index) == 0)
+                                            if (clear_prgm_by_int_index(prgm_index) == 0)
 
                                                 program_index_offset++;
                                             pthread_mutex_unlock(&shell_mutex);
@@ -1529,7 +1529,7 @@ static int open_item(const char *url, void **ptr, int *type, int *filesize, cons
         
         /* We treat the remainder of the URL as a decimal number,
          * representing a 0-based index into the list of programs.
-         * TODO: In the other versions of Free42, we can always be
+         * TODO: In the other versions of Plus42, we can always be
          * sure that core_export_programs() is only called with
          * valid program indexes, but not here, and that's a bit
          * of a concern since out-of-range values can cause bad
@@ -1765,7 +1765,7 @@ int main(int argc, char *argv[]) {
 
     // TODO: This doesn't seem to work on iOS:
     // Try starting the HTTP server, connect with a browser on the PC, click
-    // on the 'memory' link, kill the browser, kill Free42, restart Free42,
+    // on the 'memory' link, kill the browser, kill Plus42, restart Plus42,
     // restart the HTTP server.
     // It will say that the address is already in use.
     // Why? Isn't that exactly what SO_REUSEADDR is supposed to prevent?

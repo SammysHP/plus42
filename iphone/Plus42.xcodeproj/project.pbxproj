@@ -204,7 +204,7 @@
 		288765FC0DF74451002DB57D /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };
 		28AD733E0D9D9553002E5188 /* MainWindow.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = MainWindow.xib; sourceTree = "<group>"; };
 		29B97316FDCFA39411CA2CEA /* main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
-		32CA4F630368D1EE00C91783 /* Free42_Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Free42_Prefix.pch; sourceTree = "<group>"; };
+		32CA4F630368D1EE00C91783 /* Plus42_Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Plus42_Prefix.pch; sourceTree = "<group>"; };
 		8D1107310486CEB800E47090 /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		E9031C8E0FF68FB10023F9EC /* builtin_skins.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = builtin_skins.txt; sourceTree = "<group>"; };
 		E9031C900FF68FCD0023F9EC /* Ehrling42sm.gif */ = {isa = PBXFileReference; lastKnownFileType = image.gif; name = Ehrling42sm.gif; path = skins/Ehrling42sm.gif; sourceTree = SOURCE_ROOT; };
@@ -314,7 +314,7 @@
 		E99C9AE3223ED0DC00DA48D0 /* RootWindow.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = RootWindow.mm; sourceTree = "<group>"; };
 		E99FDE5C1162508C004DB479 /* core_commands7.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = core_commands7.cc; path = ../common/core_commands7.cc; sourceTree = SOURCE_ROOT; };
 		E99FDE5D1162508C004DB479 /* core_commands7.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = core_commands7.h; path = ../common/core_commands7.h; sourceTree = SOURCE_ROOT; };
-		E9A1EE361FCB8C630047398C /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = Free42/Images.xcassets; sourceTree = SOURCE_ROOT; };
+		E9A1EE361FCB8C630047398C /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = Plus42/Images.xcassets; sourceTree = SOURCE_ROOT; };
 		E9A1EE381FCB8F5D0047398C /* about-icon@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "about-icon@2x.png"; sourceTree = "<group>"; };
 		E9AE255D233C1CCF005072BA /* click3.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = click3.wav; sourceTree = "<group>"; };
 		E9AE255E233C1CCF005072BA /* click5.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = click5.wav; sourceTree = "<group>"; };
@@ -451,7 +451,7 @@
 		29B97315FDCFA39411CA2CEA /* Other Sources */ = {
 			isa = PBXGroup;
 			children = (
-				32CA4F630368D1EE00C91783 /* Free42_Prefix.pch */,
+				32CA4F630368D1EE00C91783 /* Plus42_Prefix.pch */,
 				29B97316FDCFA39411CA2CEA /* main.m */,
 				E91CC1D50F8C200800EE702C /* icons.c */,
 				E9F7136616C5F1F0006A9553 /* minizip_ioapi.c */,
@@ -639,7 +639,7 @@
 					};
 				};
 			};
-			buildConfigurationList = C01FCF4E08A954540054247B /* Build configuration list for PBXProject "Free42" */;
+			buildConfigurationList = C01FCF4E08A954540054247B /* Build configuration list for PBXProject "Plus42" */;
 			compatibilityVersion = "Xcode 3.2";
 			developmentRegion = en;
 			hasScannedForEncodings = 1;
@@ -935,7 +935,7 @@
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
-				GCC_PREFIX_HEADER = Free42_Prefix.pch;
+				GCC_PREFIX_HEADER = Plus42_Prefix.pch;
 				GCC_THUMB_SUPPORT = NO;
 				INFOPLIST_FILE = Info.plist;
 				LIBRARY_SEARCH_PATHS = (
@@ -961,7 +961,7 @@
 				ENABLE_BITCODE = NO;
 				GCC_OPTIMIZATION_LEVEL = s;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
-				GCC_PREFIX_HEADER = Free42_Prefix.pch;
+				GCC_PREFIX_HEADER = Plus42_Prefix.pch;
 				GCC_THUMB_SUPPORT = NO;
 				INFOPLIST_FILE = Info.plist;
 				LIBRARY_SEARCH_PATHS = (
@@ -1084,7 +1084,7 @@
 				ENABLE_BITCODE = NO;
 				GCC_OPTIMIZATION_LEVEL = s;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
-				GCC_PREFIX_HEADER = Free42_Prefix.pch;
+				GCC_PREFIX_HEADER = Plus42_Prefix.pch;
 				GCC_THUMB_SUPPORT = NO;
 				INFOPLIST_FILE = Info.plist;
 				LIBRARY_SEARCH_PATHS = (
@@ -1111,7 +1111,7 @@
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
-				GCC_PREFIX_HEADER = Free42_Prefix.pch;
+				GCC_PREFIX_HEADER = Plus42_Prefix.pch;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					IPHONE,
 					FREE42,
@@ -1148,7 +1148,7 @@
 				ENABLE_BITCODE = NO;
 				GCC_OPTIMIZATION_LEVEL = s;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
-				GCC_PREFIX_HEADER = Free42_Prefix.pch;
+				GCC_PREFIX_HEADER = Plus42_Prefix.pch;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					IPHONE,
 					FREE42,
@@ -1184,7 +1184,7 @@
 				ENABLE_BITCODE = NO;
 				GCC_OPTIMIZATION_LEVEL = s;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
-				GCC_PREFIX_HEADER = Free42_Prefix.pch;
+				GCC_PREFIX_HEADER = Plus42_Prefix.pch;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					IPHONE,
 					FREE42,
@@ -1222,7 +1222,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		C01FCF4E08A954540054247B /* Build configuration list for PBXProject "Free42" */ = {
+		C01FCF4E08A954540054247B /* Build configuration list for PBXProject "Plus42" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				C01FCF4F08A954540054247B /* Debug */,

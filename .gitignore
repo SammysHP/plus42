@@ -177,18 +177,6 @@
 
 # /iphone/Classes/
 
-# /iphone/Free42.xcodeproj/
-/iphone/Free42.xcodeproj/*.mode1v3
-/iphone/Free42.xcodeproj/*.pbxuser
-/iphone/Free42.xcodeproj/xcuserdata
-
-# /iphone/Free42.xcodeproj/project.xcworkspace/
-/iphone/Free42.xcodeproj/project.xcworkspace/xcuserdata
-
-# /iphone/Free42.xcodeproj/project.xcworkspace/xcshareddata/
-/iphone/Free42.xcodeproj/project.xcworkspace/xcshareddata/*.xccheckout
-/iphone/Free42.xcodeproj/project.xcworkspace/xcshareddata/*.xcscmblueprint
-
 # /iphone/Plus42.xcodeproj/
 /iphone/Plus42.xcodeproj/*.mode1v3
 /iphone/Plus42.xcodeproj/*.pbxuser

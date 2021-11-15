@@ -310,7 +310,7 @@ static BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
     srand(GetTickCount());
 
     /**********************************************/
-    /***** Try to create the Free42 directory *****/
+    /***** Try to create the Plus42 directory *****/
     /**********************************************/
 
     get_home_dir(free42dirname, FILENAMELEN);
@@ -969,7 +969,7 @@ static LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPAR
             int p = LOWORD(wParam);
             if (p == WA_INACTIVE)
                 // This is needed because when using Alt-Tab to leave
-                // Free42, Windows Vista and later don't send a key-up
+                // Plus42, Windows Vista and later don't send a key-up
                 // for the Alt key, with the result that the app only
                 // sees the key-down for Alt, and the menu bar remains
                 // stuck in Alt mode.
@@ -1401,12 +1401,12 @@ static void move_state_file(wchar_t *olddir, wchar_t *newdir, wchar_t *filename)
 }
 
 static void get_home_dir(wchar_t *path, int pathlen) {
-    // Starting with release 1.5.1, changing the Free42 directory is no longer
-    // supported. Instead, Free42 looks for a file or directory named 'portable'
+    // Starting with release 1.5.1, changing the Plus42 directory is no longer
+    // supported. Instead, Plus42 looks for a file or directory named 'portable'
     // in the executable's directory; if it exists, this is where the state files
     // will also be stored, and this will be the only directory searched for skins.
     // If there is no 'portable', then the state files will be stored under
-    // %APPDATA%\Free42, and skins will be searched for in that directory as well,
+    // %APPDATA%\Plus42, and skins will be searched for in that directory as well,
     // *and* in the executable's directory.
 
     wchar_t exepath[FILENAMELEN];

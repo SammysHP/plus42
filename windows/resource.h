@@ -1,6 +1,6 @@
 //{{NO_DEPENDENCIES}}
 // Microsoft Developer Studio generated include file.
-// Used by Free42.rc
+// Used by Plus42.rc
 //
 #define IDD_FREE42_DIALOG               102
 #define IDD_ABOUTBOX                    103

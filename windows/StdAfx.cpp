@@ -1,5 +1,5 @@
 // stdafx.cpp : source file that includes just the standard includes
-//  Free42.pch will be the pre-compiled header
+//  Plus42.pch will be the pre-compiled header
 //  stdafx.obj will contain the pre-compiled type information
 
 #include "stdafx.h"

@@ -1,4 +1,4 @@
-# Default key mapping table for Free42 (GTK version)
+# Default key mapping table for Plus42 (GTK version)
 #
 # Format: [Ctrl|Alt|Shift]* <KeyName> : <macro>
 # <KeyName> is a string consisting of the name of the symbolic constant as

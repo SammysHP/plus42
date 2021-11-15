@@ -164,7 +164,7 @@ static void selectSkinCB(GtkWidget *w, gpointer cd) {
 static bool skin_open(const char *name, bool open_layout, bool force_builtin) {
     if (!force_builtin) {
         const char *suffix = open_layout ? ".layout" : ".gif";
-        // Try Free42 dir first...
+        // Try Plus42 dir first...
         string fname = string(free42dirname) + "/" + name + suffix;
         external_file = fopen(fname.c_str(), "r");
         if (external_file != NULL)

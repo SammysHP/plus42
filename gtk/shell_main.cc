@@ -66,7 +66,7 @@ char free42dirname[FILENAMELEN];
  * container's height to exceed 32k, which means that as the print widget's
  * height approaches that magical number, the top-level window is forced to
  * become shorter and shorter. So, I set the limit at 30000 instead of
- * 32768; if we're reading a print-out file from Free42/Motif which has more
+ * 32768; if we're reading a print-out file from Plus42/Motif which has more
  * than 30000 pixels, we chop off the excess from the top.
  */
 #define PRINT_LINES 30000
@@ -413,13 +413,13 @@ static void activate(GtkApplication *theApp, gpointer userData) {
         snprintf(free42dirname, FILENAMELEN, "%s/plus42", xdg_data_home);
 
     if (!file_exists(free42dirname)) {
-        // The Free42 directory does not exist yet. Before trying to do
-        // anything else, make sure the Free42 directory path starts with a slash.
+        // The Plus42 directory does not exist yet. Before trying to do
+        // anything else, make sure the Plus42 directory path starts with a slash.
         if (free42dirname[0] != '/') {
             fprintf(stderr, "Fatal: XDG_DATA_HOME or HOME are invalid; must start with '/'\n");
             exit(1);
         }
-        // The Free42 directory does not exist yet. Trying to create it,
+        // The Plus42 directory does not exist yet. Trying to create it,
         // and all its ancestors. We're not checking for errors here, since
         // either XDG_DATA_HOME or else HOME really should be set to
         // something sane, and besides, trying to create the first few
@@ -537,7 +537,7 @@ static void activate(GtkApplication *theApp, gpointer userData) {
     // menu items, but they don't fit in the pop-up and so are cut off.
     // Can't think of a proper way around this, but this at least will fix the
     // Skin menu appearance in the most common use case, i.e. when the set of
-    // skins does not change while Free42 is running.
+    // skins does not change while Plus42 is running.
     skin_menu_update(GTK_WIDGET(item));
 
     item = GTK_MENU_ITEM(gtk_builder_get_object(builder, "states_item"));

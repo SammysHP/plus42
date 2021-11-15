@@ -17,7 +17,7 @@
                BlueprintIdentifier = "E969E2082603F14900EABB28"
                BuildableName = "Plus42 Binary.app"
                BlueprintName = "Plus42 Binary"
-               ReferencedContainer = "container:Free42.xcodeproj">
+               ReferencedContainer = "container:Plus42.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -47,7 +47,7 @@
             BlueprintIdentifier = "E969E2082603F14900EABB28"
             BuildableName = "Plus42 Binary.app"
             BlueprintName = "Plus42 Binary"
-            ReferencedContainer = "container:Free42.xcodeproj">
+            ReferencedContainer = "container:Plus42.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </LaunchAction>

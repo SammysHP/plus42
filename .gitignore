@@ -205,17 +205,17 @@
 /mac/gcc111libbid*.a
 /mac/readtest_lines.cc
 
-# /mac/Free42.xcodeproj/
-/mac/Free42.xcodeproj/*.mode1v3
-/mac/Free42.xcodeproj/*.pbxuser
-/mac/Free42.xcodeproj/xcuserdata
+# /mac/Plus42.xcodeproj/
+/mac/Plus42.xcodeproj/*.mode1v3
+/mac/Plus42.xcodeproj/*.pbxuser
+/mac/Plus42.xcodeproj/xcuserdata
 
-# /mac/Free42.xcodeproj/project.xcworkspace/
-/mac/Free42.xcodeproj/project.xcworkspace/xcuserdata
+# /mac/Plus42.xcodeproj/project.xcworkspace/
+/mac/Plus42.xcodeproj/project.xcworkspace/xcuserdata
 
-# /mac/Free42.xcodeproj/project.xcworkspace/xcshareddata/
-/mac/Free42.xcodeproj/project.xcworkspace/xcshareddata/*.xccheckout
-/mac/Free42.xcodeproj/project.xcworkspace/xcshareddata/*.xcscmblueprint
+# /mac/Plus42.xcodeproj/project.xcworkspace/xcshareddata/
+/mac/Plus42.xcodeproj/project.xcworkspace/xcshareddata/*.xccheckout
+/mac/Plus42.xcodeproj/project.xcworkspace/xcshareddata/*.xcscmblueprint
 
 # /skins/
 

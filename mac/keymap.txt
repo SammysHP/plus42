@@ -1,4 +1,4 @@
-# Default key mapping table for Free42 (Mac version)
+# Default key mapping table for Plus42 (Mac version)
 #
 # Format: [Ctrl|Alt|Shift]* <Character> : <macro>
 # <Character> is either a printable character, or a unicode character code

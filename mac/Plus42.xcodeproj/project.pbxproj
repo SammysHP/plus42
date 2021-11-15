@@ -146,7 +146,7 @@
 		13E42FB307B3F0F600E4EEF1 /* CoreData.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreData.framework; path = /System/Library/Frameworks/CoreData.framework; sourceTree = "<absolute>"; };
 		29B97324FDCFA39411CA2CEA /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = /System/Library/Frameworks/AppKit.framework; sourceTree = "<absolute>"; };
 		29B97325FDCFA39411CA2CEA /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = /System/Library/Frameworks/Foundation.framework; sourceTree = "<absolute>"; };
-		32CA4F630368D1EE00C91783 /* Free42_Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Free42_Prefix.pch; sourceTree = "<group>"; };
+		32CA4F630368D1EE00C91783 /* Plus42_Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Plus42_Prefix.pch; sourceTree = "<group>"; };
 		8D1107310486CEB800E47090 /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		8D1107320486CEB800E47090 /* Plus42 Decimal.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Plus42 Decimal.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		E9031CB00FF690AC0023F9EC /* builtin_skins.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = builtin_skins.txt; sourceTree = "<group>"; };
@@ -213,7 +213,7 @@
 		E959D42A0FEC0A44007C56A4 /* shell_spool.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = shell_spool.cc; path = ../common/shell_spool.cc; sourceTree = SOURCE_ROOT; };
 		E959D42B0FEC0A44007C56A4 /* shell_spool.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = shell_spool.h; path = ../common/shell_spool.h; sourceTree = SOURCE_ROOT; };
 		E969E2522603F14900EABB28 /* Plus42 Binary.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Plus42 Binary.app"; sourceTree = BUILT_PRODUCTS_DIR; };
-		E969E2562603F59B00EABB28 /* Free42Release.entitlements */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.entitlements; path = Free42Release.entitlements; sourceTree = "<group>"; };
+		E969E2562603F59B00EABB28 /* Plus42Release.entitlements */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.entitlements; path = Plus42Release.entitlements; sourceTree = "<group>"; };
 		E96C1DC8271C4DC300906D3B /* core_parser.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = core_parser.cc; path = ../common/core_parser.cc; sourceTree = "<group>"; };
 		E96C1DC9271C4DC300906D3B /* core_parser.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = core_parser.h; path = ../common/core_parser.h; sourceTree = "<group>"; };
 		E97714CB0FEC0E9A00F8CA16 /* shell_skin.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = shell_skin.h; path = Classes/shell_skin.h; sourceTree = "<group>"; };
@@ -347,10 +347,10 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
-		29B97314FDCFA39411CA2CEA /* Free42 */ = {
+		29B97314FDCFA39411CA2CEA /* Plus42 */ = {
 			isa = PBXGroup;
 			children = (
-				E969E2562603F59B00EABB28 /* Free42Release.entitlements */,
+				E969E2562603F59B00EABB28 /* Plus42Release.entitlements */,
 				E9092A7718C2A52500609AB0 /* gcc111libbid.a */,
 				E959D3F90FEC0A0B007C56A4 /* Common */,
 				080E96DDFE201D6D7F000001 /* Classes */,
@@ -359,13 +359,13 @@
 				29B97323FDCFA39411CA2CEA /* Frameworks */,
 				19C28FACFE9D520D11CA2CBB /* Products */,
 			);
-			name = Free42;
+			name = Plus42;
 			sourceTree = "<group>";
 		};
 		29B97315FDCFA39411CA2CEA /* Other Sources */ = {
 			isa = PBXGroup;
 			children = (
-				32CA4F630368D1EE00C91783 /* Free42_Prefix.pch */,
+				32CA4F630368D1EE00C91783 /* Plus42_Prefix.pch */,
 				E9792540169888F200598A02 /* main.mm */,
 				E93469F31CF0CCAB00B0762F /* readtest.c */,
 				E93469F11CF0C68600B0762F /* readtest_lines.cc */,
@@ -489,7 +489,7 @@
 			);
 			name = "Plus42 Decimal";
 			productInstallPath = "$(HOME)/Applications";
-			productName = Free42;
+			productName = Plus42;
 			productReference = 8D1107320486CEB800E47090 /* Plus42 Decimal.app */;
 			productType = "com.apple.product-type.application";
 		};
@@ -508,7 +508,7 @@
 			);
 			name = "Plus42 Binary";
 			productInstallPath = "$(HOME)/Applications";
-			productName = Free42;
+			productName = Plus42;
 			productReference = E969E2522603F14900EABB28 /* Plus42 Binary.app */;
 			productType = "com.apple.product-type.application";
 		};
@@ -528,7 +528,7 @@
 					};
 				};
 			};
-			buildConfigurationList = C01FCF4E08A954540054247B /* Build configuration list for PBXProject "Free42" */;
+			buildConfigurationList = C01FCF4E08A954540054247B /* Build configuration list for PBXProject "Plus42" */;
 			compatibilityVersion = "Xcode 3.2";
 			developmentRegion = en;
 			hasScannedForEncodings = 1;
@@ -539,7 +539,7 @@
 				en,
 				ja,
 			);
-			mainGroup = 29B97314FDCFA39411CA2CEA /* Free42 */;
+			mainGroup = 29B97314FDCFA39411CA2CEA /* Plus42 */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
@@ -768,7 +768,7 @@
 				GCC_MODEL_TUNING = G5;
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
-				GCC_PREFIX_HEADER = Free42_Prefix.pch;
+				GCC_PREFIX_HEADER = Plus42_Prefix.pch;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"DECIMAL_CALL_BY_REFERENCE=1",
 					"DECIMAL_GLOBAL_ROUNDING=1",
@@ -797,7 +797,7 @@
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ARCHS = "$(ARCHS_STANDARD)";
 				CLANG_CXX_LIBRARY = "libc++";
-				CODE_SIGN_ENTITLEMENTS = Free42Release.entitlements;
+				CODE_SIGN_ENTITLEMENTS = Plus42Release.entitlements;
 				CODE_SIGN_IDENTITY = "Mac Developer";
 				COMBINE_HIDPI_IMAGES = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
@@ -805,7 +805,7 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				GCC_MODEL_TUNING = G5;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
-				GCC_PREFIX_HEADER = Free42_Prefix.pch;
+				GCC_PREFIX_HEADER = Plus42_Prefix.pch;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"DECIMAL_CALL_BY_REFERENCE=1",
 					"DECIMAL_GLOBAL_ROUNDING=1",
@@ -865,7 +865,7 @@
 				GCC_MODEL_TUNING = G5;
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
-				GCC_PREFIX_HEADER = Free42_Prefix.pch;
+				GCC_PREFIX_HEADER = Plus42_Prefix.pch;
 				INFOPLIST_FILE = Info.plist;
 				INSTALL_PATH = "$(HOME)/Applications";
 				LIBRARY_SEARCH_PATHS = (
@@ -908,7 +908,7 @@
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ARCHS = "$(ARCHS_STANDARD)";
 				CLANG_CXX_LIBRARY = "libc++";
-				CODE_SIGN_ENTITLEMENTS = Free42Release.entitlements;
+				CODE_SIGN_ENTITLEMENTS = Plus42Release.entitlements;
 				CODE_SIGN_IDENTITY = "Mac Developer";
 				COMBINE_HIDPI_IMAGES = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
@@ -916,7 +916,7 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				GCC_MODEL_TUNING = G5;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
-				GCC_PREFIX_HEADER = Free42_Prefix.pch;
+				GCC_PREFIX_HEADER = Plus42_Prefix.pch;
 				INFOPLIST_FILE = Info.plist;
 				INSTALL_PATH = "$(HOME)/Applications";
 				LIBRARY_SEARCH_PATHS = (
@@ -942,7 +942,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		C01FCF4E08A954540054247B /* Build configuration list for PBXProject "Free42" */ = {
+		C01FCF4E08A954540054247B /* Build configuration list for PBXProject "Plus42" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				E9937380102DE5B300B94F08 /* Debug */,

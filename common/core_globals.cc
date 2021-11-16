@@ -2729,7 +2729,7 @@ int push_indexed_matrix() {
     matedit_mode = 0;
     return ERR_NONE;
 }
-void dump_vartype(FILE *f, vartype *v, std::string indent);
+
 int push_func_state(int n) {
     if (!program_running())
         return ERR_RESTRICTED_OPERATION;

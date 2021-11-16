@@ -52,9 +52,6 @@ class Evaluator {
     virtual bool is(const std::string *name) { return false; }
     virtual Evaluator *clone() = 0;
     virtual void detach() {}
-    #ifdef DEBUG
-    virtual void print(FILE *f, std::string indent) = 0;
-    #endif
 
     int pos() { return tpos; }
 

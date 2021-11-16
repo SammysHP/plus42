@@ -909,12 +909,7 @@ int docmd_fma(arg_struct *arg) {
 }
 
 int docmd_func(arg_struct *arg) {
-    dump("before");
-    int ret = push_func_state(arg->val.num);
-    dump("after");
-    return ret;
-
-    //return push_func_state(arg->val.num);
+    return push_func_state(arg->val.num);
 }
 
 int docmd_errmsg(arg_struct *arg) {

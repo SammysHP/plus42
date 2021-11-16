@@ -258,4 +258,10 @@ vartype *recall_private_var(const char *name, int namelength);
 vartype *recall_and_purge_private_var(const char *name, int namelength);
 int store_private_var(const char *name, int namelength, vartype *value);
 
+#ifdef DEBUG
+/* Writes a dump of all user data: programs, variables, stack, RTN stack */
+void dump(const char *message = NULL);
+void dumpa();
+#endif
+
 #endif

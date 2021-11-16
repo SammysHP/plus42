@@ -44,6 +44,7 @@
 /* Magic number "24lP" for the state file. */
 #define PLUS42_MAGIC 0x506c3432
 #define PLUS42_MAGIC_STR "24lP"
+#define DEBUG 1
 
 
 #endif

@@ -90,6 +90,7 @@ class GeneratorContext {
     }
 
     void store(prgm_struct *prgm) {
+        prgm->lclbl_invalid = 0;
         // Tack all the subroutines onto the main code
         for (int i = 0; i < queue.size(); i++) {
             addLine(CMD_RTN);
@@ -278,6 +279,13 @@ class Abs : public UnaryEvaluator {
         ev->generateCode(ctx);
         ctx->addLine(CMD_ABS);
     }
+
+    #ifdef DEBUG
+    void print(FILE *f, std::string indent) {
+        fprintf(f, "%sAbs\n", indent.c_str());
+        ev->print(f, indent + "  ");
+    }
+    #endif
 };
 
 //////////////////
@@ -300,6 +308,13 @@ class Acos : public UnaryEvaluator {
         ev->generateCode(ctx);
         ctx->addLine(CMD_ACOS);
     }
+
+    #ifdef DEBUG
+    void print(FILE *f, std::string indent) {
+        fprintf(f, "%sAcos\n", indent.c_str());
+        ev->print(f, indent + "  ");
+    }
+    #endif
 };
 
 ///////////////////
@@ -322,6 +337,13 @@ class Acosh : public UnaryEvaluator {
         ev->generateCode(ctx);
         ctx->addLine(CMD_ACOSH);
     }
+
+    #ifdef DEBUG
+    void print(FILE *f, std::string indent) {
+        fprintf(f, "%sAcosh\n", indent.c_str());
+        ev->print(f, indent + "  ");
+    }
+    #endif
 };
 
 //////////////////
@@ -344,6 +366,13 @@ class Alog : public UnaryEvaluator {
         ev->generateCode(ctx);
         ctx->addLine(CMD_10_POW_X);
     }
+
+    #ifdef DEBUG
+    void print(FILE *f, std::string indent) {
+        fprintf(f, "%sAlog\n", indent.c_str());
+        ev->print(f, indent + "  ");
+    }
+    #endif
 };
 
 /////////////////
@@ -367,6 +396,14 @@ class And : public BinaryEvaluator {
         right->generateCode(ctx);
         ctx->addLine(CMD_GEN_AND);
     }
+
+    #ifdef DEBUG
+    void print(FILE *f, std::string indent) {
+        fprintf(f, "%sAnd\n", indent.c_str());
+        left->print(f, indent + "  ");
+        right->print(f, indent + "  ");
+    }
+    #endif
 };
 
 ///////////////////
@@ -390,6 +427,14 @@ class Angle : public BinaryEvaluator {
         ctx->addLine(CMD_TO_POL);
         ctx->addLine(CMD_DROP);
     }
+
+    #ifdef DEBUG
+    void print(FILE *f, std::string indent) {
+        fprintf(f, "%sAngle\n", indent.c_str());
+        left->print(f, indent + "  ");
+        right->print(f, indent + "  ");
+    }
+    #endif
 };
 
 //////////////////
@@ -412,6 +457,13 @@ class Asin : public UnaryEvaluator {
         ev->generateCode(ctx);
         ctx->addLine(CMD_ASIN);
     }
+
+    #ifdef DEBUG
+    void print(FILE *f, std::string indent) {
+        fprintf(f, "%sAsin\n", indent.c_str());
+        ev->print(f, indent + "  ");
+    }
+    #endif
 };
 
 ///////////////////
@@ -434,6 +486,13 @@ class Asinh : public UnaryEvaluator {
         ev->generateCode(ctx);
         ctx->addLine(CMD_ASINH);
     }
+
+    #ifdef DEBUG
+    void print(FILE *f, std::string indent) {
+        fprintf(f, "%sAsinh\n", indent.c_str());
+        ev->print(f, indent + "  ");
+    }
+    #endif
 };
 
 //////////////////
@@ -456,6 +515,13 @@ class Atan : public UnaryEvaluator {
         ev->generateCode(ctx);
         ctx->addLine(CMD_ATAN);
     }
+
+    #ifdef DEBUG
+    void print(FILE *f, std::string indent) {
+        fprintf(f, "%sAtan\n", indent.c_str());
+        ev->print(f, indent + "  ");
+    }
+    #endif
 };
 
 ///////////////////
@@ -478,6 +544,13 @@ class Atanh : public UnaryEvaluator {
         ev->generateCode(ctx);
         ctx->addLine(CMD_ATANH);
     }
+
+    #ifdef DEBUG
+    void print(FILE *f, std::string indent) {
+        fprintf(f, "%sAtanh\n", indent.c_str());
+        ev->print(f, indent + "  ");
+    }
+    #endif
 };
 
 //////////////////
@@ -501,6 +574,14 @@ class Badd : public BinaryEvaluator {
         right->generateCode(ctx);
         ctx->addLine(CMD_BASEADD);
     }
+
+    #ifdef DEBUG
+    void print(FILE *f, std::string indent) {
+        fprintf(f, "%sBadd\n", indent.c_str());
+        left->print(f, indent + "  ");
+        right->print(f, indent + "  ");
+    }
+    #endif
 };
 
 //////////////////
@@ -522,6 +603,14 @@ class Band : public BinaryEvaluator {
         right->generateCode(ctx);
         ctx->addLine(CMD_AND);
     }
+
+    #ifdef DEBUG
+    void print(FILE *f, std::string indent) {
+        fprintf(f, "%sBand\n", indent.c_str());
+        left->print(f, indent + "  ");
+        right->print(f, indent + "  ");
+    }
+    #endif
 };
 
 //////////////////
@@ -545,6 +634,14 @@ class Bdiv : public BinaryEvaluator {
         right->generateCode(ctx);
         ctx->addLine(CMD_BASEDIV);
     }
+
+    #ifdef DEBUG
+    void print(FILE *f, std::string indent) {
+        fprintf(f, "%sBdiv\n", indent.c_str());
+        left->print(f, indent + "  ");
+        right->print(f, indent + "  ");
+    }
+    #endif
 };
 
 //////////////////
@@ -568,6 +665,14 @@ class Bmul : public BinaryEvaluator {
         right->generateCode(ctx);
         ctx->addLine(CMD_BASEMUL);
     }
+
+    #ifdef DEBUG
+    void print(FILE *f, std::string indent) {
+        fprintf(f, "%sBmul\n", indent.c_str());
+        left->print(f, indent + "  ");
+        right->print(f, indent + "  ");
+    }
+    #endif
 };
 
 //////////////////
@@ -590,6 +695,13 @@ class Bneg : public UnaryEvaluator {
         ev->generateCode(ctx);
         ctx->addLine(CMD_BASECHS);
     }
+
+    #ifdef DEBUG
+    void print(FILE *f, std::string indent) {
+        fprintf(f, "%sBneg\n", indent.c_str());
+        ev->print(f, indent + "  ");
+    }
+    #endif
 };
 
 //////////////////
@@ -612,6 +724,13 @@ class Bnot : public UnaryEvaluator {
         ev->generateCode(ctx);
         ctx->addLine(CMD_NOT);
     }
+
+    #ifdef DEBUG
+    void print(FILE *f, std::string indent) {
+        fprintf(f, "%sBnot\n", indent.c_str());
+        ev->print(f, indent + "  ");
+    }
+    #endif
 };
 
 /////////////////
@@ -633,6 +752,14 @@ class Bor : public BinaryEvaluator {
         right->generateCode(ctx);
         ctx->addLine(CMD_OR);
     }
+
+    #ifdef DEBUG
+    void print(FILE *f, std::string indent) {
+        fprintf(f, "%sBor\n", indent.c_str());
+        left->print(f, indent + "  ");
+        right->print(f, indent + "  ");
+    }
+    #endif
 };
 
 //////////////////
@@ -656,6 +783,14 @@ class Bsub : public BinaryEvaluator {
         right->generateCode(ctx);
         ctx->addLine(CMD_BASESUB);
     }
+
+    #ifdef DEBUG
+    void print(FILE *f, std::string indent) {
+        fprintf(f, "%sBsub\n", indent.c_str());
+        left->print(f, indent + "  ");
+        right->print(f, indent + "  ");
+    }
+    #endif
 };
 
 //////////////////
@@ -679,6 +814,14 @@ class Bxor : public BinaryEvaluator {
         right->generateCode(ctx);
         ctx->addLine(CMD_BASEMUL);
     }
+
+    #ifdef DEBUG
+    void print(FILE *f, std::string indent) {
+        fprintf(f, "%sBxor\n", indent.c_str());
+        left->print(f, indent + "  ");
+        right->print(f, indent + "  ");
+    }
+    #endif
 };
 
 //////////////////
@@ -743,6 +886,14 @@ class Call : public Evaluator {
                 return -1;
         return 0;
     }
+
+    #ifdef DEBUG
+    void print(FILE *f, std::string indent) {
+        fprintf(f, "%sCall\n", indent.c_str());
+        for (int i = 0; i < evs->size(); i++)
+            (*evs)[i]->print(f, indent + "  ");
+    }
+    #endif
 };
 
 ///////////////////
@@ -770,6 +921,12 @@ class Cdate : public Evaluator {
     int howMany(const std::string *name) {
         return 0;
     }
+
+    #ifdef DEBUG
+    void print(FILE *f, std::string indent) {
+        fprintf(f, "%sCdate\n", indent.c_str());
+    }
+    #endif
 };
 
 //////////////////
@@ -791,6 +948,14 @@ class Comb : public BinaryEvaluator {
         right->generateCode(ctx);
         ctx->addLine(CMD_COMB);
     }
+
+    #ifdef DEBUG
+    void print(FILE *f, std::string indent) {
+        fprintf(f, "%sComb\n", indent.c_str());
+        left->print(f, indent + "  ");
+        right->print(f, indent + "  ");
+    }
+    #endif
 };
 
 ///////////////////////
@@ -814,6 +979,14 @@ class CompareEQ : public BinaryEvaluator {
         right->generateCode(ctx);
         ctx->addLine(CMD_GEN_EQ);
     }
+
+    #ifdef DEBUG
+    void print(FILE *f, std::string indent) {
+        fprintf(f, "%s==\n", indent.c_str());
+        left->print(f, indent + "  ");
+        right->print(f, indent + "  ");
+    }
+    #endif
 };
 
 ///////////////////////
@@ -837,6 +1010,14 @@ class CompareNE : public BinaryEvaluator {
         right->generateCode(ctx);
         ctx->addLine(CMD_GEN_NE);
     }
+
+    #ifdef DEBUG
+    void print(FILE *f, std::string indent) {
+        fprintf(f, "%s<>\n", indent.c_str());
+        left->print(f, indent + "  ");
+        right->print(f, indent + "  ");
+    }
+    #endif
 };
 
 ///////////////////////
@@ -860,6 +1041,14 @@ class CompareLT : public BinaryEvaluator {
         right->generateCode(ctx);
         ctx->addLine(CMD_GEN_LT);
     }
+
+    #ifdef DEBUG
+    void print(FILE *f, std::string indent) {
+        fprintf(f, "%s<\n", indent.c_str());
+        left->print(f, indent + "  ");
+        right->print(f, indent + "  ");
+    }
+    #endif
 };
 
 ///////////////////////
@@ -883,6 +1072,14 @@ class CompareLE : public BinaryEvaluator {
         right->generateCode(ctx);
         ctx->addLine(CMD_GEN_LE);
     }
+
+    #ifdef DEBUG
+    void print(FILE *f, std::string indent) {
+        fprintf(f, "%s<=\n", indent.c_str());
+        left->print(f, indent + "  ");
+        right->print(f, indent + "  ");
+    }
+    #endif
 };
 
 ///////////////////////
@@ -906,6 +1103,14 @@ class CompareGT : public BinaryEvaluator {
         right->generateCode(ctx);
         ctx->addLine(CMD_GEN_GT);
     }
+
+    #ifdef DEBUG
+    void print(FILE *f, std::string indent) {
+        fprintf(f, "%s>\n", indent.c_str());
+        left->print(f, indent + "  ");
+        right->print(f, indent + "  ");
+    }
+    #endif
 };
 
 ///////////////////////
@@ -929,6 +1134,14 @@ class CompareGE : public BinaryEvaluator {
         right->generateCode(ctx);
         ctx->addLine(CMD_GEN_GE);
     }
+
+    #ifdef DEBUG
+    void print(FILE *f, std::string indent) {
+        fprintf(f, "%s>=\n", indent.c_str());
+        left->print(f, indent + "  ");
+        right->print(f, indent + "  ");
+    }
+    #endif
 };
 
 /////////////////
@@ -951,6 +1164,13 @@ class Cos : public UnaryEvaluator {
         ev->generateCode(ctx);
         ctx->addLine(CMD_COS);
     }
+
+    #ifdef DEBUG
+    void print(FILE *f, std::string indent) {
+        fprintf(f, "%sCos\n", indent.c_str());
+        ev->print(f, indent + "  ");
+    }
+    #endif
 };
 
 //////////////////
@@ -973,6 +1193,13 @@ class Cosh : public UnaryEvaluator {
         ev->generateCode(ctx);
         ctx->addLine(CMD_COSH);
     }
+
+    #ifdef DEBUG
+    void print(FILE *f, std::string indent) {
+        fprintf(f, "%sCosh\n", indent.c_str());
+        ev->print(f, indent + "  ");
+    }
+    #endif
 };
 
 ///////////////////
@@ -1000,6 +1227,12 @@ class Ctime : public Evaluator {
     int howMany(const std::string *name) {
         return 0;
     }
+
+    #ifdef DEBUG
+    void print(FILE *f, std::string indent) {
+        fprintf(f, "%sCtime\n", indent.c_str());
+    }
+    #endif
 };
 
 //////////////////
@@ -1023,6 +1256,14 @@ class Date : public BinaryEvaluator {
         right->generateCode(ctx);
         ctx->addLine(CMD_DATE_PLUS);
     }
+
+    #ifdef DEBUG
+    void print(FILE *f, std::string indent) {
+        fprintf(f, "%sDate\n", indent.c_str());
+        left->print(f, indent + "  ");
+        right->print(f, indent + "  ");
+    }
+    #endif
 };
 
 ///////////////////
@@ -1078,6 +1319,15 @@ class Ddays : public Evaluator {
         else
             return 0;
     }
+
+    #ifdef DEBUG
+    void print(FILE *f, std::string indent) {
+        fprintf(f, "%sDdays\n", indent.c_str());
+        date1->print(f, indent + "  ");
+        date2->print(f, indent + "  ");
+        cal->print(f, indent + "  ");
+    }
+    #endif
 };
 
 /////////////////
@@ -1100,6 +1350,13 @@ class Dec : public UnaryEvaluator {
         ev->generateCode(ctx);
         ctx->addLine(CMD_TO_DEC);
     }
+
+    #ifdef DEBUG
+    void print(FILE *f, std::string indent) {
+        fprintf(f, "%sDec\n", indent.c_str());
+        ev->print(f, indent + "  ");
+    }
+    #endif
 };
 
 /////////////////
@@ -1122,6 +1379,13 @@ class Deg : public UnaryEvaluator {
         ev->generateCode(ctx);
         ctx->addLine(CMD_TO_DEG);
     }
+
+    #ifdef DEBUG
+    void print(FILE *f, std::string indent) {
+        fprintf(f, "%sDeg\n", indent.c_str());
+        ev->print(f, indent + "  ");
+    }
+    #endif
 };
 
 ////////////////////////
@@ -1145,6 +1409,14 @@ class Difference : public BinaryEvaluator {
         right->generateCode(ctx);
         ctx->addLine(CMD_SUB);
     }
+
+    #ifdef DEBUG
+    void print(FILE *f, std::string indent) {
+        fprintf(f, "%s-\n", indent.c_str());
+        left->print(f, indent + "  ");
+        right->print(f, indent + "  ");
+    }
+    #endif
 };
 
 /////////////////
@@ -1172,6 +1444,14 @@ class Ell : public UnaryEvaluator {
         ev->generateCode(ctx);
         ctx->addLine(compatMode ? CMD_GSTO : CMD_STO, name);
     }
+
+    #ifdef DEBUG
+    void print(FILE *f, std::string indent) {
+        fprintf(f, "%sL\n", indent.c_str());
+        fprintf(f, "  %s%s\n", indent.c_str(), name.c_str());
+        ev->print(f, indent + "  ");
+    }
+    #endif
 };
 
 //////////////////////
@@ -1210,6 +1490,14 @@ class Equation : public BinaryEvaluator {
         right->generateCode(ctx);
         ctx->addLine(CMD_SUB);
     }
+
+    #ifdef DEBUG
+    void print(FILE *f, std::string indent) {
+        fprintf(f, "%s=\n", indent.c_str());
+        left->print(f, indent + "  ");
+        right->print(f, indent + "  ");
+    }
+    #endif
 };
 
 /////////////////
@@ -1245,6 +1533,13 @@ class Ess : public Evaluator {
     int howMany(const std::string *nam) {
         return *nam == name ? -1 : 0;
     }
+
+    #ifdef DEBUG
+    void print(FILE *f, std::string indent) {
+        fprintf(f, "%sS\n", indent.c_str());
+        fprintf(f, "  %s%s\n", indent.c_str(), name.c_str());
+    }
+    #endif
 };
 
 /////////////////
@@ -1267,6 +1562,13 @@ class Exp : public UnaryEvaluator {
         ev->generateCode(ctx);
         ctx->addLine(CMD_E_POW_X);
     }
+
+    #ifdef DEBUG
+    void print(FILE *f, std::string indent) {
+        fprintf(f, "%sExp\n", indent.c_str());
+        ev->print(f, indent + "  ");
+    }
+    #endif
 };
 
 ///////////////////
@@ -1289,6 +1591,13 @@ class Expm1 : public UnaryEvaluator {
         ev->generateCode(ctx);
         ctx->addLine(CMD_E_POW_X_1);
     }
+
+    #ifdef DEBUG
+    void print(FILE *f, std::string indent) {
+        fprintf(f, "%sExpm1\n", indent.c_str());
+        ev->print(f, indent + "  ");
+    }
+    #endif
 };
 
 //////////////////
@@ -1309,6 +1618,13 @@ class Fact : public UnaryEvaluator {
         ev->generateCode(ctx);
         ctx->addLine(CMD_FACT);
     }
+
+    #ifdef DEBUG
+    void print(FILE *f, std::string indent) {
+        fprintf(f, "%sFact\n", indent.c_str());
+        ev->print(f, indent + "  ");
+    }
+    #endif
 };
 
 ////////////////
@@ -1329,6 +1645,13 @@ class Fp : public UnaryEvaluator {
         ev->generateCode(ctx);
         ctx->addLine(CMD_FP);
     }
+
+    #ifdef DEBUG
+    void print(FILE *f, std::string indent) {
+        fprintf(f, "%sFp\n", indent.c_str());
+        ev->print(f, indent + "  ");
+    }
+    #endif
 };
 
 ///////////////////
@@ -1349,6 +1672,13 @@ class Gamma : public UnaryEvaluator {
         ev->generateCode(ctx);
         ctx->addLine(CMD_GAMMA);
     }
+
+    #ifdef DEBUG
+    void print(FILE *f, std::string indent) {
+        fprintf(f, "%sGamma\n", indent.c_str());
+        ev->print(f, indent + "  ");
+    }
+    #endif
 };
 
 /////////////////
@@ -1381,6 +1711,13 @@ class Gee : public Evaluator {
     int howMany(const std::string *name) {
         return 0;
     }
+
+    #ifdef DEBUG
+    void print(FILE *f, std::string indent) {
+        fprintf(f, "%sG\n", indent.c_str());
+        fprintf(f, "  %s%s\n", indent.c_str(), name.c_str());
+    }
+    #endif
 };
 
 /////////////////
@@ -1403,6 +1740,13 @@ class Hms : public UnaryEvaluator {
         ev->generateCode(ctx);
         ctx->addLine(CMD_TO_HMS);
     }
+
+    #ifdef DEBUG
+    void print(FILE *f, std::string indent) {
+        fprintf(f, "%sHms\n", indent.c_str());
+        ev->print(f, indent + "  ");
+    }
+    #endif
 };
 
 ////////////////////
@@ -1426,6 +1770,14 @@ class Hmsadd : public BinaryEvaluator {
         right->generateCode(ctx);
         ctx->addLine(CMD_HMSADD);
     }
+
+    #ifdef DEBUG
+    void print(FILE *f, std::string indent) {
+        fprintf(f, "%sHms+\n", indent.c_str());
+        left->print(f, indent + "  ");
+        right->print(f, indent + "  ");
+    }
+    #endif
 };
 
 ////////////////////
@@ -1449,6 +1801,14 @@ class Hmssub : public BinaryEvaluator {
         right->generateCode(ctx);
         ctx->addLine(CMD_HMSSUB);
     }
+
+    #ifdef DEBUG
+    void print(FILE *f, std::string indent) {
+        fprintf(f, "%sHms-\n", indent.c_str());
+        left->print(f, indent + "  ");
+        right->print(f, indent + "  ");
+    }
+    #endif
 };
 
 /////////////////
@@ -1471,6 +1831,13 @@ class Hrs : public UnaryEvaluator {
         ev->generateCode(ctx);
         ctx->addLine(CMD_TO_HR);
     }
+
+    #ifdef DEBUG
+    void print(FILE *f, std::string indent) {
+        fprintf(f, "%sHrs\n", indent.c_str());
+        ev->print(f, indent + "  ");
+    }
+    #endif
 };
 
 //////////////////
@@ -1493,6 +1860,14 @@ class Idiv : public BinaryEvaluator {
         ctx->addLine(CMD_DIV);
         ctx->addLine(CMD_IP);
     }
+
+    #ifdef DEBUG
+    void print(FILE *f, std::string indent) {
+        fprintf(f, "%sIdiv\n", indent.c_str());
+        left->print(f, indent + "  ");
+        right->print(f, indent + "  ");
+    }
+    #endif
 };
 
 ////////////////
@@ -1553,6 +1928,15 @@ class If : public Evaluator {
         else
             return 0;
     }
+
+    #ifdef DEBUG
+    void print(FILE *f, std::string indent) {
+        fprintf(f, "%sIf\n", indent.c_str());
+        condition->print(f, indent + "  ");
+        trueEv->print(f, indent + "  ");
+        falseEv->print(f, indent + "  ");
+    }
+    #endif
 };
 
 /////////////////
@@ -1581,6 +1965,13 @@ class Int : public UnaryEvaluator {
         ctx->addLine(CMD_SUB);
         ctx->addLine(CMD_LBL, lbl);
     }
+
+    #ifdef DEBUG
+    void print(FILE *f, std::string indent) {
+        fprintf(f, "%sInt\n", indent.c_str());
+        ev->print(f, indent + "  ");
+    }
+    #endif
 };
 
 ////////////////
@@ -1601,6 +1992,13 @@ class Ip : public UnaryEvaluator {
         ev->generateCode(ctx);
         ctx->addLine(CMD_IP);
     }
+
+    #ifdef DEBUG
+    void print(FILE *f, std::string indent) {
+        fprintf(f, "%sIp\n", indent.c_str());
+        ev->print(f, indent + "  ");
+    }
+    #endif
 };
 
 /////////////////
@@ -1623,6 +2021,13 @@ class Inv : public UnaryEvaluator {
         ev->generateCode(ctx);
         ctx->addLine(CMD_INV);
     }
+
+    #ifdef DEBUG
+    void print(FILE *f, std::string indent) {
+        fprintf(f, "%sInv\n", indent.c_str());
+        ev->print(f, indent + "  ");
+    }
+    #endif
 };
 
 //////////////////
@@ -1655,6 +2060,14 @@ class Item : public UnaryEvaluator {
         else
             return 0;
     }
+
+    #ifdef DEBUG
+    void print(FILE *f, std::string indent) {
+        fprintf(f, "%sItem\n", indent.c_str());
+        fprintf(f, "  %s%s\n", indent.c_str(), name.c_str());
+        ev->print(f, indent + "  ");
+    }
+    #endif
 };
 
 /////////////////////
@@ -1686,6 +2099,13 @@ class Literal : public Evaluator {
     int howMany(const std::string *name) {
         return 0;
     }
+
+    #ifdef DEBUG
+    void print(FILE *f, std::string indent) {
+        fprintf(f, "%sLiteral\n", indent.c_str());
+        fprintf(f, "  %s%g\n", indent.c_str(), value);
+    }
+    #endif
 };
 
 ////////////////
@@ -1708,6 +2128,13 @@ class Ln : public UnaryEvaluator {
         ev->generateCode(ctx);
         ctx->addLine(CMD_LN);
     }
+
+    #ifdef DEBUG
+    void print(FILE *f, std::string indent) {
+        fprintf(f, "%sLn\n", indent.c_str());
+        ev->print(f, indent + "  ");
+    }
+    #endif
 };
 
 //////////////////
@@ -1730,6 +2157,13 @@ class Ln1p : public UnaryEvaluator {
         ev->generateCode(ctx);
         ctx->addLine(CMD_LN_1_X);
     }
+
+    #ifdef DEBUG
+    void print(FILE *f, std::string indent) {
+        fprintf(f, "%sLn1p\n", indent.c_str());
+        ev->print(f, indent + "  ");
+    }
+    #endif
 };
 
 /////////////////
@@ -1752,6 +2186,13 @@ class Log : public UnaryEvaluator {
         ev->generateCode(ctx);
         ctx->addLine(CMD_LOG);
     }
+
+    #ifdef DEBUG
+    void print(FILE *f, std::string indent) {
+        fprintf(f, "%sLog\n", indent.c_str());
+        ev->print(f, indent + "  ");
+    }
+    #endif
 };
 
 /////////////////
@@ -1812,6 +2253,14 @@ class Max : public Evaluator {
                 return -1;
         return 0;
     }
+
+    #ifdef DEBUG
+    void print(FILE *f, std::string indent) {
+        fprintf(f, "%sMax\n", indent.c_str());
+        for (int i = 0; i < evs->size(); i++)
+            (*evs)[i]->print(f, indent + "  ");
+    }
+    #endif
 };
 
 /////////////////
@@ -1872,6 +2321,14 @@ class Min : public Evaluator {
                 return -1;
         return 0;
     }
+
+    #ifdef DEBUG
+    void print(FILE *f, std::string indent) {
+        fprintf(f, "%sMin\n", indent.c_str());
+        for (int i = 0; i < evs->size(); i++)
+            (*evs)[i]->print(f, indent + "  ");
+    }
+    #endif
 };
 
 /////////////////
@@ -1893,6 +2350,14 @@ class Mod : public BinaryEvaluator {
         right->generateCode(ctx);
         ctx->addLine(CMD_MOD);
     }
+
+    #ifdef DEBUG
+    void print(FILE *f, std::string indent) {
+        fprintf(f, "%sMod\n", indent.c_str());
+        left->print(f, indent + "  ");
+        right->print(f, indent + "  ");
+    }
+    #endif
 };
 
 /////////////////////
@@ -1937,6 +2402,16 @@ class NameTag : public UnaryEvaluator {
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
     }
+
+    #ifdef DEBUG
+    void print(FILE *f, std::string indent) {
+        fprintf(f, "%sNameTag\n", indent.c_str());
+        fprintf(f, "  %s%s\n", indent.c_str(), name.c_str());
+        if (params != NULL)
+            for (int i = 0; i < params->size(); i++)
+                fprintf(f, "  %s%s\n", indent.c_str(), name.c_str());
+    }
+    #endif
 };
 
 //////////////////////
@@ -1959,6 +2434,13 @@ class Negative : public UnaryEvaluator {
         ev->generateCode(ctx);
         ctx->addLine(CMD_CHS);
     }
+
+    #ifdef DEBUG
+    void print(FILE *f, std::string indent) {
+        fprintf(f, "%s+/-\n", indent.c_str());
+        ev->print(f, indent + "  ");
+    }
+    #endif
 };
 
 ////////////////////
@@ -1986,6 +2468,12 @@ class Newstr : public Evaluator {
     int howMany(const std::string *name) {
         return 0;
     }
+
+    #ifdef DEBUG
+    void print(FILE *f, std::string indent) {
+        fprintf(f, "%sNewstr\n", indent.c_str());
+    }
+    #endif
 };
 
 /////////////////////
@@ -2013,6 +2501,12 @@ class Newlist : public Evaluator {
     int howMany(const std::string *name) {
         return 0;
     }
+
+    #ifdef DEBUG
+    void print(FILE *f, std::string indent) {
+        fprintf(f, "%sNewlist\n", indent.c_str());
+    }
+    #endif
 };
 
 /////////////////
@@ -2035,6 +2529,13 @@ class Not : public UnaryEvaluator {
         ev->generateCode(ctx);
         ctx->addLine(CMD_GEN_NOT);
     }
+
+    #ifdef DEBUG
+    void print(FILE *f, std::string indent) {
+        fprintf(f, "%sNot\n", indent.c_str());
+        ev->print(f, indent + "  ");
+    }
+    #endif
 };
 
 /////////////////
@@ -2057,6 +2558,13 @@ class Oct : public UnaryEvaluator {
         ev->generateCode(ctx);
         ctx->addLine(CMD_TO_OCT);
     }
+
+    #ifdef DEBUG
+    void print(FILE *f, std::string indent) {
+        fprintf(f, "%sOct\n", indent.c_str());
+        ev->print(f, indent + "  ");
+    }
+    #endif
 };
 
 ////////////////
@@ -2080,6 +2588,14 @@ class Or : public BinaryEvaluator {
         right->generateCode(ctx);
         ctx->addLine(CMD_GEN_OR);
     }
+
+    #ifdef DEBUG
+    void print(FILE *f, std::string indent) {
+        fprintf(f, "%sOr\n", indent.c_str());
+        left->print(f, indent + "  ");
+        right->print(f, indent + "  ");
+    }
+    #endif
 };
 
 //////////////////
@@ -2103,6 +2619,14 @@ class Perm : public BinaryEvaluator {
         right->generateCode(ctx);
         ctx->addLine(CMD_PERM);
     }
+
+    #ifdef DEBUG
+    void print(FILE *f, std::string indent) {
+        fprintf(f, "%sPerm\n", indent.c_str());
+        left->print(f, indent + "  ");
+        right->print(f, indent + "  ");
+    }
+    #endif
 };
 
 ////////////////
@@ -2130,6 +2654,12 @@ class Pi : public Evaluator {
     int howMany(const std::string *name) {
         return 0;
     }
+
+    #ifdef DEBUG
+    void print(FILE *f, std::string indent) {
+        fprintf(f, "%sPi\n", indent.c_str());
+    }
+    #endif
 };
 
 ///////////////////
@@ -2153,6 +2683,14 @@ class Power : public BinaryEvaluator {
         right->generateCode(ctx);
         ctx->addLine(CMD_Y_POW_X);
     }
+
+    #ifdef DEBUG
+    void print(FILE *f, std::string indent) {
+        fprintf(f, "%s^\n", indent.c_str());
+        left->print(f, indent + "  ");
+        right->print(f, indent + "  ");
+    }
+    #endif
 };
 
 /////////////////////
@@ -2176,6 +2714,14 @@ class Product : public BinaryEvaluator {
         right->generateCode(ctx);
         ctx->addLine(CMD_MUL);
     }
+
+    #ifdef DEBUG
+    void print(FILE *f, std::string indent) {
+        fprintf(f, "%s*\n", indent.c_str());
+        left->print(f, indent + "  ");
+        right->print(f, indent + "  ");
+    }
+    #endif
 };
 
 //////////////////////
@@ -2199,6 +2745,14 @@ class Quotient : public BinaryEvaluator {
         right->generateCode(ctx);
         ctx->addLine(CMD_DIV);
     }
+
+    #ifdef DEBUG
+    void print(FILE *f, std::string indent) {
+        fprintf(f, "%s/\n", indent.c_str());
+        left->print(f, indent + "  ");
+        right->print(f, indent + "  ");
+    }
+    #endif
 };
 
 /////////////////
@@ -2221,6 +2775,13 @@ class Rad : public UnaryEvaluator {
         ev->generateCode(ctx);
         ctx->addLine(CMD_TO_RAD);
     }
+
+    #ifdef DEBUG
+    void print(FILE *f, std::string indent) {
+        fprintf(f, "%sRad\n", indent.c_str());
+        ev->print(f, indent + "  ");
+    }
+    #endif
 };
 
 ////////////////////
@@ -2245,6 +2806,14 @@ class Radius : public BinaryEvaluator {
         ctx->addLine(CMD_SWAP);
         ctx->addLine(CMD_DROP);
     }
+
+    #ifdef DEBUG
+    void print(FILE *f, std::string indent) {
+        fprintf(f, "%sRadium\n", indent.c_str());
+        left->print(f, indent + "  ");
+        right->print(f, indent + "  ");
+    }
+    #endif
 };
 
 ////////////////////
@@ -2272,6 +2841,12 @@ class Random : public Evaluator {
     int howMany(const std::string *name) {
         return 0;
     }
+
+    #ifdef DEBUG
+    void print(FILE *f, std::string indent) {
+        fprintf(f, "%sRandom\n", indent.c_str());
+    }
+    #endif
 };
 
 /////////////////
@@ -2315,6 +2890,14 @@ class Rnd : public BinaryEvaluator {
         ctx->addLine(CMD_STOFLAG);
         ctx->addLine(CMD_DROPN, 2);
     }
+
+    #ifdef DEBUG
+    void print(FILE *f, std::string indent) {
+        fprintf(f, "%sRnd\n", indent.c_str());
+        left->print(f, indent + "  ");
+        right->print(f, indent + "  ");
+    }
+    #endif
 };
 
 /////////////////
@@ -2336,6 +2919,13 @@ class Sgn : public UnaryEvaluator {
         ctx->addLine(CMD_X_NE_0);
         ctx->addLine(CMD_SIGN);
     }
+
+    #ifdef DEBUG
+    void print(FILE *f, std::string indent) {
+        fprintf(f, "%sSgn\n", indent.c_str());
+        ev->print(f, indent + "  ");
+    }
+    #endif
 };
 
 ///////////////////
@@ -2425,6 +3015,18 @@ class Sigma : public Evaluator {
             return -1;
         return 0;
     }
+
+    #ifdef DEBUG
+    void print(FILE *f, std::string indent) {
+        fprintf(f, "%sSigma\n", indent.c_str());
+        fprintf(f, "  %s%s\n", indent.c_str(), name.c_str());
+        ev->print(f, indent + "  ");
+        from->print(f, indent + "  ");
+        to->print(f, indent + "  ");
+        step->print(f, indent + "  ");
+        ev->print(f, indent + "  ");
+    }
+    #endif
 };
 
 /////////////////
@@ -2447,6 +3049,13 @@ class Sin : public UnaryEvaluator {
         ev->generateCode(ctx);
         ctx->addLine(CMD_SIN);
     }
+
+    #ifdef DEBUG
+    void print(FILE *f, std::string indent) {
+        fprintf(f, "%sSin\n", indent.c_str());
+        ev->print(f, indent + "  ");
+    }
+    #endif
 };
 
 //////////////////
@@ -2469,6 +3078,13 @@ class Sinh : public UnaryEvaluator {
         ev->generateCode(ctx);
         ctx->addLine(CMD_SINH);
     }
+
+    #ifdef DEBUG
+    void print(FILE *f, std::string indent) {
+        fprintf(f, "%sSinh\n", indent.c_str());
+        ev->print(f, indent + "  ");
+    }
+    #endif
 };
 
 ///////////////////
@@ -2490,6 +3106,13 @@ class Sizes : public UnaryEvaluator {
         ctx->addLine(CMD_DIM_T);
         ctx->addLine(CMD_MUL);
     }
+
+    #ifdef DEBUG
+    void print(FILE *f, std::string indent) {
+        fprintf(f, "%sSized\n", indent.c_str());
+        ev->print(f, indent + "  ");
+    }
+    #endif
 };
 
 ////////////////
@@ -2512,6 +3135,13 @@ class Sq : public UnaryEvaluator {
         ev->generateCode(ctx);
         ctx->addLine(CMD_SQUARE);
     }
+
+    #ifdef DEBUG
+    void print(FILE *f, std::string indent) {
+        fprintf(f, "%sSq\n", indent.c_str());
+        ev->print(f, indent + "  ");
+    }
+    #endif
 };
 
 //////////////////
@@ -2534,6 +3164,13 @@ class Sqrt : public UnaryEvaluator {
         ev->generateCode(ctx);
         ctx->addLine(CMD_SQRT);
     }
+
+    #ifdef DEBUG
+    void print(FILE *f, std::string indent) {
+        fprintf(f, "%sSqrt\n", indent.c_str());
+        ev->print(f, indent + "  ");
+    }
+    #endif
 };
 
 /////////////////
@@ -2557,6 +3194,14 @@ class Sum : public BinaryEvaluator {
         right->generateCode(ctx);
         ctx->addLine(CMD_ADD);
     }
+
+    #ifdef DEBUG
+    void print(FILE *f, std::string indent) {
+        fprintf(f, "%sSum\n", indent.c_str());
+        left->print(f, indent + "  ");
+        right->print(f, indent + "  ");
+    }
+    #endif
 };
 
 /////////////////
@@ -2579,6 +3224,13 @@ class Tan : public UnaryEvaluator {
         ev->generateCode(ctx);
         ctx->addLine(CMD_TAN);
     }
+
+    #ifdef DEBUG
+    void print(FILE *f, std::string indent) {
+        fprintf(f, "%sTan\n", indent.c_str());
+        ev->print(f, indent + "  ");
+    }
+    #endif
 };
 
 //////////////////
@@ -2601,6 +3253,13 @@ class Tanh : public UnaryEvaluator {
         ev->generateCode(ctx);
         ctx->addLine(CMD_TANH);
     }
+
+    #ifdef DEBUG
+    void print(FILE *f, std::string indent) {
+        fprintf(f, "%sTanh\n", indent.c_str());
+        ev->print(f, indent + "  ");
+    }
+    #endif
 };
 
 //////////////////////
@@ -2642,6 +3301,13 @@ class Variable : public Evaluator {
     int howMany(const std::string *name) {
         return nam == *name;
     }
+
+    #ifdef DEBUG
+    void print(FILE *f, std::string indent) {
+        fprintf(f, "%sVariable\n", indent.c_str());
+        fprintf(f, "  %s%s\n", indent.c_str(), nam.c_str());
+    }
+    #endif
 };
 
 ////////////////////
@@ -2666,6 +3332,14 @@ class Xcoord : public BinaryEvaluator {
         ctx->addLine(CMD_SWAP);
         ctx->addLine(CMD_DROP);
     }
+
+    #ifdef DEBUG
+    void print(FILE *f, std::string indent) {
+        fprintf(f, "%sXcoord\n", indent.c_str());
+        left->print(f, indent + "  ");
+        right->print(f, indent + "  ");
+    }
+    #endif
 };
 
 /////////////////
@@ -2728,6 +3402,14 @@ class Xeq : public Evaluator {
                 return -1;
         return 0;
     }
+
+    #ifdef DEBUG
+    void print(FILE *f, std::string indent) {
+        fprintf(f, "%sXeq\n", indent.c_str());
+        for (int i = 0; i < evs->size(); i++)
+            (*evs)[i]->print(f, indent + "  ");
+    }
+    #endif
 };
 
 /////////////////
@@ -2751,6 +3433,14 @@ class Xor : public BinaryEvaluator {
         right->generateCode(ctx);
         ctx->addLine(CMD_GEN_XOR);
     }
+
+    #ifdef DEBUG
+    void print(FILE *f, std::string indent) {
+        fprintf(f, "%sXor\n", indent.c_str());
+        left->print(f, indent + "  ");
+        right->print(f, indent + "  ");
+    }
+    #endif
 };
 
 ////////////////////
@@ -2774,6 +3464,14 @@ class Ycoord : public BinaryEvaluator {
         ctx->addLine(CMD_TO_REC);
         ctx->addLine(CMD_DROP);
     }
+
+    #ifdef DEBUG
+    void print(FILE *f, std::string indent) {
+        fprintf(f, "%sYcoord\n", indent.c_str());
+        left->print(f, indent + "  ");
+        right->print(f, indent + "  ");
+    }
+    #endif
 };
 
 /* Methods that can't be defined in their class declarations

@@ -997,11 +997,14 @@ void clear_row(int row) {
     fill_rect(0, row * 8, 131, 8, 0);
 }
 
-static int prgmline2buf(char *buf, int len, int4 line, int highlight,
-                        int cmd, arg_struct *arg, const char *orig_num,
-                        bool shift_left = false,
-                        bool highlight_final_end = true,
-                        char **xstr = NULL) {
+#ifndef DEBUG
+static
+#endif
+int prgmline2buf(char *buf, int len, int4 line, int highlight,
+                 int cmd, arg_struct *arg, const char *orig_num,
+                 bool shift_left = false,
+                 bool highlight_final_end = true,
+                 char **xstr = NULL) {
     int bufptr = 0;
     if (line != -1) {
         if (line < 10)
@@ -1962,6 +1965,7 @@ static int procrustean_phloat2string(phloat d, char *buf, int buflen) {
 }
 
 void show() {
+    dump("SHOW");
     if (flags.f.prgm_mode)
         display_prgm_line(-1, 0);
     else if (alpha_active()) {

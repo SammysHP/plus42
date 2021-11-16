@@ -18,6 +18,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifdef DEBUG
+#include <stdio.h>
+#endif
+
 #include "core_globals.h"
 #include "core_helpers.h"
 #include "core_display.h"
@@ -32,6 +36,8 @@ equation_data::~equation_data() {
 
 void pgm_index::inc_refcount() {
     if (uni > 0 && (uni & 1) != 0) {
+        if ((uni >> 1) == 0)
+            fprintf(stderr, "yep\n");
         fprintf(stderr, "inc refcount %d : %d -> %d\n",
                 (uni >> 1) + prgms_count,
                 prgms[(uni >> 1) + prgms_count].eq_data->refcount,
@@ -47,6 +53,8 @@ void pgm_index::dec_refcount() {
         // destructors running after prgms has been freed
         return;
     if (uni > 0 && (uni & 1) != 0) {
+        if ((uni >> 1) == 0)
+            fprintf(stderr, "yep\n");
         fprintf(stderr, "dec refcount %d : %d -> %d\n",
                 (uni >> 1) + prgms_count,
                 prgms[(uni >> 1) + prgms_count].eq_data->refcount,
@@ -270,6 +278,8 @@ void free_vartype(vartype *v) {
         return;
     switch (v->type) {
         case TYPE_REAL: {
+            if (((vartype_real *) v)->x == 3)
+                fprintf(stderr, "yep\n");
             if (realpool_size < POOLSIZE)
                 realpool[realpool_size++] = (vartype_real *) v;
             else
@@ -941,3 +951,214 @@ int store_private_var(const char *name, int namelength, vartype *value) {
     vars[varindex].value = value;
     return ERR_NONE;
 }
+
+#ifdef DEBUG
+const char *dump_index(int4 idx) {
+    static char buf[20];
+    if (idx == -1)
+        strcpy(buf, "none");
+    else if (idx == -2)
+        strcpy(buf, "solver");
+    else if (idx == -3)
+        strcpy(buf, "integ");
+    else if ((idx & 1) == 0)
+        sprintf(buf, "prgm %d", idx >> 1);
+    else
+        sprintf(buf, "eqn %d", idx >> 1);
+    return buf;
+}
+
+void dump_vartype(FILE *f, vartype *v, std::string indent) {
+    if (v == NULL) {
+        fprintf(f, "%sNULL\n", indent.c_str());
+        return;
+    }
+    switch (v->type) {
+        case TYPE_REAL: {
+            vartype_real *r = (vartype_real *) v;
+            fprintf(f, "%sreal(%g)\n", indent.c_str(), r->x);
+            break;
+        }
+        case TYPE_COMPLEX: {
+            vartype_complex *c = (vartype_complex *) v;
+            fprintf(f, "%scomplex(%g, %g)\n", indent.c_str(), c->re, c->im);
+            break;
+        }
+        case TYPE_REALMATRIX: {
+            vartype_realmatrix *rm = (vartype_realmatrix *) v;
+            fprintf(f, "%sreal-matrix(%dx%d)\n", indent.c_str(), rm->rows, rm->columns);
+            int4 sz = rm->rows * rm->columns;
+            for (int4 i = 0; i < sz; i++)
+                if (rm->array->is_string[i]) {
+                    char *text;
+                    int4 length;
+                    get_matrix_string(rm, i, &text, &length);
+                    std::string ss(text, length);
+                    fprintf(f, "  %s\"%s\"\n", indent.c_str(), ss.c_str());
+                } else
+                    fprintf(f, "  %s%g\n", indent.c_str(), rm->array->data[i]);
+            break;
+        }
+        case TYPE_COMPLEXMATRIX: {
+            vartype_complexmatrix *cm = (vartype_complexmatrix *) v;
+            fprintf(f, "%scomplex-matrix(%dx%d)\n", indent.c_str(), cm->rows, cm->columns);
+            int4 sz = 2 * cm->rows * cm->columns;
+            for (int4 i = 0; i < sz; i += 2)
+                fprintf(f, "  %s(%g, %g)\n", indent.c_str(), cm->array->data[i], cm->array->data[i + 1]);
+            break;
+        }
+        case TYPE_STRING: {
+            vartype_string *s = (vartype_string *) v;
+            std::string ss(s->txt(), s->length);
+            fprintf(f, "%sstring(\"%s\")\n", indent.c_str(), ss.c_str());
+            break;
+        }
+        case TYPE_LIST: {
+            vartype_list *list = (vartype_list *) v;
+            fprintf(f, "%slist(%d)\n", indent.c_str(), list->size);
+            for (int i = 0; i < list->size; i++)
+                dump_vartype(f, list->array->data[i], indent + "  ");
+            fprintf(f, "\n");
+            break;
+        }
+        case TYPE_EQUATION: {
+            vartype_equation *eq = (vartype_equation *) v;
+            fprintf(f, "%sequation(%s)\n", indent.c_str(), dump_index(eq->data.index()));
+            break;
+        }
+    }
+}
+
+int4 core_program_size(int prgm_index);
+
+int prgmline2buf(char *buf, int len, int4 line, int highlight,
+                 int cmd, arg_struct *arg, const char *orig_num,
+                 bool shift_left = false,
+                 bool highlight_final_end = true,
+                 char **xstr = NULL);
+
+void dump_stack(FILE *f);
+void dump_math_pgm_indexes(FILE *f);
+
+void dump(const char *message) {
+    static int count = 0;
+    char buf[1024];
+    sprintf(buf, "%s/Desktop/dump-%d.txt", getenv("HOME"), count++);
+    FILE *f = fopen(buf, "w");
+    if (message != NULL)
+        fprintf(f, "%s\n", message);
+    int4 saved_index = current_prgm.unified();
+    fprintf(f, "\n");
+
+    fprintf(f, "PROGRAMS\n\n");
+    fprintf(f, "prgms_count = %d\nprgms_and_eqns_count = %d\n\n", prgms_count, prgms_and_eqns_count);
+    for (int i = 0; i < prgms_and_eqns_count; i++) {
+        bool is_eqn = i >= prgms_count;
+        if (is_eqn && prgms[i].eq_data == NULL)
+            continue;
+        current_prgm.init_unified_from_state(is_eqn ? ((i - prgms_count) << 1) | 1 : i << 1);
+        fprintf(f, "  prgms[%d] (%s)\n", i, is_eqn ? "equation" : "program");
+        fprintf(f, "  index = %d\n", current_prgm.index());
+        fprintf(f, "  capacity = %d\n", prgms[i].capacity);
+        fprintf(f, "  size = %d\n", prgms[i].size);
+        fprintf(f, "  lclbl_invalid = %d\n", prgms[i].lclbl_invalid);
+        if (is_eqn)
+            fprintf(f, "  eq_data = %lx\n", (uintptr_t) prgms[i].eq_data);
+        fprintf(f, "\n");
+
+        if (is_eqn) {
+            equation_data *eqd = prgms[i].eq_data;
+            fprintf(f, "  eq_data->refcount = %d\n", eqd->refcount);
+            fprintf(f, "  eq_data->length = %d\n", eqd->length);
+            int bufptr = 0;
+            string2buf(buf, 1024, &bufptr, eqd->text, eqd->length);
+            buf[bufptr] = 0;
+            if (eqd->text == NULL)
+                fprintf(f, "  eq_data->text = NULL\n");
+            else
+                fprintf(f, "  eq_data->text = \"%s\"\n", eqd->text);
+            fprintf(f, "  eq_data->ev = %lx\n", (uintptr_t) eqd->ev);
+            fprintf(f, "  eq_data->compatMode = %d\n", eqd->compatMode);
+            fprintf(f, "  eq_data->eqn_index = %d\n", eqd->eqn_index);
+            fprintf(f, "\n");
+            if (eqd->ev != NULL) {
+                eqd->ev->print(f, "  ");
+                fprintf(f, "\n");
+            }
+        }
+
+        int4 size = core_program_size(current_prgm.index());
+        int bufptr = 0;
+        string2buf(buf, 1024, &bufptr, "00 { ", 5);
+        bufptr += int2string(size, buf + bufptr, 1024 - bufptr);
+        string2buf(buf, 1024, &bufptr, "-Byte Prgm }", 12);
+        buf[bufptr] = 0;
+        fprintf(f, "  %s\n", buf);
+
+        int4 pc = 0;
+        int line = 1;
+        int cmd;
+        do {
+            arg_struct arg;
+            const char *num_str;
+            get_next_command(&pc, &cmd, &arg, 0, &num_str);
+            bufptr = 0;
+            string2buf(buf, 1024, &bufptr, "  ", 2);
+            bufptr += prgmline2buf(buf + bufptr, 1024 - bufptr, line,
+                                    cmd == CMD_LBL, cmd, &arg,
+                                    num_str, false, true, NULL);
+            buf[bufptr] = 0;
+            fprintf(f, "%s\n", buf);
+            line++;
+        } while (cmd != CMD_END);
+        fprintf(f, "\n");
+    }
+    current_prgm.init_unified_from_state(saved_index);
+
+    fprintf(f, "VARIABLES\n\n");
+    fprintf(f, "vars_count = %d\n\n", vars_count);
+    for (int i = 0; i < vars_count; i++) {
+        std::string n(vars[i].name, vars[i].length);
+        fprintf(f, "  vars[%d] \"%s\"\n", i, n.c_str());
+        fprintf(f, "  length = %d\n", vars[i].length);
+        fprintf(f, "  level = %d\n", vars[i].level);
+        fprintf(f, "  flags = %d\n", vars[i].flags);
+        dump_vartype(f, vars[i].value, "  ");
+        fprintf(f, "\n");
+    }
+    
+    fprintf(f, "STACK\n\n");
+    fprintf(f, "depth = %d\n\n", sp + 1);
+    for (int i = sp; i >= 0; i--) {
+        fprintf(f, "  stack[%d] = ", i);
+        dump_vartype(f, stack[sp - i], "    ");
+    }
+    fprintf(f, "  lastx = ");
+    dump_vartype(f, lastx, "");
+    fprintf(f, "\n");
+
+    fprintf(f, "RTN STACK\n\n");
+    dump_stack(f);
+    fprintf(f, "\n");
+
+    fprintf(f, "PROGRAM INDEXES\n\n");
+    fprintf(f, "current_prgm = %s\n", dump_index(current_prgm.unified()));
+    fprintf(f, "varmenu_eqn = ");
+    dump_vartype(f, varmenu_eqn, "  ");
+    fprintf(f, "matedit_x = ");
+    dump_vartype(f, matedit_x, "  ");
+    dump_math_pgm_indexes(f);
+    fclose(f);
+}
+
+void dumpa() {
+    for (int i = 0; i < vars_count; i++) {
+        if (vars[i].length == 1 && vars[i].name[0] == 'A') {
+            fprintf(stderr, "A = ");
+            dump_vartype(stderr, vars[i].value, "");
+            return;
+        }
+    }
+    fprintf(stderr, "A = unset\n");
+}
+#endif

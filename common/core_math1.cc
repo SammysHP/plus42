@@ -17,6 +17,10 @@
 
 #include <stdlib.h>
 
+#ifdef DEBUG
+#include <stdio.h>
+#endif
+
 #include "core_math1.h"
 #include "core_commands2.h"
 #include "core_display.h"
@@ -638,7 +642,10 @@ int return_to_solve(int failure, bool stop) {
             return start_solve_2(solve.x1, solve.x2);
         if (sp == -1)
             return ERR_TOO_FEW_ARGUMENTS;
-        int err = store_var(solve.var_name, solve.var_length, stack[sp]);
+        vartype *v = dup_vartype(stack[sp]);
+        if (v == NULL)
+            return ERR_INSUFFICIENT_MEMORY;
+        int err = store_var(solve.var_name, solve.var_length, v);
         if (err != ERR_NONE)
             return ERR_INSUFFICIENT_MEMORY;
 
@@ -1344,3 +1351,21 @@ int return_to_integ(bool stop) {
         return ERR_INTERNAL_ERROR;
     }
 }
+
+#ifdef DEBUG
+const char *dump_index(int4 idx);
+void dump_vartype(FILE *f, vartype *v, std::string indent);
+
+void dump_math_pgm_indexes(FILE *f) {
+    fprintf(f, "solve.prev_prgm = %s\n", dump_index(solve.prev_prgm.unified()));
+    fprintf(f, "solve.eq = ");
+    dump_vartype(f, solve.eq, "");
+    fprintf(f, "solve.active_eq = ");
+    dump_vartype(f, solve.active_eq, "");
+    fprintf(f, "integ.prev_prgm = %s\n", dump_index(integ.prev_prgm.unified()));
+    fprintf(f, "integ.eq = ");
+    dump_vartype(f, integ.eq, "");
+    fprintf(f, "integ.active_eq = ");
+    dump_vartype(f, integ.active_eq, "");
+}
+#endif

@@ -796,6 +796,8 @@ static int keydown_sto_overwrite(int key, bool shift, int *repeat);
 int eqn_keydown(int key, int *repeat) {
     if (!active)
         return 0;
+    if (key == KEY_DOT)
+        dump("DOT in equation editor");
     
     bool shift = false;
     if (mode_interruptible == NULL) {

@@ -65,11 +65,9 @@ class pgm_index {
     }
     void init_eqn_from_state(int4 eqn) {
         uni = (eqn << 1) | 1;
-        fprintf(stderr, "creating ref to %d\n", eqn);
     }
     void init_unified_from_state(int4 unified) {
         this->uni = unified;
-        fprintf(stderr, "creating unified ref to %d\n", unified);
     }
     void init_eqn(int4 eqn) {
         uni = (eqn << 1) | 1;
@@ -257,11 +255,5 @@ int matrix_copy(vartype *dst, const vartype *src);
 vartype *recall_private_var(const char *name, int namelength);
 vartype *recall_and_purge_private_var(const char *name, int namelength);
 int store_private_var(const char *name, int namelength, vartype *value);
-
-#ifdef DEBUG
-/* Writes a dump of all user data: programs, variables, stack, RTN stack */
-void dump(const char *message = NULL);
-void dumpa();
-#endif
 
 #endif

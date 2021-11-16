@@ -1236,16 +1236,11 @@ static bool persist_globals() {
         goto done;
     for (i = 0; i < prgms_count; i++)
         core_export_programs(1, &i, NULL);
-    fprintf(stderr, "exported %d programs\n", prgms_count);
-    int e; e = 0;
     for (i = prgms_count; i < prgms_and_eqns_count; i++) {
         equation_data *eqd = prgms[i].eq_data;
-        if (eqd != NULL) {
+        if (eqd != NULL)
             core_export_programs(1, &i, NULL);
-            e++;
-        }
     }
-    fprintf(stderr, "exported %d compiled equations\n", e);
     if (!write_int(prgms_count))
         goto done;
     for (i = prgms_and_eqns_count - 1; i >= prgms_count; i--) {
@@ -1402,12 +1397,10 @@ static bool unpersist_globals() {
     if (!read_int(&total_prgms))
         goto done;
     core_import_programs(total_prgms, NULL);
-    fprintf(stderr, "imported %d programs and compiled equations\n", total_prgms);
     if (!read_int(&prgms_count))
         goto done;
     rebuild_label_table();
     prgms_and_eqns_count = prgms_count;
-    int e; e = 0;
     while (total_prgms-- > prgms_count) {
         equation_data *eqd = new equation_data;
         if (eqd == NULL)
@@ -1436,9 +1429,7 @@ static bool unpersist_globals() {
         eqd->ev = Parser::parse(std::string(eqd->text, eqd->length), eqd->compatMode, &errpos);
         prgms[prgms_count + eqd->eqn_index] = prgms[total_prgms];
         prgms[prgms_count + eqd->eqn_index].eq_data = eqd;
-        e++;
     }
-    fprintf(stderr, "of these, %d were equations\n", e);
 
     if (!read_int(&sp)) {
         sp = -1;
@@ -1723,7 +1714,6 @@ int clear_prgm_by_index(pgm_index prgm) {
             i++;
     }
     labels_count = i;
-    fprintf(stderr, "clear_prgm_by_index: labels_count now %d\n", labels_count);
     if (prgms_count == 0 || prgm.index() == prgms_count) {
         pgm_index saved_prgm = current_prgm;
         int saved_pc = pc;
@@ -2034,7 +2024,6 @@ void rebuild_label_table() {
     int prgm_index;
     int4 pc;
     labels_count = 0;
-    fprintf(stderr, "rebuild: prgms_count %d\n", prgms_count);
     for (prgm_index = 0; prgm_index < prgms_count; prgm_index++) {
         prgm_struct *prgm = prgms + prgm_index;
         pc = 0;
@@ -2061,7 +2050,6 @@ void rebuild_label_table() {
                     labels = newlabels;
                 }
                 newlabel = labels + labels_count++;
-                fprintf(stderr, "rebuild: labels_count now %d\n", labels_count);
                 if (command == CMD_END)
                     newlabel->length = 0;
                 else {
@@ -2775,13 +2763,8 @@ int push_func_state(int n) {
     fd_data[1] = new_real(flags.f.big_stack ? sp + 1 : -1);
     fd_data[2] = new_string(NULL, lasterr == -1 ? 2 + lasterr_length : 2);
     fd_data[3] = dup_vartype(lastx);
-    for (int i = 0; i < inputs; i++) {
-        fprintf(stderr, "stack[%d] = ", sp - i);
-        dump_vartype(stderr, stack[sp - i], "");
-        dumpa();
+    for (int i = 0; i < inputs; i++)
         fd_data[i + 4] = dup_vartype(stack[sp - i]);
-        dumpa();
-    }
     for (int i = 0; i < size; i++)
         if (fd_data[i] == NULL) {
             free_vartype(fd);
@@ -4139,33 +4122,5 @@ bool off_enabled() {
     vartype_string *str = (vartype_string *) stack[sp];
     off_enable_flag = string_equals(str->txt(), str->length, "YESOFF", 6);
     return off_enable_flag;
-}
-#endif
-
-#ifdef DEBUG
-const char *dump_index(int4 idx);
-
-void dump_stack(FILE *f) {
-    int rsp = rtn_sp;
-    int rlevel = rtn_level;
-    bool r0 = rtn_level_0_has_matrix_entry;
-    while (rlevel > 0) {
-        rsp--;
-        rlevel--;
-        fprintf(f, "[%2d] %s, pc = %d\n", rlevel, dump_index(rtn_stack[rsp].get_prgm()), rtn_stack[rsp].pc);
-        if (rtn_stack[rsp].has_matrix()) {
-            matrix_entry:
-            rtn_stack_matrix_name_entry e1;
-            memcpy(&e1, &rtn_stack[--rsp], sizeof(e1));
-            std::string s(e1.name, e1.length);
-            rtn_stack_matrix_ij_entry e2;
-            memcpy(&e2, &rtn_stack[--rsp], sizeof(e2));
-            fprintf(f, "[%2d] matrix = \"%s\" [%d, %d]\n", rlevel, s.c_str(), e2.i, e2.j);
-        }
-    }
-    if (r0) {
-        r0 = false;
-        goto matrix_entry;
-    }
 }
 #endif

@@ -192,7 +192,7 @@ static bool insert_text(const char *text, int len) {
     }
 
     if (edit_len + len > edit_capacity) {
-        int newcap = edit_capacity + 32;
+        int newcap = edit_len + len + 32;
         char *newbuf = (char *) realloc(edit_buf, newcap);
         if (newbuf == NULL) {
             show_error(ERR_INSUFFICIENT_MEMORY);

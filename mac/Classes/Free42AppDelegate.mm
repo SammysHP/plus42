@@ -433,6 +433,7 @@ static void low_battery_checker(CFRunLoopTimerRef timer, void *info) {
     state.printWindowKnown = 1;
     statefile = fopen(statefilename, "w");
     if (statefile != NULL) {
+        //setvbuf(statefile, NULL, _IONBF, 0);
         write_shell_state();
         fclose(statefile);
     }

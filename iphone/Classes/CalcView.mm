@@ -924,6 +924,7 @@ static int write_shell_state() {
     FILE *statefile = fopen("config/state", "w");
     if (statefile == NULL)
         return 0;
+    //setvbuf(statefile, NULL, _IONBF, 0);
     if (fwrite(&magic, 1, sizeof(int), statefile) != sizeof(int))
         return 0;
     if (fwrite(&version, 1, sizeof(int), statefile) != sizeof(int))

@@ -62,7 +62,7 @@ class Evaluator {
 };
 
 class Lexer;
-class prgm_struct;
+struct prgm_struct;
 
 class Parser {
 

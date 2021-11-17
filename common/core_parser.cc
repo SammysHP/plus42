@@ -228,10 +228,14 @@ class BinaryEvaluator : public Evaluator {
 
     Evaluator *left, *right;
     bool invertible;
+    bool swapArgs;
 
     public:
 
-    BinaryEvaluator(int pos, Evaluator *left, Evaluator *right, bool invertible) : Evaluator(pos), left(left), right(right), invertible(invertible) {}
+    BinaryEvaluator(int pos, Evaluator *left, Evaluator *right, bool invertible)
+        : Evaluator(pos), left(left), right(right), invertible(invertible), swapArgs(false) {}
+    BinaryEvaluator(int pos, Evaluator *left, Evaluator *right, bool invertible, bool swapArgs)
+        : Evaluator(pos), left(left), right(right), invertible(invertible), swapArgs(swapArgs) {}
 
     ~BinaryEvaluator() {
         delete left;
@@ -534,6 +538,7 @@ class Bdiv : public BinaryEvaluator {
     public:
 
     Bdiv(int pos, Evaluator *left, Evaluator *right) : BinaryEvaluator(pos, left, right, true) {}
+    Bdiv(int pos, Evaluator *left, Evaluator *right, bool swapArgs) : BinaryEvaluator(pos, left, right, true, swapArgs) {}
 
     Evaluator *clone() {
         return new Bdiv(tpos, left->clone(), right->clone());
@@ -544,6 +549,8 @@ class Bdiv : public BinaryEvaluator {
     void generateCode(GeneratorContext *ctx) {
         left->generateCode(ctx);
         right->generateCode(ctx);
+        if (swapArgs)
+            ctx->addLine(CMD_SWAP);
         ctx->addLine(CMD_BASEDIV);
     }
 };
@@ -645,6 +652,7 @@ class Bsub : public BinaryEvaluator {
     public:
 
     Bsub(int pos, Evaluator *left, Evaluator *right) : BinaryEvaluator(pos, left, right, true) {}
+    Bsub(int pos, Evaluator *left, Evaluator *right, bool swapArgs) : BinaryEvaluator(pos, left, right, true, swapArgs) {}
 
     Evaluator *clone() {
         return new Bsub(tpos, left->clone(), right->clone());
@@ -655,6 +663,8 @@ class Bsub : public BinaryEvaluator {
     void generateCode(GeneratorContext *ctx) {
         left->generateCode(ctx);
         right->generateCode(ctx);
+        if (swapArgs)
+            ctx->addLine(CMD_SWAP);
         ctx->addLine(CMD_BASESUB);
     }
 };
@@ -1012,6 +1022,7 @@ class Date : public BinaryEvaluator {
     public:
 
     Date(int pos, Evaluator *left, Evaluator *right) : BinaryEvaluator(pos, left, right, true) {}
+    Date(int pos, Evaluator *left, Evaluator *right, bool swapArgs) : BinaryEvaluator(pos, left, right, true, swapArgs) {}
 
     Evaluator *clone() {
         return new Date(tpos, left->clone(), right->clone());
@@ -1022,6 +1033,8 @@ class Date : public BinaryEvaluator {
     void generateCode(GeneratorContext *ctx) {
         left->generateCode(ctx);
         right->generateCode(ctx);
+        if (swapArgs)
+            ctx->addLine(CMD_SWAP);
         ctx->addLine(CMD_DATE_PLUS);
     }
 };
@@ -1134,6 +1147,7 @@ class Difference : public BinaryEvaluator {
     public:
 
     Difference(int pos, Evaluator *left, Evaluator *right) : BinaryEvaluator(pos, left, right, true) {}
+    Difference(int pos, Evaluator *left, Evaluator *right, bool swapArgs) : BinaryEvaluator(pos, left, right, true, swapArgs) {}
 
     Evaluator *clone() {
         return new Difference(tpos, left->clone(), right->clone());
@@ -1144,6 +1158,8 @@ class Difference : public BinaryEvaluator {
     void generateCode(GeneratorContext *ctx) {
         left->generateCode(ctx);
         right->generateCode(ctx);
+        if (swapArgs)
+            ctx->addLine(CMD_SWAP);
         ctx->addLine(CMD_SUB);
     }
 };
@@ -1436,6 +1452,7 @@ class Hmssub : public BinaryEvaluator {
     public:
 
     Hmssub(int pos, Evaluator *left, Evaluator *right) : BinaryEvaluator(pos, left, right, true) {}
+    Hmssub(int pos, Evaluator *left, Evaluator *right, bool swapArgs) : BinaryEvaluator(pos, left, right, true, swapArgs) {}
 
     Evaluator *clone() {
         return new Hmssub(tpos, left->clone(), right->clone());
@@ -1446,6 +1463,8 @@ class Hmssub : public BinaryEvaluator {
     void generateCode(GeneratorContext *ctx) {
         left->generateCode(ctx);
         right->generateCode(ctx);
+        if (swapArgs)
+            ctx->addLine(CMD_SWAP);
         ctx->addLine(CMD_HMSSUB);
     }
 };
@@ -2140,6 +2159,7 @@ class Power : public BinaryEvaluator {
     public:
 
     Power(int pos, Evaluator *left, Evaluator *right) : BinaryEvaluator(pos, left, right, true) {}
+    Power(int pos, Evaluator *left, Evaluator *right, bool swapArgs) : BinaryEvaluator(pos, left, right, true, swapArgs) {}
 
     Evaluator *clone() {
         return new Power(tpos, left->clone(), right->clone());
@@ -2150,6 +2170,8 @@ class Power : public BinaryEvaluator {
     void generateCode(GeneratorContext *ctx) {
         left->generateCode(ctx);
         right->generateCode(ctx);
+        if (swapArgs)
+            ctx->addLine(CMD_SWAP);
         ctx->addLine(CMD_Y_POW_X);
     }
 };
@@ -2186,6 +2208,7 @@ class Quotient : public BinaryEvaluator {
     public:
 
     Quotient(int pos, Evaluator *left, Evaluator *right) : BinaryEvaluator(pos, left, right, true) {}
+    Quotient(int pos, Evaluator *left, Evaluator *right, bool swapArgs) : BinaryEvaluator(pos, left, right, true, swapArgs) {}
 
     Evaluator *clone() {
         return new Quotient(tpos, left->clone(), right->clone());
@@ -2196,6 +2219,8 @@ class Quotient : public BinaryEvaluator {
     void generateCode(GeneratorContext *ctx) {
         left->generateCode(ctx);
         right->generateCode(ctx);
+        if (swapArgs)
+            ctx->addLine(CMD_SWAP);
         ctx->addLine(CMD_DIV);
     }
 };
@@ -2824,10 +2849,10 @@ bool Atanh::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
 bool Badd::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
     if (left->howMany(name) == 1) {
         *lhs = left;
-        *rhs = new Bsub(0, *rhs, right);
+        *rhs = new Bsub(0, right, *rhs, true);
     } else {
         *lhs = right;
-        *rhs = new Bsub(0, *rhs, left);
+        *rhs = new Bsub(0, left, *rhs, true);
     }
     return true;
 }
@@ -2835,7 +2860,7 @@ bool Badd::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
 bool Bdiv::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
     if (left->howMany(name) == 1) {
         *lhs = left;
-        *rhs = new Bmul(0, *rhs, right);
+        *rhs = new Bmul(0, right, *rhs);
     } else {
         *lhs = right;
         *rhs = new Bdiv(0, left, *rhs);
@@ -2846,10 +2871,10 @@ bool Bdiv::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
 bool Bmul::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
     if (left->howMany(name) == 1) {
         *lhs = left;
-        *rhs = new Bdiv(0, *rhs, right);
+        *rhs = new Bdiv(0, right, *rhs, true);
     } else {
         *lhs = right;
-        *rhs = new Bdiv(0, *rhs, left);
+        *rhs = new Bdiv(0, left, *rhs, true);
     }
     return true;
 }
@@ -2869,7 +2894,7 @@ bool Bnot::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
 bool Bsub::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
     if (left->howMany(name) == 1) {
         *lhs = left;
-        *rhs = new Badd(0, *rhs, right);
+        *rhs = new Badd(0, right, *rhs);
     } else {
         *lhs = right;
         *rhs = new Bsub(0, left, *rhs);
@@ -2880,7 +2905,7 @@ bool Bsub::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
 bool Bxor::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
     if (left->howMany(name) == 1) {
         *lhs = left;
-        *rhs = new Bxor(0, *rhs, right);
+        *rhs = new Bxor(0, right, *rhs);
     } else {
         *lhs = right;
         *rhs = new Bxor(0, left, *rhs);
@@ -2903,7 +2928,7 @@ bool Cosh::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
 bool Date::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
     if (left->howMany(name) == 1) {
         *lhs = left;
-        *rhs = new Date(0, *rhs, new Negative(0, right));
+        *rhs = new Date(0, new Negative(0, right), *rhs, true);
     } else {
         *lhs = right;
         *rhs = new Ddays(0, left, *rhs, new Literal(0, 1));
@@ -2926,7 +2951,7 @@ bool Deg::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
 bool Difference::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
     if (left->howMany(name) == 1) {
         *lhs = left;
-        *rhs = new Sum(0, *rhs, right);
+        *rhs = new Sum(0, right, *rhs);
     } else {
         *lhs = right;
         *rhs = new Difference(0, left, *rhs);
@@ -2955,10 +2980,10 @@ bool Hms::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
 bool Hmsadd::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
     if (left->howMany(name) == 1) {
         *lhs = left;
-        *rhs = new Hmssub(0, *rhs, right);
+        *rhs = new Hmssub(0, right, *rhs, true);
     } else {
         *lhs = right;
-        *rhs = new Hmssub(0, *rhs, left);
+        *rhs = new Hmssub(0, left, *rhs, true);
     }
     return true;
 }
@@ -2966,7 +2991,7 @@ bool Hmsadd::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
 bool Hmssub::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
     if (left->howMany(name) == 1) {
         *lhs = left;
-        *rhs = new Hmsadd(0, *rhs, right);
+        *rhs = new Hmsadd(0, right, *rhs);
     } else {
         *lhs = right;
         *rhs = new Hmssub(0, left, *rhs);
@@ -3019,10 +3044,10 @@ bool Oct::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
 bool Power::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
     if (left->howMany(name) == 1) {
         *lhs = left;
-        *rhs = new Power(0, *rhs, new Inv(0, right));
+        *rhs = new Power(0, new Inv(0, right), *rhs, true);
     } else {
         *lhs = right;
-        *rhs = new Quotient(0, new Ln(0, *rhs), new Ln(0, left));
+        *rhs = new Quotient(0, new Ln(0, left), new Ln(0, *rhs), true);
     }
     return true;
 }
@@ -3030,10 +3055,10 @@ bool Power::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
 bool Product::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
     if (left->howMany(name) == 1) {
         *lhs = left;
-        *rhs = new Quotient(0, *rhs, right);
+        *rhs = new Quotient(0, right, *rhs, true);
     } else {
         *lhs = right;
-        *rhs = new Quotient(0, *rhs, left);
+        *rhs = new Quotient(0, left, *rhs, true);
     }
     return true;
 }
@@ -3041,7 +3066,7 @@ bool Product::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) 
 bool Quotient::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
     if (left->howMany(name) == 1) {
         *lhs = left;
-        *rhs = new Product(0, *rhs, right);
+        *rhs = new Product(0, right, *rhs);
     } else {
         *lhs = right;
         *rhs = new Quotient(0, left, *rhs);
@@ -3082,10 +3107,10 @@ bool Sqrt::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
 bool Sum::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
     if (left->howMany(name) == 1) {
         *lhs = left;
-        *rhs = new Difference(0, *rhs, right);
+        *rhs = new Difference(0, right, *rhs, true);
     } else {
         *lhs = right;
-        *rhs = new Difference(0, *rhs, left);
+        *rhs = new Difference(0, left, *rhs, true);
     }
     return true;
 }

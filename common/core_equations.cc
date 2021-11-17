@@ -1447,6 +1447,22 @@ static int keydown_list(int key, bool shift, int *repeat) {
                 return 1;
             }
 
+            /* Make sure all parameters exist, creating new ones
+             * initialized to zero where necessary.
+             */
+            equation_data *eq = prgms[((vartype_equation *) v)->data.index()].eq_data;
+            std::vector<std::string> params, locals;
+            eq->ev->collectVariables(&params, &locals);
+            for (int i = 0; i < params.size(); i++) {
+                std::string n = params[i];
+                vartype *p = recall_var(n.c_str(), n.length());
+                if (p == NULL) {
+                    p = new_real(0);
+                    if (p != NULL)
+                        store_var(n.c_str(), n.length(), p);
+                }
+            }
+
             pending_command_arg.type = ARGTYPE_EQN;
             pending_command_arg.val.num = ((vartype_equation *) v)->data.index();
             if (menu_whence == CATSECT_PGM_SOLVE)

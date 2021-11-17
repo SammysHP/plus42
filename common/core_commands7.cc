@@ -2272,7 +2272,7 @@ int docmd_gen_not(arg_struct *arg) {
 }
 
 int docmd_if_t(arg_struct *arg) {
-    int ret = ((vartype_real *) stack[sp])->x != 0 ? ERR_YES : ERR_NO;
+    bool ret = ((vartype_real *) stack[sp])->x != 0;
     int err = unary_no_result();
     return err != ERR_NONE ? err : ret ? ERR_YES : ERR_NO;
 }

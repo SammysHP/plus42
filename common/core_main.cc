@@ -163,6 +163,12 @@ void core_cleanup() {
     stack_capacity = 0;
     free_vartype(lastx);
     lastx = NULL;
+    reset_math();
+    free_vartype(varmenu_eqn);
+    varmenu_eqn = NULL;
+    free_vartype(matedit_x);
+    matedit_x = NULL;
+    current_prgm.clear();
     clear_rtns_vars_and_prgms();
     clean_vartype_pools();
 }

@@ -1161,13 +1161,11 @@ class Ell : public UnaryEvaluator {
 
     public:
 
-    Ell(int pos, std::string name, Evaluator *ev, bool compatMode) : UnaryEvaluator(pos, ev, true), name(name), compatMode(compatMode) {}
+    Ell(int pos, std::string name, Evaluator *ev, bool compatMode) : UnaryEvaluator(pos, ev, false), name(name), compatMode(compatMode) {}
 
     Evaluator *clone() {
         return new Ell(tpos, name, ev->clone(), compatMode);
     }
-
-    bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
 
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
@@ -2933,12 +2931,6 @@ bool Difference::invert(const std::string *name, Evaluator **lhs, Evaluator **rh
         *lhs = right;
         *rhs = new Difference(0, left, *rhs);
     }
-    return true;
-}
-
-bool Ell::invert(const std::string *n, Evaluator **lhs, Evaluator **rhs) {
-    *lhs = ev;
-    *rhs = new Ell(0, name, *rhs, compatMode);
     return true;
 }
 

@@ -506,7 +506,6 @@ char *eqn_copy() {
                 equation_data *eqd = prgms[eq->data.index()].eq_data;
                 text = eqd->text;
                 len = eqd->length;
-                tb_write(&tb, buf, len);
             } else {
                 text = "<Invalid>";
                 len = 9;

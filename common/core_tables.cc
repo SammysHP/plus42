@@ -549,7 +549,7 @@ const command_spec cmd_array[] =
     { /* XEQL */       docmd_xeql,        "XEQL",                0x20, 0x00, 0x00, 0x00,  4, ARG_COUNT,  0, NA_T },
     { /* GSTO */       docmd_gsto,        "GSTO",                0x20, 0x00, 0xf2, 0x34,  4, ARG_NAMED,  1, ALLT },
     { /* GRCL */       docmd_grcl,        "GRCL",                0x20, 0x00, 0xf2, 0x35,  4, ARG_NAMED,  0, NA_T },
-    { /* SVAR_T */     docmd_svar_t,      "SVAR?",               0x00, 0x00, 0xa7, 0xa7,  5, ARG_NONE,   1, 0x10 },
+    { /* SVAR */       docmd_svar,        "SVAR",                0x00, 0x00, 0xa7, 0xa7,  4, ARG_NONE,   1, 0x10 },
     { /* MATITEM */    docmd_matitem,     "MATITEM",             0x00, 0x00, 0xa7, 0xa8,  7, ARG_NONE,   2, FUNC },
     { /* GEN_EQ */     docmd_gen_eq,      "=",                   0x00, 0x00, 0xa7, 0xa9,  1, ARG_NONE,   2, ALLT },
     { /* GEN_NE */     docmd_gen_ne,      "\014",                0x00, 0x00, 0xa7, 0xaa,  1, ARG_NONE,   2, ALLT },

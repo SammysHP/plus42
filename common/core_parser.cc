@@ -142,8 +142,7 @@ class GeneratorContext {
                     || line->cmd == CMD_STO_ADD
                     || line->cmd == CMD_GSTO
                     || line->cmd == CMD_GRCL
-                    || line->cmd == CMD_XEQ
-                    || line->cmd == CMD_SVAR_T) {
+                    || line->cmd == CMD_XEQ) {
                 arg.type = ARGTYPE_STR;
                 arg.length = line->s->size();
                 if (arg.length > 7)
@@ -1248,9 +1247,8 @@ class Ess : public Evaluator {
     bool isBool() { return true; }
     
     void generateCode(GeneratorContext *ctx) {
-        ctx->addLine(CMD_NUMBER, (phloat) 0);
-        ctx->addLine(CMD_SVAR_T, name);
-        ctx->addLine(CMD_SIGN);
+        ctx->addLine(CMD_XSTR, name);
+        ctx->addLine(CMD_SVAR);
     }
 
     void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {

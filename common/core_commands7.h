@@ -126,7 +126,7 @@ int docmd_gtol(arg_struct *arg);
 int docmd_xeql(arg_struct *arg);
 int docmd_gsto(arg_struct *arg);
 int docmd_grcl(arg_struct *arg);
-int docmd_svar_t(arg_struct *arg);
+int docmd_svar(arg_struct *arg);
 int docmd_matitem(arg_struct *arg);
 int docmd_gen_eq(arg_struct *arg);
 int docmd_gen_ne(arg_struct *arg);

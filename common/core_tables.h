@@ -508,7 +508,7 @@
 #define CMD_XEQL        452
 #define CMD_GSTO        453
 #define CMD_GRCL        454
-#define CMD_SVAR_T      455
+#define CMD_SVAR        455
 #define CMD_MATITEM     456
 #define CMD_GEN_EQ      457
 #define CMD_GEN_NE      458

@@ -2104,14 +2104,17 @@ int docmd_grcl(arg_struct *arg) {
     return recall_result(v);
 }
 
-int docmd_svar_t(arg_struct *arg) {
+int docmd_svar(arg_struct *arg) {
     bool ret = solve_active();
     if (ret) {
         vartype_string *s = (vartype_string *) stack[sp];
         ret = is_solve_var(s->txt(), s->length);
     }
-    int err = unary_no_result();
-    return err != ERR_NONE ? err : ret ? ERR_YES : ERR_NO;
+    vartype *v = new_real(ret ? 1 : 0);
+    if (v == NULL)
+        return ERR_INSUFFICIENT_MEMORY;
+    unary_result(v);
+    return ERR_NONE;
 }
 
 int docmd_matitem(arg_struct *arg) {

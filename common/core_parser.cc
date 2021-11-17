@@ -2434,8 +2434,8 @@ class Sigma : public Evaluator {
         from->collectVariables(vars, locals);
         to->collectVariables(vars, locals);
         step->collectVariables(vars, locals);
-        locals->pop_back();
         ev->collectVariables(vars, locals);
+        locals->pop_back();
     }
 
     int howMany(const std::string *nam) {

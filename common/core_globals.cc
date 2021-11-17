@@ -1401,7 +1401,7 @@ static bool unpersist_globals() {
         goto done;
     rebuild_label_table();
     prgms_and_eqns_count = prgms_count;
-    while (total_prgms-- > prgms_count) {
+    while (--total_prgms >= prgms_count) {
         equation_data *eqd = new equation_data;
         if (eqd == NULL)
             goto done;
@@ -1428,6 +1428,7 @@ static bool unpersist_globals() {
         int errpos;
         eqd->ev = Parser::parse(std::string(eqd->text, eqd->length), eqd->compatMode, &errpos);
         prgms[prgms_count + eqd->eqn_index] = prgms[total_prgms];
+        prgms[total_prgms].eq_data = NULL;
         prgms[prgms_count + eqd->eqn_index].eq_data = eqd;
     }
 
@@ -1597,6 +1598,8 @@ static bool make_prgm_space(int n) {
     prgm_struct *new_prgms = (prgm_struct *) realloc(prgms, new_prgms_capacity * sizeof(prgm_struct));
     if (new_prgms == NULL)
         return false;
+    for (int i = prgms_capacity; i < new_prgms_capacity; i++)
+        new_prgms[i].eq_data = (equation_data *) (((uintptr_t) -1) / 3 * 2);
     prgms = new_prgms;
     prgms_capacity = new_prgms_capacity;
     return true;
@@ -1795,6 +1798,8 @@ void goto_dot_dot(bool force_new) {
         prgms_capacity += 10;
         newprgms = (prgm_struct *) malloc(prgms_capacity * sizeof(prgm_struct));
         // TODO - handle memory allocation failure
+        for (i = prgms_capacity - 10; i < prgms_capacity; i++)
+            newprgms[i].eq_data = (equation_data *) (((uintptr_t) -1) / 3 * 2);
         for (i = 0; i < prgms_count; i++)
             newprgms[i] = prgms[i];
         for (i = prgms_count; i < prgms_and_eqns_count; i++)
@@ -2257,6 +2262,8 @@ bool store_command(int4 pc, int command, arg_struct *arg, const char *num_str) {
             new_prgms = (prgm_struct *)
                             malloc(prgms_capacity * sizeof(prgm_struct));
             // TODO - handle memory allocation failure
+            for (i = prgms_capacity - 10; i < prgms_capacity; i++)
+                new_prgms[i].eq_data = (equation_data *) (((uintptr_t) -1) / 3 * 2);
             int4 cp = current_prgm.index();
             for (i = 0; i <= cp; i++)
                 new_prgms[i] = prgms[i];

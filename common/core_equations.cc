@@ -150,7 +150,7 @@ bool persist_eqn() {
 }
 
 void clear_eqn() {
-    free_vartype(eqns);
+    free_vartype((vartype *) eqns);
     eqns = NULL;
 }
 

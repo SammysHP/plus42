@@ -41,28 +41,6 @@ phloat NAN_1_PHLOAT;
 phloat NAN_2_PHLOAT;
 
 
-/* Note: this function does not handle infinities or NaN */
-static void bcdfloat2string(short *p, char *buf) {
-    short exp = p[7];
-    bool neg = (exp & 0x8000) != 0;
-    exp = ((short) (exp << 3)) >> 3;
-    if (neg)
-        *buf++ = '-';
-    for (int i = 0; i < 7; i++) {
-        short d = p[i];
-        sprintf(buf, "%04d", d);
-        if (i == 0) {
-            for (int j = 4; j >= 2; j--)
-                buf[j] = buf[j - 1];
-            buf[1] = '.';
-            buf += 5;
-        } else
-            buf += 4;
-    }
-    sprintf(buf, "e%d", exp * 4 - 1);
-}
-
-
 #ifdef BCD_MATH
 
 

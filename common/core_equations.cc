@@ -154,6 +154,7 @@ void clear_eqn() {
     eqns = NULL;
 }
 
+#if 0
 static bool is_name_char(char c) {
     /* The non-name characters are the same as on the 17B,
      * plus not-equal, less-equal, greater-equal, and
@@ -167,6 +168,7 @@ static bool is_name_char(char c) {
         && c != 11 /* GE */ && c != '['
         && c != ']';
 }
+#endif
 
 static void show_error(int err) {
     current_error = err;

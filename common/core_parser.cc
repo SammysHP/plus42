@@ -3805,7 +3805,6 @@ Evaluator *Parser::parseThing() {
             if (evs == NULL)
                 return NULL;
             if (!nextToken(&t2, &t2pos) || t2 != ")") {
-                fail:
                 for (int i = 0; i < evs->size(); i++)
                     delete (*evs)[i];
                 delete evs;
@@ -4105,7 +4104,6 @@ int isolate(vartype *eqn, const char *name, int length) {
         } else {
             // Shouldn't happen
             delete lhs;
-            fail:
             delete rhs;
             return -1;
         }

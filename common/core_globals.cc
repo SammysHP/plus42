@@ -4102,6 +4102,7 @@ void hard_reset(int reason) {
     mode_menu_caps = false;
 
     reset_math();
+    eqn_end();
 
     clear_display();
     clear_custom_menu();

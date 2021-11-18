@@ -714,12 +714,29 @@ int store_var(const char *name, int namelength, vartype *value, bool local, bool
             vars_capacity = nc;
             vars = nv;
         }
+        if (global) {
+            /* We're forcing a global, but we need to be careful if matching locals
+             * already exist, and insert the new global *before* the lowest-level
+             * matching local...
+             */
+            for (int i = 0; i < vars_count; i++)
+                if (string_equals(name, namelength, vars[i].name, vars[i].length)) {
+                    memmove(vars + i + 1, vars + i, (vars_count - i) * sizeof(var_struct));
+                    varindex = i;
+                    vars_count++;
+                    vars[i + 1].flags |= VAR_HIDING;
+                    vars[i].flags = VAR_HIDDEN;
+                    vars[i].level = -1;
+                    goto done;
+                }
+        }
         varindex = vars_count++;
         vars[varindex].length = namelength;
         for (i = 0; i < namelength; i++)
             vars[varindex].name[i] = name[i];
         vars[varindex].level = local ? get_rtn_level() : -1;
         vars[varindex].flags = 0;
+        done:;
     } else if (local && vars[varindex].level < get_rtn_level()) {
         if (vars_count == vars_capacity) {
             int nc = vars_capacity + 25;

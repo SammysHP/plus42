@@ -1422,37 +1422,56 @@ static int keydown_list(int key, bool shift, int *repeat) {
                 return 1;
             }
             vartype *v = eqns->array->data[selected_row];
-            if (v->type == TYPE_STRING) {
-                vartype_string *s = (vartype_string *) v;
-                int errpos;
-                vartype *eq = new_equation(s->txt(), s->length, flags.f.eqn_compat, &errpos);
-                if (eq == NULL) {
-                    if (errpos == -1) {
-                        show_error(ERR_INSUFFICIENT_MEMORY);
-                    } else {
-                        squeak();
-                        show_error(ERR_INVALID_EQUATION);
-                        current_error = ERR_NONE;
-                        timeout_action = 3;
-                        timeout_edit_pos = errpos;
-                        shell_request_timeout3(1000);
-                    }
-                    return 1;
-                }
-                free_vartype(eqns->array->data[selected_row]);
-                eqns->array->data[selected_row] = eq;
-                v = eq;
-            } else if (v->type != TYPE_EQUATION) {
+            if (v->type != TYPE_STRING && v->type != TYPE_EQUATION) {
                 show_error(ERR_INVALID_TYPE);
                 return 1;
             }
+            char *text;
+            int len;
+            if (v->type == TYPE_STRING) {
+                vartype_string *s = (vartype_string *) v;
+                text = s->txt();
+                len = s->length;
+            } else {
+                vartype_equation *eq = (vartype_equation *) v;
+                equation_data *eqd = prgms[eq->data.index()].eq_data;
+                if (eqd->compatMode == flags.f.eqn_compat)
+                    goto no_need_to_reparse;
+                text = eqd->text;
+                len = eqd->length;
+            }
+            int errpos;
+            vartype *eq;
+            eq = new_equation(text, len, flags.f.eqn_compat, &errpos);
+            if (eq == NULL) {
+                if (errpos == -1) {
+                    show_error(ERR_INSUFFICIENT_MEMORY);
+                } else {
+                    squeak();
+                    show_error(ERR_INVALID_EQUATION);
+                    current_error = ERR_NONE;
+                    timeout_action = 3;
+                    timeout_edit_pos = errpos;
+                    shell_request_timeout3(1000);
+                }
+                return 1;
+            }
+            if (!disentangle((vartype *) eqns)) {
+                free_vartype(eq);
+                show_error(ERR_INSUFFICIENT_MEMORY);
+                return 1;
+            }
+            free_vartype(eqns->array->data[selected_row]);
+            eqns->array->data[selected_row] = eq;
+            v = eq;
+            no_need_to_reparse:
 
             /* Make sure all parameters exist, creating new ones
              * initialized to zero where necessary.
              */
-            equation_data *eq = prgms[((vartype_equation *) v)->data.index()].eq_data;
+            equation_data *eqd = prgms[((vartype_equation *) v)->data.index()].eq_data;
             std::vector<std::string> params, locals;
-            eq->ev->collectVariables(&params, &locals);
+            eqd->ev->collectVariables(&params, &locals);
             for (int i = 0; i < params.size(); i++) {
                 std::string n = params[i];
                 vartype *p = recall_var(n.c_str(), n.length());

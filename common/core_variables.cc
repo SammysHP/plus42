@@ -612,7 +612,7 @@ equation_data *find_equation_data(const char *name, int namelength) {
         equation_data *eqd = prgms[i].eq_data;
         if (eqd != NULL && eqd->ev != NULL) {
             std::string s = eqd->ev->eqnName();
-            if (s.length() > 0 && string_equals(s.c_str(), s.length(), name, namelength))
+            if (s.length() > 0 && string_equals(s.c_str(), (int) s.length(), name, namelength))
                 return eqd;
         }
     }
@@ -620,7 +620,7 @@ equation_data *find_equation_data(const char *name, int namelength) {
 }
 
 static int store_params2(std::vector<std::string> *params) {
-    int nparams = params == NULL ? 0 : params->size();
+    int nparams = params == NULL ? 0 : (int) params->size();
     if (sp < nparams)
         return ERR_TOO_FEW_ARGUMENTS;
     if (!ensure_var_space(nparams))
@@ -643,7 +643,7 @@ static int store_params2(std::vector<std::string> *params) {
     int vsp = sp - nparams;
     for (int i = 0; i < nparams; i++) {
         std::string p = (*params)[i];
-        store_var(p.c_str(), p.length(), stack[vsp++], true);
+        store_var(p.c_str(), (int) p.length(), stack[vsp++], true);
     }
     free_vartype(lastx);
     lastx = stack[sp];

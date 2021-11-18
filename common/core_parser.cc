@@ -150,7 +150,7 @@ class GeneratorContext {
                 memcpy(arg.val.text, line->s->c_str(), arg.length);
             } else if (line->cmd == CMD_XSTR) {
                 arg.type = ARGTYPE_XSTR;
-                int len = line->s->length();
+                int len = (int) line->s->length();
                 if (len > 65535)
                     len = 65535;
                 arg.length = len;
@@ -4096,7 +4096,7 @@ void get_varmenu_row_for_eqn(vartype *eqn, int *rows, int *row, char ktext[6][7]
     std::vector<std::string> vars;
     std::vector<std::string> locals;
     ev->collectVariables(&vars, &locals);
-    *rows = (vars.size() + 5) / 6;
+    *rows = ((int) vars.size() + 5) / 6;
     if (*rows == 0)
         return;
     if (*row >= *rows)
@@ -4105,7 +4105,7 @@ void get_varmenu_row_for_eqn(vartype *eqn, int *rows, int *row, char ktext[6][7]
         int r = 6 * *row + i;
         if (r < vars.size()) {
             std::string t = vars[r];
-            int len = t.length();
+            int len = (int) t.length();
             if (len > 7)
                 len = 7;
             memcpy(ktext[i], t.c_str(), len);

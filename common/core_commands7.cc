@@ -1330,7 +1330,7 @@ int docmd_prmvar(arg_struct *arg) {
         print_text(NULL, 0, true);
         for (int i = 0; i < params.size(); i++) {
             std::string s = params[i];
-            print_one_var(s.c_str(), s.length());
+            print_one_var(s.c_str(), (int) s.length());
         }
         shell_annunciators(-1, -1, 0, -1, -1, -1);
         return ERR_NONE;

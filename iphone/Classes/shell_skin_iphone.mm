@@ -298,7 +298,7 @@ static void MyProviderReleaseData2(void *info,  const void *data, size_t size) {
 void skin_load(long *width, long *height) {
     char line[1024];
     int size;
-    int kmcap = 0;
+    /* int kmcap = 0; */
     int lineno = 0;
     bool force_builtin = false;
 

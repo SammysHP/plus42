@@ -113,8 +113,10 @@ bool unpersist_eqn(int4 ver) {
     if (edit_buf != NULL)
         free(edit_buf);
     edit_buf = (char *) malloc(edit_len);
-    if (edit_buf == NULL)
+    if (edit_buf == NULL) {
+        edit_capacity = edit_len = 0;
         return false;
+    }
     if (fread(edit_buf, 1, edit_len, gfile) != edit_len) goto fail;
     if (!read_bool(&cursor_on)) goto fail;
     if (!read_int(&current_error)) return false;
@@ -126,6 +128,7 @@ bool unpersist_eqn(int4 ver) {
     fail:
     free(edit_buf);
     edit_buf = NULL;
+    edit_capacity = edit_len = 0;
     return false;
 }
 
@@ -344,6 +347,8 @@ static void save() {
         eqns->array->data[selected_row] = v;
     }
     free(edit_buf);
+    edit_buf = NULL;
+    edit_capacity = edit_len = 0;
     edit_pos = -1;
     eqn_draw();
 }
@@ -1048,6 +1053,8 @@ static int keydown_save_confirmation(int key, bool shift, int *repeat) {
         case KEY_SQRT: {
             /* No */
             free(edit_buf);
+            edit_buf = NULL;
+            edit_capacity = edit_len = 0;
             edit_pos = -1;
             dialog = DIALOG_NONE;
             eqn_draw();
@@ -1128,10 +1135,11 @@ static int keydown_rcl(int key, bool shift, int *repeat) {
                     goto nope;
                 edit_buf = (char *) malloc(s->length);
                 if (edit_buf == NULL) {
+                    edit_capacity = edit_len = 0;
                     show_error(ERR_INSUFFICIENT_MEMORY);
                 } else {
                     memcpy(edit_buf, s->txt(), s->length);
-                    edit_len = s->length;
+                    edit_capacity = edit_len = s->length;
                     goto store;
                 }
             }
@@ -1149,10 +1157,11 @@ static int keydown_rcl(int key, bool shift, int *repeat) {
             } else {
                 edit_buf = (char *) malloc(arg.length);
                 if (edit_buf == NULL) {
+                    edit_capacity = edit_len = 0;
                     show_error(ERR_INSUFFICIENT_MEMORY);
                 } else {
                     memcpy(edit_buf, arg.val.xstr, arg.length);
-                    edit_len = arg.length;
+                    edit_capacity = edit_len = arg.length;
                     goto store;
                 }
             }
@@ -1165,16 +1174,19 @@ static int keydown_rcl(int key, bool shift, int *repeat) {
             } else {
                 edit_buf = (char *) malloc(reg_alpha_length);
                 if (edit_buf == NULL) {
+                    edit_capacity = edit_len = 0;
                     show_error(ERR_INSUFFICIENT_MEMORY);
                 } else {
                     memcpy(edit_buf, reg_alpha, reg_alpha_length);
-                    edit_len = reg_alpha_length;
+                    edit_capacity = edit_len = reg_alpha_length;
                     store:
                     edit_pos = 0;
                     new_eq = true;
                     save();
                     if (edit_pos == 0) {
                         free(edit_buf);
+                        edit_buf = NULL;
+                        edit_capacity = edit_len = 0;
                         edit_pos = -1;
                     } else {
                         dialog = DIALOG_NONE;
@@ -1213,8 +1225,10 @@ static bool get_equation() {
         len = 9;
     }
     edit_buf = (char *) malloc(len);
-    if (edit_buf == NULL)
+    if (edit_buf == NULL) {
+        edit_capacity = edit_len = 0;
         return false;
+    }
     edit_len = edit_capacity = len;
     memcpy(edit_buf, text, len);
     return true;
@@ -1277,6 +1291,8 @@ static int keydown_sto_overwrite(int key, bool shift, int *repeat) {
                     if (s == NULL) {
                         nomem:
                         free(edit_buf);
+                        edit_buf = NULL;
+                        edit_capacity = edit_len = 0;
                         show_error(ERR_INSUFFICIENT_MEMORY);
                         return 1;
                     }
@@ -1330,6 +1346,8 @@ static int keydown_sto_overwrite(int key, bool shift, int *repeat) {
                 }
             }
             free(edit_buf);
+            edit_buf = NULL;
+            edit_capacity = edit_len = 0;
             goto done;
         }
         case KEY_LN:
@@ -1469,11 +1487,11 @@ static int keydown_list(int key, bool shift, int *repeat) {
             eqd->ev->collectVariables(&params, &locals);
             for (int i = 0; i < params.size(); i++) {
                 std::string n = params[i];
-                vartype *p = recall_var(n.c_str(), n.length());
+                vartype *p = recall_var(n.c_str(), (int) n.length());
                 if (p == NULL) {
                     p = new_real(0);
                     if (p != NULL)
-                        store_var(n.c_str(), n.length(), p);
+                        store_var(n.c_str(), (int) n.length(), p);
                 }
             }
 
@@ -2069,6 +2087,8 @@ static int keydown_edit_2(int key, bool shift, int *repeat) {
                         if (string_equals(edit_buf, edit_len, orig_text, orig_len)) {
                             edit_pos = -1;
                             free(edit_buf);
+                            edit_buf = NULL;
+                            edit_capacity = edit_len = 0;
                             eqn_draw();
                             break;
                         }

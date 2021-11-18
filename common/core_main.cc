@@ -606,7 +606,8 @@ bool core_keyup() {
             pc = 0;
         get_next_command(&pc, &cmd, &arg, 1, NULL);
         if (pending_command == CMD_SST_RT
-                && (cmd == CMD_XEQ || cmd == CMD_SOLVE || cmd == CMD_INTEG)) {
+                && (cmd == CMD_XEQ || cmd == CMD_XEQL
+                    || cmd == CMD_EVAL || cmd == CMD_SOLVE || cmd == CMD_INTEG)) {
             pc = oldpc;
             step_over();
             goto do_run;

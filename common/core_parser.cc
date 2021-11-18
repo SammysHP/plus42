@@ -2509,8 +2509,16 @@ class Sizes : public UnaryEvaluator {
 
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
+        int lbl1 = ctx->nextLabel();
+        int lbl2 = ctx->nextLabel();
+        ctx->addLine(CMD_LIST_T);
+        ctx->addLine(CMD_GTOL, lbl1);
         ctx->addLine(CMD_DIM_T);
         ctx->addLine(CMD_MUL);
+        ctx->addLine(CMD_GTOL, lbl2);
+        ctx->addLine(CMD_LBL, lbl1);
+        ctx->addLine(CMD_LENGTH);
+        ctx->addLine(CMD_LBL, lbl2);
     }
 };
 
@@ -2800,6 +2808,15 @@ class Ycoord : public BinaryEvaluator {
 
 /* Methods that can't be defined in their class declarations
  * because they reference other Evaluator classes 
+ *
+ * NOTE: The invert() methods may emit nodes with swapArgs=true, but it doesn't
+ * pay attention to swapArgs in the nodes it reads. The idea is that the
+ * inverter logic will only be applied to parse trees created from strings, and
+ * those will never have swapArgs=true; the trees created by the inverter may
+ * contain swapArgs=true here or there, but they will never be fed back into
+ * the inverter.
+ * Should the need ever arise to apply the inverter to its own output, this
+ * would have to be dealt with of course, but that doesn't seem likely.
  */
 
 bool Acos::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {

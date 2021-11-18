@@ -1071,8 +1071,6 @@ int docmd_rotxy(arg_struct *arg) {
 
 int docmd_solve(arg_struct *arg) {
     int err;
-    vartype *v;
-    phloat x1, x2;
     if (arg->type == ARGTYPE_IND_NUM
             || arg->type == ARGTYPE_IND_STK
             || arg->type == ARGTYPE_IND_STR) {
@@ -1083,51 +1081,31 @@ int docmd_solve(arg_struct *arg) {
     if (arg->type != ARGTYPE_STR)
         return ERR_INVALID_TYPE;
 
-    v = recall_var(arg->val.text, arg->length);
-    if (v == 0)
-        x1 = 0;
-    else if (v->type == TYPE_REAL)
-        x1 = ((vartype_real *) v)->x;
-    else if (v->type == TYPE_STRING)
-        return ERR_ALPHA_DATA_IS_INVALID;
-    else
-        return ERR_INVALID_TYPE;
-
-    if (stack[sp]->type == TYPE_REAL)
-        x2 = ((vartype_real *) stack[sp])->x;
-    else if (stack[sp]->type == TYPE_STRING)
-        return ERR_ALPHA_DATA_IS_INVALID;
-    else
-        return ERR_INVALID_TYPE;
+    vartype *v = recall_var(arg->val.text, arg->length);
 
     if (!program_running())
         clear_all_rtns();
     string_copy(reg_alpha, &reg_alpha_length, arg->val.text, arg->length);
-    return start_solve(arg->val.text, arg->length, x1, x2);
+    return start_solve(arg->val.text, arg->length, v, stack[sp]);
 }
 
 int docmd_vmsolve(arg_struct *arg) {
-    vartype *v;
-    phloat x1, x2;
     if (arg->type != ARGTYPE_STR)
         return ERR_INVALID_TYPE;
 
-    v = recall_var(arg->val.text, arg->length);
-    if (v == NULL) {
-        x1 = 0;
-        x2 = 1;
-    } else if (v->type == TYPE_REAL) {
-        x1 = ((vartype_real *) v)->x;
-        if (!get_shadow(arg->val.text, arg->length, &x2))
-            x2 = x1;
-    } else if (v->type == TYPE_STRING)
-        return ERR_ALPHA_DATA_IS_INVALID;
-    else
-        return ERR_INVALID_TYPE;
+    vartype *v1 = recall_var(arg->val.text, arg->length);
+    vartype *v2 = NULL;
+    if (v1 != NULL && v1->type == TYPE_REAL) {
+        phloat x;
+        if (get_shadow(arg->val.text, arg->length, &x))
+            v2 = new_real(x);
+    }
 
     clear_all_rtns();
     string_copy(reg_alpha, &reg_alpha_length, arg->val.text, arg->length);
-    return start_solve(arg->val.text, arg->length, x1, x2);
+    int err = start_solve(arg->val.text, arg->length, v1, v2);
+    free_vartype(v2);
+    return err;
 }
 
 int docmd_xor(arg_struct *arg) {

@@ -414,7 +414,7 @@ static int call_solve_fn(int which, int state) {
 
 static int start_solve_2(phloat x1, phloat x2);
 
-int start_solve(const char *name, int length, phloat x1, phloat x2) {
+int start_solve(const char *name, int length, vartype *v1, vartype *v2) {
     if (solve_active())
         return ERR_SOLVE_SOLVE;
     string_copy(solve.var_name, &solve.var_length, name, length);
@@ -429,8 +429,6 @@ int start_solve(const char *name, int length, phloat x1, phloat x2) {
             solve.prev_pc = pc;
             solve.prev_sp = flags.f.big_stack ? sp : -2;
             solve.keep_running = !should_i_stop_at_this_level() && program_running();
-            solve.x1 = x1;
-            solve.x2 = x2;
 
             solve.state = 8;
             clean_stack(solve.prev_sp);
@@ -447,6 +445,26 @@ int start_solve(const char *name, int length, phloat x1, phloat x2) {
             } else
                 return ERR_RUN;
         }
+    }
+
+    phloat x1, x2;
+    if (v1 == NULL) {
+        x1 = 0;
+        x2 = 1;
+    } else if (v1->type == TYPE_STRING) {
+        return ERR_ALPHA_DATA_IS_INVALID;
+    } else if (v1->type != TYPE_REAL) {
+        return ERR_INVALID_TYPE;
+    } else {
+        x1 = ((vartype_real *) v1)->x;
+        if (v2 == NULL)
+            x2 = x1;
+        else if (v2->type == TYPE_STRING)
+            return ERR_ALPHA_DATA_IS_INVALID;
+        else if (v2->type != TYPE_REAL)
+            return ERR_INVALID_TYPE;
+        else
+            x2 = ((vartype_real *) v2)->x;
     }
     return start_solve_2(x1, x2);
 }

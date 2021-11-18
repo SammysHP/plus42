@@ -149,11 +149,6 @@ bool persist_eqn() {
     return true;
 }
 
-void clear_eqn() {
-    free_vartype((vartype *) eqns);
-    eqns = NULL;
-}
-
 #if 0
 static bool is_name_char(char c) {
     /* The non-name characters are the same as on the 17B,

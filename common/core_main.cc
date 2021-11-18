@@ -163,7 +163,6 @@ void core_cleanup() {
     stack_capacity = 0;
     free_vartype(lastx);
     lastx = NULL;
-    clear_eqn();
     reset_math();
     free_vartype(varmenu_eqn);
     varmenu_eqn = NULL;

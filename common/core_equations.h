@@ -23,7 +23,6 @@
 
 bool unpersist_eqn(int4 ver);
 bool persist_eqn();
-void clear_eqn();
 
 int eqn_start(int whence);
 void eqn_end();

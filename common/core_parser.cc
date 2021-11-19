@@ -687,7 +687,7 @@ class Bxor : public BinaryEvaluator {
     void generateCode(GeneratorContext *ctx) {
         left->generateCode(ctx);
         right->generateCode(ctx);
-        ctx->addLine(CMD_BASEMUL);
+        ctx->addLine(CMD_XOR);
     }
 };
 

@@ -3800,11 +3800,11 @@ Evaluator *Parser::parseThing() {
                 mode = EXPR_LIST_EXPR;
             } else if (t == "ANGLE" || t == "RADIUS" || t == "XCOORD"
                     || t == "YCOORD" || t == "COMB" || t == "PERM"
-                    || t == "IDIV" || t == "RND" || t == "TRN"
-                    || t == "DATE" || t == "BAND" || t == "BOR"
-                    || t == "BXOR" || t == "BADD" || t == "BSUB"
-                    || t == "BMUL" || t == "BDIV" || t == "HMSADD"
-                    || t == "HMSSUB") {
+                    || t == "IDIV" || t == "MOD" || t == "RND"
+                    || t == "TRN" || t == "DATE" || t == "BAND"
+                    || t == "BOR" || t == "BXOR" || t == "BADD"
+                    || t == "BSUB" || t == "BMUL" || t == "BDIV"
+                    || t == "HMSADD" || t == "HMSSUB") {
                 nargs = 2;
                 mode = EXPR_LIST_EXPR;
             } else if (t == "DDAYS") {
@@ -3936,11 +3936,11 @@ Evaluator *Parser::parseThing() {
                     return NULL;
             } else if (t == "ANGLE" || t == "RADIUS" || t == "XCOORD"
                     || t == "YCOORD" || t == "COMB" || t == "PERM"
-                    || t == "IDIV" || t == "RND" || t == "TRN"
-                    || t == "DATE" || t == "BAND" || t == "BOR"
-                    || t == "BXOR" || t == "BADD" || t == "BSUB"
-                    || t == "BMUL" || t == "BDIV" || t == "HMSADD"
-                    || t == "HMSSUB") {
+                    || t == "IDIV" || t == "MOD" || t == "RND"
+                    || t == "TRN" || t == "DATE" || t == "BAND"
+                    || t == "BOR" || t == "BXOR" || t == "BADD"
+                    || t == "BSUB" || t == "BMUL" || t == "BDIV"
+                    || t == "HMSADD" || t == "HMSSUB") {
                 Evaluator *left = (*evs)[0];
                 Evaluator *right = (*evs)[1];
                 delete evs;
@@ -3958,6 +3958,8 @@ Evaluator *Parser::parseThing() {
                     return new Perm(tpos, left, right);
                 else if (t == "IDIV")
                     return new Idiv(tpos, left, right);
+                else if (t == "MOD")
+                    return new Mod(tpos, left, right);
                 else if (t == "RND")
                     return new Rnd(tpos, left, right, false);
                 else if (t == "TRN")

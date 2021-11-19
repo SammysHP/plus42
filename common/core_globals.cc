@@ -3991,7 +3991,11 @@ void hard_reset(int reason) {
     rtn_integ_active = false;
 
     /* Reinitialize programs */
+    bool prev_loading_state = loading_state;
+    loading_state = true;
     goto_dot_dot(false);
+    loading_state = prev_loading_state;
+
 
     pending_command = CMD_NONE;
 

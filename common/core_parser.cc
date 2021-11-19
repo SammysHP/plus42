@@ -2284,7 +2284,7 @@ class Random : public Evaluator {
     }
 
     void generateCode(GeneratorContext *ctx) {
-        ctx->addLine(CMD_PI);
+        ctx->addLine(CMD_RAN);
     }
 
     void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {

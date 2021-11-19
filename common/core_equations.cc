@@ -339,7 +339,7 @@ static void save() {
             if (n > 0)
                 memmove(eqns->array->data + selected_row + 1,
                         eqns->array->data + selected_row,
-                        n);
+                        n * sizeof(vartype *));
             eqns->array->data[selected_row] = v;
         }
     } else {

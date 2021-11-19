@@ -1629,6 +1629,8 @@ int4 new_eqn_idx(int4 idx) {
     if (idx >= prgms_and_eqns_count) {
         if (!make_prgm_space(idx + 1 - prgms_and_eqns_count))
             return -1;
+        for (int i = prgms_and_eqns_count; i < idx; i++)
+            prgms[i].eq_data = NULL;
         prgms_and_eqns_count = idx + 1;
     }
     prgms[idx].eq_data = NULL;

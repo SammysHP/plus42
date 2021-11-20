@@ -161,7 +161,8 @@ class GeneratorContext {
             } else if (line->cmd == CMD_LBL) {
                 continue;
             } else if (line->cmd == CMD_FIX
-                    || line->cmd == CMD_SCI) {
+                    || line->cmd == CMD_SCI
+                    || line->cmd == CMD_PICK) {
                 arg.type = ARGTYPE_IND_STK;
                 arg.val.stk = 'X';
             } else if (line->cmd == CMD_GTOL
@@ -2296,6 +2297,54 @@ class Random : public Evaluator {
     }
 };
 
+//////////////////////
+/////  Register  /////
+//////////////////////
+
+class Register : public Evaluator {
+    
+    private:
+    
+    int index; // X=1, Y=2, Z=3, T=4
+    Evaluator *ev;
+    
+    public:
+    
+    Register(int pos, int index) : Evaluator(pos), index(index), ev(NULL) {}
+    Register(int pos, Evaluator *ev) : Evaluator(pos), ev(ev) {}
+    
+    Evaluator *clone() {
+        if (ev == NULL)
+            return new Register(tpos, index);
+        else
+            return new Register(tpos, ev);
+    }
+    
+    void generateCode(GeneratorContext *ctx) {
+        if (ev == NULL)
+            ctx->addLine(CMD_NUMBER, (phloat) index);
+        else
+            ev->generateCode(ctx);
+        ctx->addLine(CMD_FDEPTH);
+        ctx->addLine(CMD_ADD);
+        ctx->addLine(CMD_PICK);
+        ctx->addLine(CMD_SWAP);
+        ctx->addLine(CMD_DROP);
+    }
+
+    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
+        if (ev != NULL)
+            ev->collectVariables(vars, locals);
+    }
+
+    int howMany(const std::string *name) {
+        if (ev == NULL)
+            return 0;
+        else
+            return ev->howMany(name) == 0 ? 0 : -1;
+    }
+};
+
 /////////////////
 /////  Rnd  /////
 /////////////////
@@ -4055,7 +4104,10 @@ Evaluator *Parser::parseThing() {
                 delete ev;
                 return NULL;
             }
-            return new Item(tpos, t, ev);
+            if (t == "STACK")
+                return new Register(tpos, ev);
+            else
+                return new Item(tpos, t, ev);
         } else {
             pushback(t2, t2pos);
             if (t == "PI" || lex->compatMode && t == "\7")
@@ -4070,6 +4122,14 @@ Evaluator *Parser::parseThing() {
                 return new Newstr(tpos);
             else if (t == "NEWLIST")
                 return new Newlist(tpos);
+            else if (t == "REGX")
+                return new Register(tpos, 1);
+            else if (t == "REGY")
+                return new Register(tpos, 2);
+            else if (t == "REGZ")
+                return new Register(tpos, 3);
+            else if (t == "REGT")
+                return new Register(tpos, 4);
             else
                 return new Variable(tpos, t);
         }

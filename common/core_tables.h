@@ -525,8 +525,9 @@
 #define CMD_DDAYSC      469
 #define CMD_GETEQN      470
 #define CMD_TO_PAR      471
+#define CMD_FDEPTH      472
 
-#define CMD_SENTINEL    472
+#define CMD_SENTINEL    473
 
 
 /* command_spec.argtype */

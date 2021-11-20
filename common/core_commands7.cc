@@ -2294,3 +2294,14 @@ int docmd_geteqn(arg_struct *arg) {
 int docmd_to_par(arg_struct *arg) {
     return store_params();
 }
+
+int docmd_fdepth(arg_struct *arg) {
+    int depth;
+    int err = get_frame_depth(&depth);
+    if (err != ERR_NONE)
+        return err;
+    vartype *v = new_real(depth);
+    if (v == NULL)
+        return ERR_INSUFFICIENT_MEMORY;
+    return recall_result(v);
+}

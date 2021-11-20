@@ -565,7 +565,8 @@ const command_spec cmd_array[] =
     { /* TRUNC */      docmd_trunc,       "TR\325NC",            0x00, 0x00, 0xa7, 0xb4,  5, ARG_NONE,   1, 0x0f },
     { /* DDAYSC */     docmd_ddaysc,      "DD\301YSC",           0x00, 0x00, 0xa7, 0xb5,  6, ARG_NONE,   3, 0x01 },
     { /* GETEQN */     docmd_geteqn,      "GETEQN",              0x00, 0x00, 0xa7, 0xb6,  6, ARG_NONE,   1, 0x10 },
-    { /* TO_PAR */     docmd_to_par,      "\017PAR",             0x00, 0x00, 0xa7, 0xb7,  4, ARG_NONE,   1, 0x50 }
+    { /* TO_PAR */     docmd_to_par,      "\017PAR",             0x00, 0x00, 0xa7, 0xb7,  4, ARG_NONE,   1, 0x50 },
+    { /* FDEPTH */     docmd_fdepth,      "FDEPTH",              0x00, 0x00, 0xa7, 0xb8,  6, ARG_NONE,   0, NA_T }
 };
 
 /*

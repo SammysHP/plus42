@@ -3117,6 +3117,22 @@ int pop_func_state(bool error) {
     return ERR_NONE;
 }
 
+int get_frame_depth(int *depth) {
+    if (!flags.f.big_stack)
+        return ERR_INVALID_CONTEXT;
+    vartype *fd = recall_private_var("FD", 2);
+    if (fd == NULL)
+        return ERR_INVALID_CONTEXT;
+    int d = to_int(((vartype_real *) ((vartype_list *) fd)->array->data[1])->x);
+    if (d == -1)
+        d = 4;
+    d = sp + 1 - d;
+    if (d < 0)
+        return ERR_INVALID_CONTEXT;
+    *depth = d;
+    return ERR_NONE;
+}
+
 void step_out() {
     if (rtn_sp > 0)
         rtn_stop_level = rtn_level - 1;

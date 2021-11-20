@@ -540,6 +540,7 @@ int push_indexed_matrix();
 int push_func_state(int n);
 int push_stack_state(bool big);
 int pop_func_state(bool error);
+int get_frame_depth(int *depth);
 void step_out();
 void step_over();
 bool should_i_stop_at_this_level();

@@ -550,7 +550,7 @@ const command_spec cmd_array[] =
     { /* GSTO */       docmd_gsto,        "GSTO",                0x20, 0x00, 0xf2, 0x34,  4, ARG_NAMED,  1, ALLT },
     { /* GRCL */       docmd_grcl,        "GRCL",                0x20, 0x00, 0xf2, 0x35,  4, ARG_NAMED,  0, NA_T },
     { /* SVAR */       docmd_svar,        "SVAR",                0x00, 0x00, 0xa7, 0xa7,  4, ARG_NONE,   1, 0x10 },
-    { /* MATITEM */    docmd_matitem,     "MATITEM",             0x00, 0x00, 0xa7, 0xa8,  7, ARG_NONE,   2, FUNC },
+    { /* GETITEM */    docmd_getitem,     "GETITEM",             0x00, 0x00, 0xa7, 0xa8,  7, ARG_NONE,   2, FUNC },
     { /* GEN_EQ */     docmd_gen_eq,      "=",                   0x00, 0x00, 0xa7, 0xa9,  1, ARG_NONE,   2, ALLT },
     { /* GEN_NE */     docmd_gen_ne,      "\014",                0x00, 0x00, 0xa7, 0xaa,  1, ARG_NONE,   2, ALLT },
     { /* GEN_LT */     docmd_gen_lt,      "<",                   0x00, 0x00, 0xa7, 0xab,  1, ARG_NONE,   2, 0x01 },
@@ -566,7 +566,8 @@ const command_spec cmd_array[] =
     { /* DDAYSC */     docmd_ddaysc,      "DD\301YSC",           0x00, 0x00, 0xa7, 0xb5,  6, ARG_NONE,   3, 0x01 },
     { /* GETEQN */     docmd_geteqn,      "GETEQN",              0x00, 0x00, 0xa7, 0xb6,  6, ARG_NONE,   1, 0x10 },
     { /* TO_PAR */     docmd_to_par,      "\017PAR",             0x00, 0x00, 0xa7, 0xb7,  4, ARG_NONE,   1, 0x50 },
-    { /* FDEPTH */     docmd_fdepth,      "FDEPTH",              0x00, 0x00, 0xa7, 0xb8,  6, ARG_NONE,   0, NA_T }
+    { /* FDEPTH */     docmd_fdepth,      "FDEPTH",              0x00, 0x00, 0xa7, 0xb8,  6, ARG_NONE,   0, NA_T },
+    { /* PUTITEM */    docmd_putitem,     "PUTITEM",             0x00, 0x00, 0xa7, 0xb9,  7, ARG_NONE,   3, FUNC }
 };
 
 /*

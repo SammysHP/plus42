@@ -2117,31 +2117,53 @@ int docmd_svar(arg_struct *arg) {
     return ERR_NONE;
 }
 
-int docmd_matitem(arg_struct *arg) {
+static int item_helper(arg_struct *arg, bool get) {
+    int off = get ? 0 : 1;
+    int spo = sp - off;
     bool two_d;
-    if (stack[sp]->type == TYPE_STRING)
+    vartype_string *name;
+    if (stack[spo]->type == TYPE_STRING)
         return ERR_ALPHA_DATA_IS_INVALID;
-    if (stack[sp]->type != TYPE_REAL)
+    if (stack[spo]->type != TYPE_REAL)
         return ERR_INVALID_TYPE;
-    if (stack[sp - 1]->type == TYPE_REALMATRIX
-            || stack[sp - 1]->type == TYPE_COMPLEXMATRIX
-            || stack[sp - 1]->type == TYPE_LIST)
+    if (stack[spo - 1]->type == TYPE_STRING) {
         two_d = false;
-    else if (stack[sp - 1]->type == TYPE_STRING)
-        return ERR_ALPHA_DATA_IS_INVALID;
-    else if (stack[sp - 1]->type != TYPE_REAL)
+        name = (vartype_string *) stack[spo - 1];
+    } else if (stack[spo - 1]->type != TYPE_REAL) {
         return ERR_INVALID_TYPE;
-    else {
+    } else {
         two_d = true;
-        if (sp < 2)
+        if (spo < 2)
             return ERR_TOO_FEW_ARGUMENTS;
-        if (stack[sp - 2]->type == TYPE_STRING)
-            return ERR_ALPHA_DATA_IS_INVALID;
-        if (stack[sp - 2]->type != TYPE_REALMATRIX && stack[sp - 2]->type != TYPE_COMPLEXMATRIX)
+        if (stack[spo - 2]->type != TYPE_STRING)
             return ERR_INVALID_TYPE;
+        name = (vartype_string *) stack[spo - 2];
     }
 
-    phloat d = ((vartype_real *) stack[sp])->x;
+    vartype *v = recall_var(name->txt(), name->length);
+    if (get) {
+        if (v->type != TYPE_REALMATRIX
+                && v->type != TYPE_COMPLEXMATRIX
+                && (two_d || v->type != TYPE_LIST))
+            return ERR_INVALID_TYPE;
+    } else {
+        if (v->type == TYPE_REALMATRIX) {
+            if (stack[sp]->type != TYPE_REAL
+                    && stack[sp]->type != TYPE_STRING)
+                return ERR_INVALID_TYPE;
+        } else if (v->type == TYPE_COMPLEXMATRIX) {
+            if (stack[sp]->type != TYPE_REAL
+                    && stack[sp]->type != TYPE_COMPLEX)
+                return ERR_INVALID_TYPE;
+        } else if (v->type == TYPE_LIST) {
+            if (two_d)
+                return ERR_INVALID_TYPE;
+        } else {
+            return ERR_INVALID_TYPE;
+        }
+    }
+
+    phloat d = ((vartype_real *) stack[spo])->x;
     if (d <= -2147483648.0 || d >= 2147483648.0)
         return ERR_DIMENSION_ERROR;
     int4 n = to_int4(d);
@@ -2150,10 +2172,11 @@ int docmd_matitem(arg_struct *arg) {
     if (n == 0)
         return ERR_DIMENSION_ERROR;
     n--;
-    vartype *v;
+
     if (two_d) {
-        v = stack[sp - 2];
-        d = ((vartype_real *) stack[sp - 1])->x;
+        if (v->type == TYPE_LIST)
+            return ERR_DIMENSION_ERROR;
+        d = ((vartype_real *) stack[spo - 1])->x;
         if (d <= -2147483648.0 || d >= 2147483648.0)
             return ERR_DIMENSION_ERROR;
         int4 m = to_int4(d);
@@ -2168,47 +2191,134 @@ int docmd_matitem(arg_struct *arg) {
         if (n >= cols)
             return ERR_DIMENSION_ERROR;
         n += m * cols;
-    } else {
-        v = stack[sp - 1];
+    }
+
+    if (!get && !disentangle(v))
+        return ERR_INSUFFICIENT_MEMORY;
+
+    vartype *r = NULL;
+    vartype *t1 = NULL, *t2 = NULL;
+    if (!flags.f.big_stack) {
+        t1 = dup_vartype(stack[REG_T]);
+        if (t1 == NULL)
+            return ERR_INSUFFICIENT_MEMORY;
+        t2 = dup_vartype(stack[REG_T]);
+        if (t2 == NULL) {
+            free_vartype(t1);
+            return ERR_INSUFFICIENT_MEMORY;
+        }
     }
 
     switch (v->type) {
         case TYPE_REALMATRIX: {
-            vartype_realmatrix *rm = (vartype_realmatrix *) v;
-            if (n >= rm->rows * rm->columns)
+            vartype_realmatrix *rm;
+            rm = (vartype_realmatrix *) v;
+            if (n >= rm->rows * rm->columns) {
+                dim_fail:
+                free_vartype(t1);
+                free_vartype(t2);
                 return ERR_DIMENSION_ERROR;
-            if (rm->array->is_string[n]) {
-                const char *text;
-                int4 len;
-                get_matrix_string(rm, n, &text, &len);
-                v = new_string(text, len);
+            }
+            if (get) {
+                if (rm->array->is_string[n]) {
+                    const char *text;
+                    int4 len;
+                    get_matrix_string(rm, n, &text, &len);
+                    r = new_string(text, len);
+                } else {
+                    r = new_real(rm->array->data[n]);
+                }
+                if (r == NULL)
+                    return ERR_INSUFFICIENT_MEMORY;
             } else {
-                v = new_real(rm->array->data[n]);
+                if (stack[sp]->type == TYPE_REAL) {
+                    if (rm->array->is_string[n] == 2)
+                        free(*(void **) &rm->array->data[n]);
+                    rm->array->data[n] = ((vartype_real *) stack[sp])->x;
+                    rm->array->is_string[n] = 0;
+                } else {
+                    vartype_string *vs;
+                    vs = (vartype_string *) stack[sp];
+                    if (!put_matrix_string(rm, n, vs->txt(), vs->length)) {
+                        put_fail:
+                        free_vartype(t1);
+                        free_vartype(t2);
+                        return ERR_INSUFFICIENT_MEMORY;
+                    }
+                }
             }
             break;
         }
         case TYPE_COMPLEXMATRIX: {
             vartype_complexmatrix *cm = (vartype_complexmatrix *) v;
             if (n >= cm->rows * cm->columns)
-                return ERR_DIMENSION_ERROR;
-            v = new_complex(cm->array->data[2 * n], cm->array->data[2 * n + 1]);
+                goto dim_fail;
+            if (get) {
+                r = new_complex(cm->array->data[2 * n], cm->array->data[2 * n + 1]);
+            } else {
+                if (stack[sp]->type == TYPE_REAL) {
+                    cm->array->data[2 * n] = ((vartype_real *) stack[sp])->x;
+                    cm->array->data[2 * n + 1] = 0;
+                } else {
+                    cm->array->data[2 * n] = ((vartype_complex *) stack[sp])->re;
+                    cm->array->data[2 * n + 1] = ((vartype_complex *) stack[sp])->im;
+                }
+            }
             break;
         }
         case TYPE_LIST: {
             vartype_list *list = (vartype_list *) v;
             if (n >= list->size)
-                return ERR_DIMENSION_ERROR;
-            v = dup_vartype(list->array->data[n]);
+                goto dim_fail;
+            if (get) {
+                r = dup_vartype(list->array->data[n]);
+            } else {
+                vartype *v2 = dup_vartype(stack[sp]);
+                if (v2 == NULL) 
+                    goto put_fail;
+                free_vartype(list->array->data[n]);
+                list->array->data[n] = v2;
+            }
             break;
         }
     }
 
-    if (v == NULL)
-        return ERR_INSUFFICIENT_MEMORY;
-    if (two_d)
-        return ternary_result(v);
-    else
-        return binary_result(v);
+    if (get) {
+        if (r == NULL)
+            return ERR_INSUFFICIENT_MEMORY;
+        if (two_d)
+            return ternary_result(r);
+        else
+            return binary_result(r);
+    } else if (flags.f.big_stack) {
+        free_vartype(stack[sp - 1]);
+        free_vartype(stack[sp - 2]);
+        if (two_d) {
+            free_vartype(stack[sp - 3]);
+            stack[sp - 3] = stack[sp];
+            sp -= 3;
+        } else {
+            stack[sp - 2] = stack[sp];
+            sp -= 2;
+        }
+        return ERR_NONE;
+    } else {
+        // In the two_d case, I'm actually consuming Y, Z, and T,
+        // but I need something to duplicate, so I duplicate T anyway.
+        free_vartype(stack[REG_Z]);
+        stack[REG_Z] = t1;
+        free_vartype(stack[REG_Y]);
+        stack[REG_Y] = t2;
+    }
+    return ERR_NONE;
+}
+
+int docmd_getitem(arg_struct *arg) {
+    return item_helper(arg, true);
+}
+
+int docmd_putitem(arg_struct *arg) {
+    return item_helper(arg, false);
 }
 
 static int maybe_binary_result(vartype *v) {

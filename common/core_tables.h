@@ -509,7 +509,7 @@
 #define CMD_GSTO        453
 #define CMD_GRCL        454
 #define CMD_SVAR        455
-#define CMD_MATITEM     456
+#define CMD_GETITEM     456
 #define CMD_GEN_EQ      457
 #define CMD_GEN_NE      458
 #define CMD_GEN_LT      459
@@ -526,8 +526,9 @@
 #define CMD_GETEQN      470
 #define CMD_TO_PAR      471
 #define CMD_FDEPTH      472
+#define CMD_PUTITEM     473
 
-#define CMD_SENTINEL    473
+#define CMD_SENTINEL    474
 
 
 /* command_spec.argtype */

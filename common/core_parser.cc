@@ -1168,24 +1168,47 @@ class Difference : public BinaryEvaluator {
 /////  Ell  /////
 /////////////////
 
-class Ell : public UnaryEvaluator {
+class Ell : public Evaluator {
 
     private:
 
     std::string name;
+    Evaluator *left, *right;
     bool compatMode;
 
     public:
 
-    Ell(int pos, std::string name, Evaluator *ev, bool compatMode) : UnaryEvaluator(pos, ev, false), name(name), compatMode(compatMode) {}
+    Ell(int pos, std::string name, Evaluator *right, bool compatMode) : Evaluator(pos), name(name), left(NULL), right(right), compatMode(compatMode) {}
+    Ell(int pos, Evaluator *left, Evaluator *right, bool compatMode) : Evaluator(pos), name(""), left(left), right(right), compatMode(compatMode) {}
 
     Evaluator *clone() {
-        return new Ell(tpos, name, ev->clone(), compatMode);
+        if (name != "")
+            return new Ell(tpos, name, right->clone(), compatMode);
+        else
+            return new Ell(tpos, left->clone(), right->clone(), compatMode);
     }
 
     void generateCode(GeneratorContext *ctx) {
-        ev->generateCode(ctx);
-        ctx->addLine(compatMode ? CMD_GSTO : CMD_STO, name);
+        if (name != "") {
+            right->generateCode(ctx);
+            ctx->addLine(compatMode ? CMD_GSTO : CMD_STO, name);
+        } else {
+            left->generateCode(ctx);
+            right->generateCode(ctx);
+            left->generateAssignmentCode(ctx);
+        }
+    }
+
+    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
+        if (left != NULL)
+            left->collectVariables(vars, locals);
+        right->collectVariables(vars, locals);
+    }
+
+    int howMany(const std::string *nam) {
+        if (left != NULL && left->howMany(nam) != 0)
+            return -1;
+        return right->howMany(nam) == 0 ? 0 : -1;
     }
 };
 
@@ -1646,28 +1669,51 @@ class Inv : public UnaryEvaluator {
 /////  Item  /////
 //////////////////
 
-class Item : public UnaryEvaluator {
+class Item : public Evaluator {
 
     private:
 
+    Evaluator *ev1, *ev2;
     std::string name;
+    bool lvalue;
 
     public:
 
-    Item(int pos, std::string name, Evaluator *ev) : UnaryEvaluator(pos, ev, false), name(name) {}
+    Item(int pos, std::string name, Evaluator *ev1, Evaluator *ev2) : Evaluator(pos), name(name), ev1(ev1), ev2(ev2), lvalue(false) {}
 
     Evaluator *clone() {
-        return new Item(tpos, name, ev->clone());
+        Evaluator *ret = new Item(tpos, name, ev1->clone(), ev2 == NULL ? NULL : ev2->clone());
+        if (lvalue)
+            ret->makeLvalue();
+        return ret;
+    }
+    
+    bool makeLvalue() {
+        lvalue = true;
+        return true;
     }
 
     void generateCode(GeneratorContext *ctx) {
-        ctx->addLine(CMD_RCL, name);
-        ev->generateCode(ctx);
-        ctx->addLine(CMD_MATITEM);
+        ctx->addLine(CMD_XSTR, name);
+        ev1->generateCode(ctx);
+        if (ev2 != NULL)
+            ev2->generateCode(ctx);
+        if (!lvalue)
+            ctx->addLine(CMD_GETITEM);
+    }
+    
+    void generateAssignmentCode(GeneratorContext *ctx) {
+        ctx->addLine(CMD_PUTITEM);
+    }
+    
+    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
+        ev1->collectVariables(vars, locals);
+        if (ev2 != NULL)
+            ev2->collectVariables(vars, locals);
     }
 
     int howMany(const std::string *nam) {
-        if (*nam == name || ev->howMany(nam) != 0)
+        if (*nam == name || ev1->howMany(nam) != 0 || ev2 != NULL && ev2->howMany(nam) != 0)
             return -1;
         else
             return 0;
@@ -2325,6 +2371,7 @@ class Register : public Evaluator {
             ctx->addLine(CMD_NUMBER, (phloat) index);
         else
             ev->generateCode(ctx);
+        // TODO: Range check?
         ctx->addLine(CMD_FDEPTH);
         ctx->addLine(CMD_ADD);
         ctx->addLine(CMD_PICK);
@@ -2703,7 +2750,7 @@ class Variable : public Evaluator {
     std::string name() { return nam; }
 
     bool is(const std::string *name) { return *name == nam; }
-
+    
     void generateCode(GeneratorContext *ctx) {
         ctx->addLine(CMD_RCL, nam);
     }
@@ -3735,6 +3782,7 @@ Evaluator *Parser::parseFactor() {
 #define EXPR_LIST_EXPR 0
 #define EXPR_LIST_BOOLEAN 1
 #define EXPR_LIST_NAME 2
+#define EXPR_LIST_LVALUE 3
 
 std::vector<Evaluator *> *Parser::parseExprList(int nargs, int mode) {
     std::string t;
@@ -3774,6 +3822,11 @@ std::vector<Evaluator *> *Parser::parseExprList(int nargs, int mode) {
                 delete ev;
                 goto fail;
             }
+            if (mode == EXPR_LIST_LVALUE &&
+                    ev->name() == "" && !ev->makeLvalue()) {
+                delete ev;
+                goto fail;
+            }
         }
         mode = EXPR_LIST_EXPR;
         evs->push_back(ev);
@@ -3784,10 +3837,13 @@ std::vector<Evaluator *> *Parser::parseExprList(int nargs, int mode) {
                 goto fail;
         } else {
             pushback(t, tpos);
-            if (t == ")" && (nargs == -1 || nargs == evs->size()))
+            bool optional_two = nargs == -2 && evs->size() == 2;
+            if (t == ")" && (nargs == -1 || nargs == evs->size() || optional_two))
                 return evs;
             else
                 goto fail;
+            if (optional_two)
+                nargs = 3;
         }
     }
 }
@@ -3868,8 +3924,11 @@ Evaluator *Parser::parseThing() {
             } else if (t == "G" || t == "S") {
                 nargs = 1;
                 mode = EXPR_LIST_NAME;
-            } else if (t == "L" || t == "ITEM") {
+            } else if (t == "L") {
                 nargs = 2;
+                mode = EXPR_LIST_LVALUE;
+            } else if (t == "ITEM") {
+                nargs = -2;
                 mode = EXPR_LIST_NAME;
             } else if (t == "\5") {
                 nargs = 5;
@@ -4071,19 +4130,24 @@ Evaluator *Parser::parseThing() {
                 delete name;
                 return new Ess(tpos, n);
             } else if (t == "L") {
-                Evaluator *name = (*evs)[0];
-                Evaluator *ev = (*evs)[1];
+                Evaluator *left = (*evs)[0];
+                Evaluator *right = (*evs)[1];
                 delete evs;
-                std::string n = name->name();
-                delete name;
-                return new Ell(tpos, n, ev, lex->compatMode);
+                std::string n = left->name();
+                if (n != "") {
+                    delete left;
+                    return new Ell(tpos, n, right, lex->compatMode);
+                } else {
+                    return new Ell(tpos, left, right, lex->compatMode);
+                }
             } else if (t == "ITEM") {
                 Evaluator *name = (*evs)[0];
-                Evaluator *ev = (*evs)[1];
+                Evaluator *ev1 = (*evs)[1];
+                Evaluator *ev2 = evs->size() == 3 ? (*evs)[2] : NULL;
                 delete evs;
                 std::string n = name->name();
                 delete name;
-                return new Item(tpos, n, ev);
+                return new Item(tpos, n, ev1, ev2);
             } else if (t == "\5") {
                 Evaluator *name = (*evs)[0];
                 Evaluator *from = (*evs)[1];
@@ -4097,17 +4161,34 @@ Evaluator *Parser::parseThing() {
             } else
                 return new Call(tpos, t, evs);
         } else if (!lex->compatMode && t2 == "[") {
-            Evaluator *ev = parseExpr(CTX_VALUE);
-            if (ev == NULL)
+            Evaluator *ev1 = parseExpr(CTX_VALUE);
+            Evaluator *ev2 = NULL;
+            if (ev1 == NULL)
                 return NULL;
-            if (!nextToken(&t2, &t2pos) || t2 != "]") {
-                delete ev;
+            if (!nextToken(&t2, &t2pos)) {
+                item_fail:
+                delete ev1;
                 return NULL;
             }
+            if (t2 == ":") {
+                if (t == "STACK")
+                    goto item_fail;
+                ev2 = parseExpr(CTX_VALUE);
+                if (ev2 == NULL)
+                    goto item_fail;
+                if (!nextToken(&t2, &t2pos)) {
+                    item2_fail:
+                    delete ev1;
+                    delete ev2;
+                    return NULL;
+                }
+            }
+            if (t2 != "]")
+                goto item2_fail;
             if (t == "STACK")
-                return new Register(tpos, ev);
+                return new Register(tpos, ev1);
             else
-                return new Item(tpos, t, ev);
+                return new Item(tpos, t, ev1, ev2);
         } else {
             pushback(t2, t2pos);
             if (t == "PI" || lex->compatMode && t == "\7")

@@ -4,6 +4,7 @@
 #include <float.h>
 #include <sstream>
 
+#include "core_helpers.h"
 #include "core_parser.h"
 #include "core_tables.h"
 #include "core_variables.h"
@@ -1698,7 +1699,9 @@ class Integ : public Evaluator {
         ulim->collectVariables(vars, locals);
         addIfNew("ACC", vars, locals);
         if (xeq) {
-            // TODO
+            std::vector<std::string> names = get_mvars(name.c_str(), name.length());
+            for (int i = 0; i < names.size(); i++)
+                addIfNew(names[i], vars, locals);
         } else {
             equation_data *eqd = find_equation_data(name.c_str(), name.length());
             if (eqd != NULL && eqd->ev != NULL)
@@ -1708,6 +1711,11 @@ class Integ : public Evaluator {
     }
 
     int howMany(const std::string *nam) {
+        if (*nam != integ_var) {
+            if (llim->howMany(nam) != 0
+                    || ulim->howMany(nam) != 0)
+                return -1;
+        }
         return 0;
     }
 };
@@ -4485,5 +4493,29 @@ bool has_parameters(equation_data *eqdata) {
 std::vector<std::string> get_parameters(equation_data *eqdata) {
     std::vector<std::string> names, locals;
     eqdata->ev->collectVariables(&names, &locals);
+    return names;
+}
+
+std::vector<std::string> get_mvars(const char *name, int namelen) {
+    std::vector<std::string> names;
+    if (namelen > 7)
+        // Too long
+        return names;
+    arg_struct arg;
+    arg.type = ARGTYPE_STR;
+    int len;
+    string_copy(arg.val.text, &len, name, namelen);
+    arg.length = len;
+    pgm_index prgm;
+    int4 pc;
+    if (!find_global_label(&arg, &prgm, &pc))
+        return names;
+    pgm_index saved_prgm = current_prgm;
+    current_prgm = prgm;
+    int cmd;
+    pc += get_command_length(current_prgm, pc);
+    while (get_next_command(&pc, &cmd, &arg, 0, NULL), cmd == CMD_MVAR)
+        names.push_back(std::string(arg.val.text, arg.length));
+    current_prgm = saved_prgm;
     return names;
 }

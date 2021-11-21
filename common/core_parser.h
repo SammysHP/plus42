@@ -107,5 +107,6 @@ void get_varmenu_row_for_eqn(vartype *eqn, int *rows, int *row, char ktext[6][7]
 int isolate(vartype *eqn, const char *name, int length);
 bool has_parameters(equation_data *eqdata);
 std::vector<std::string> get_parameters(equation_data *eqdata);
+std::vector<std::string> get_mvars(const char *name, int namelen);
 
 #endif

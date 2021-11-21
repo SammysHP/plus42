@@ -663,23 +663,7 @@ int store_params() {
         vartype_string *name = (vartype_string *) stack[sp];
         if (name->length > 7)
             return ERR_NAME_TOO_LONG;
-        arg_struct arg;
-        arg.type = ARGTYPE_STR;
-        int len;
-        string_copy(arg.val.text, &len, name->txt(), name->length);
-        arg.length = len;
-        pgm_index prgm;
-        int4 pc;
-        if (!find_global_label(&arg, &prgm, &pc))
-            return ERR_LABEL_NOT_FOUND;
-        pgm_index saved_prgm = current_prgm;
-        current_prgm = prgm;
-        int cmd;
-        pc += get_command_length(current_prgm, pc);
-        std::vector<std::string> params;
-        while (get_next_command(&pc, &cmd, &arg, 0, NULL), cmd == CMD_MVAR)
-            params.push_back(std::string(arg.val.text, arg.length));
-        current_prgm = saved_prgm;
+        std::vector<std::string> params = get_mvars(name->txt(), name->length);
         return store_params2(&params);
     } else { // TYPE_EQUATION
         vartype_equation *eq = (vartype_equation *) stack[sp];

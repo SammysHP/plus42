@@ -1679,13 +1679,13 @@ class Integ : public Evaluator {
         } else {
             ctx->addLine(CMD_XSTR, name);
             ctx->addLine(CMD_GETEQN);
-            ctx->addLine(CMD_PGMINT, "");
+            ctx->addLine(CMD_PGMINT, std::string(""));
             ctx->addLine(CMD_DROP);
         }
         llim->generateCode(ctx);
-        ctx->addLine(CMD_LSTO, "LLIM");
+        ctx->addLine(CMD_LSTO, std::string("LLIM"));
         ulim->generateCode(ctx);
-        ctx->addLine(CMD_LSTO, "ULIM");
+        ctx->addLine(CMD_LSTO, std::string("ULIM"));
         ctx->addLine(CMD_DROPN, 2);
         ctx->addLine(CMD_INTEG, integ_var);
         ctx->addLine(CMD_SWAP);

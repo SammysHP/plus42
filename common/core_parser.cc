@@ -2,6 +2,7 @@
 #include <string.h>
 #include <math.h>
 #include <float.h>
+#include <limits.h>
 #include <sstream>
 
 #include "core_helpers.h"

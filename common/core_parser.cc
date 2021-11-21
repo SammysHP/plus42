@@ -3409,6 +3409,7 @@ class Lexer {
         return !isspace(c) && c != '+' && c != '-' && c != '\1' && c != '\0'
                 && c != '^' && c != '(' && c != ')' && c != '<'
                 && c != '>' && c != '=' && c != ':'
+                && c != '.' && c != ',' && (c < '0' || c > '9') && c != 24
                 && (compatMode
                         || c != '*' && c != '/' && c != '[' && c != ']' && c != '!');
     }
@@ -3991,6 +3992,16 @@ std::vector<Evaluator *> *Parser::parseExprList(int min_args, int max_args, int 
     }
 }
 
+static bool get_phloat(std::string tok, phloat *d) {
+    char c = tok[0];
+    if ((c < '0' || c > '9') && c != '.' && c != ',')
+        return false;
+    for (int i = 0; i < tok.length(); i++)
+        if (tok[i] == 'E' || tok[i] == 'e')
+            tok[i] = 24;
+    return string2phloat(tok.c_str(), tok.length(), d) == 0;
+}
+
 Evaluator *Parser::parseThing() {
     std::string t;
     int tpos;
@@ -4009,8 +4020,8 @@ Evaluator *Parser::parseThing() {
         else
             return new Negative(tpos, ev);
     }
-    double d;
-    if (sscanf(t.c_str(), "%lf", &d) == 1) {
+    phloat d;
+    if (get_phloat(t, &d)) {
         return new Literal(tpos, d);
     } else if (t == "(") {
         Evaluator *ev = parseExpr(context == CTX_TOP ? CTX_VALUE : context);

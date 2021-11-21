@@ -1762,8 +1762,8 @@ class Item : public Evaluator {
 
     private:
 
-    Evaluator *ev1, *ev2;
     std::string name;
+    Evaluator *ev1, *ev2;
     bool lvalue;
 
     public:

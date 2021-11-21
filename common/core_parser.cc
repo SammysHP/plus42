@@ -142,12 +142,19 @@ class GeneratorContext {
                     || line->cmd == CMD_STO_ADD
                     || line->cmd == CMD_GSTO
                     || line->cmd == CMD_GRCL
-                    || line->cmd == CMD_XEQ) {
+                    || line->cmd == CMD_XEQ
+                    || line->cmd == CMD_INTEG) {
+                do_string:
                 arg.type = ARGTYPE_STR;
                 arg.length = line->s->size();
                 if (arg.length > 7)
                     arg.length = 7;
                 memcpy(arg.val.text, line->s->c_str(), arg.length);
+            } else if (line->cmd == CMD_PGMINT) {
+                if (line->s->length() > 0)
+                    goto do_string;
+                arg.type = ARGTYPE_IND_STK;
+                arg.val.stk = 'X';
             } else if (line->cmd == CMD_XSTR) {
                 arg.type = ARGTYPE_XSTR;
                 int len = (int) line->s->length();
@@ -1181,6 +1188,16 @@ class Ell : public Evaluator {
     Ell(int pos, std::string name, Evaluator *right, bool compatMode) : Evaluator(pos), name(name), left(NULL), right(right), compatMode(compatMode) {}
     Ell(int pos, Evaluator *left, Evaluator *right, bool compatMode) : Evaluator(pos), name(""), left(left), right(right), compatMode(compatMode) {}
 
+    ~Ell() {
+        delete left;
+        delete right;
+    }
+
+    void detach() {
+        left = NULL;
+        right = NULL;
+    }
+
     Evaluator *clone() {
         if (name != "")
             return new Ell(tpos, name, right->clone(), compatMode);
@@ -1623,6 +1640,78 @@ class Int : public UnaryEvaluator {
     }
 };
 
+///////////////////
+/////  Integ  /////
+///////////////////
+
+class Integ : public Evaluator {
+
+    private:
+
+    bool xeq;
+    std::string name;
+    std::string integ_var;
+    Evaluator *llim;
+    Evaluator *ulim;
+
+    public:
+
+    Integ(int tpos, bool xeq, std::string name, std::string integ_var, Evaluator *llim, Evaluator *ulim)
+        : Evaluator(tpos), xeq(xeq), name(name), integ_var(integ_var), llim(llim), ulim(ulim) {}
+
+    ~Integ() {
+        delete llim;
+        delete ulim;
+    }
+
+    void detach() {
+        llim = NULL;
+        ulim = NULL;
+    }
+
+    Evaluator *clone() {
+        return new Integ(tpos, xeq, name, integ_var, llim->clone(), ulim->clone());
+    }
+
+    void generateCode(GeneratorContext *ctx) {
+        if (xeq) {
+            ctx->addLine(CMD_PGMINT, name);
+        } else {
+            ctx->addLine(CMD_XSTR, name);
+            ctx->addLine(CMD_GETEQN);
+            ctx->addLine(CMD_PGMINT, "");
+            ctx->addLine(CMD_DROP);
+        }
+        llim->generateCode(ctx);
+        ctx->addLine(CMD_LSTO, "LLIM");
+        ulim->generateCode(ctx);
+        ctx->addLine(CMD_LSTO, "ULIM");
+        ctx->addLine(CMD_DROPN, 2);
+        ctx->addLine(CMD_INTEG, integ_var);
+        ctx->addLine(CMD_SWAP);
+        ctx->addLine(CMD_DROP);
+    }
+    
+    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
+        locals->push_back(integ_var);
+        llim->collectVariables(vars, locals);
+        ulim->collectVariables(vars, locals);
+        addIfNew("ACC", vars, locals);
+        if (xeq) {
+            // TODO
+        } else {
+            equation_data *eqd = find_equation_data(name.c_str(), name.length());
+            if (eqd != NULL && eqd->ev != NULL)
+                eqd->ev->collectVariables(vars, locals);
+        }
+        locals->pop_back();
+    }
+
+    int howMany(const std::string *nam) {
+        return 0;
+    }
+};
+
 ////////////////
 /////  Ip  /////
 ////////////////
@@ -1680,6 +1769,16 @@ class Item : public Evaluator {
     public:
 
     Item(int pos, std::string name, Evaluator *ev1, Evaluator *ev2) : Evaluator(pos), name(name), ev1(ev1), ev2(ev2), lvalue(false) {}
+
+    ~Item() {
+        delete ev1;
+        delete ev2;
+    }
+
+    void detach() {
+        ev1 = NULL;
+        ev2 = NULL;
+    }
 
     Evaluator *clone() {
         Evaluator *ret = new Item(tpos, name, ev1->clone(), ev2 == NULL ? NULL : ev2->clone());
@@ -2359,6 +2458,14 @@ class Register : public Evaluator {
     Register(int pos, int index) : Evaluator(pos), index(index), ev(NULL) {}
     Register(int pos, Evaluator *ev) : Evaluator(pos), ev(ev) {}
     
+    ~Register() {
+        delete ev;
+    }
+
+    void detach() {
+        ev = NULL;
+    }
+
     Evaluator *clone() {
         if (ev == NULL)
             return new Register(tpos, index);
@@ -2767,13 +2874,7 @@ class Variable : public Evaluator {
     }
 
     void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
-        for (int i = 0; i < locals->size(); i++)
-            if ((*locals)[i] == nam)
-                return;
-        for (int i = 0; i < vars->size(); i++)
-            if ((*vars)[i] == nam)
-                return;
-        vars->push_back(nam);
+        addIfNew(nam, vars, locals);
     }
 
     int howMany(const std::string *name) {
@@ -3252,6 +3353,16 @@ bool Tanh::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
 void Evaluator::getSides(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
     *lhs = this;
     *rhs = new Literal(0, 0);
+}
+
+void Evaluator::addIfNew(std::string name, std::vector<std::string> *vars, std::vector<std::string> *locals) {
+    for (int i = 0; i < locals->size(); i++)
+        if ((*locals)[i] == name)
+            return;
+    for (int i = 0; i < vars->size(); i++)
+        if ((*vars)[i] == name)
+            return;
+    vars->push_back(name);
 }
 
 ///////////////////
@@ -3793,9 +3904,11 @@ Evaluator *Parser::parseFactor() {
 #define EXPR_LIST_EXPR 0
 #define EXPR_LIST_BOOLEAN 1
 #define EXPR_LIST_NAME 2
-#define EXPR_LIST_LVALUE 3
+#define EXPR_LIST_INTEG 3
+#define EXPR_LIST_INTEG_XEQ 4
+#define EXPR_LIST_LVALUE 5
 
-std::vector<Evaluator *> *Parser::parseExprList(int nargs, int mode) {
+std::vector<Evaluator *> *Parser::parseExprList(int min_args, int max_args, int mode) {
     std::string t;
     int tpos;
     if (!nextToken(&t, &tpos) || t == "")
@@ -3803,7 +3916,7 @@ std::vector<Evaluator *> *Parser::parseExprList(int nargs, int mode) {
     pushback(t, tpos);
     std::vector<Evaluator *> *evs = new std::vector<Evaluator *>;
     if (t == ")") {
-        if (nargs == 0 || nargs == -1 && mode == EXPR_LIST_EXPR) {
+        if (min_args == 0) {
             return evs;
         } else {
             fail:
@@ -3818,12 +3931,25 @@ std::vector<Evaluator *> *Parser::parseExprList(int nargs, int mode) {
 
     while (true) {
         Evaluator *ev;
-        if (mode == EXPR_LIST_NAME) {
+        if (mode == EXPR_LIST_NAME || mode == EXPR_LIST_INTEG || mode == EXPR_LIST_INTEG_XEQ) {
             if (!nextToken(&t, &tpos) || t == "")
                 goto fail;
             if (!lex->isIdentifier(t))
                 goto fail;
             ev = new Variable(tpos, t);
+            if (mode == EXPR_LIST_INTEG_XEQ) {
+                if (t == "XEQ") {
+                    min_args++;
+                    max_args++;
+                    mode = EXPR_LIST_INTEG;
+                } else {
+                    mode = EXPR_LIST_NAME;
+                }
+            } else if (mode == EXPR_LIST_INTEG) {
+                mode = EXPR_LIST_NAME;
+            } else {
+                mode = EXPR_LIST_EXPR;
+            }
         } else {
             bool wantBool = mode == EXPR_LIST_BOOLEAN;
             ev = parseExpr(wantBool ? CTX_BOOLEAN : CTX_VALUE);
@@ -3838,23 +3964,20 @@ std::vector<Evaluator *> *Parser::parseExprList(int nargs, int mode) {
                 delete ev;
                 goto fail;
             }
+            mode = EXPR_LIST_EXPR;
         }
-        mode = EXPR_LIST_EXPR;
         evs->push_back(ev);
         if (!nextToken(&t, &tpos))
             goto fail;
         if (t == ":") {
-            if (evs->size() == nargs)
+            if (evs->size() == max_args)
                 goto fail;
         } else {
             pushback(t, tpos);
-            bool optional_two = nargs == -2 && evs->size() == 2;
-            if (t == ")" && (nargs == -1 || nargs == evs->size() || optional_two))
+            if (t == ")" && evs->size() >= min_args)
                 return evs;
             else
                 goto fail;
-            if (optional_two)
-                nargs = 3;
         }
     }
 }
@@ -3897,7 +4020,7 @@ Evaluator *Parser::parseThing() {
         if (!nextToken(&t2, &t2pos))
             return NULL;
         if (t2 == "(") {
-            int nargs;
+            int min_args, max_args;
             int mode;
             if (t == "SIN" || t == "COS" || t == "TAN"
                     || t == "ASIN" || t == "ACOS" || t == "ATAN"
@@ -3913,7 +4036,7 @@ Evaluator *Parser::parseThing() {
                     || t == "MROWS" || t == "MCOLS"
                     || t == "SGN" || t == "DEC" || t == "OCT"
                     || t == "BNOT" || t == "BNEG") {
-                nargs = 1;
+                min_args = max_args = 1;
                 mode = EXPR_LIST_EXPR;
             } else if (t == "ANGLE" || t == "RADIUS" || t == "XCOORD"
                     || t == "YCOORD" || t == "COMB" || t == "PERM"
@@ -3922,38 +4045,45 @@ Evaluator *Parser::parseThing() {
                     || t == "BOR" || t == "BXOR" || t == "BADD"
                     || t == "BSUB" || t == "BMUL" || t == "BDIV"
                     || t == "HMSADD" || t == "HMSSUB") {
-                nargs = 2;
+                min_args = max_args = 2;
                 mode = EXPR_LIST_EXPR;
             } else if (t == "DDAYS") {
-                nargs = 3;
+                min_args = max_args = 3;
                 mode = EXPR_LIST_EXPR;
             } else if (t == "MIN" || t == "MAX") {
-                nargs = -1;
+                min_args = 0;
+                max_args = INT_MAX;
                 mode = EXPR_LIST_EXPR;
             } else if (t == "IF") {
-                nargs = 3;
+                min_args = max_args = 3;
                 mode = EXPR_LIST_BOOLEAN;
             } else if (t == "G" || t == "S") {
-                nargs = 1;
+                min_args = max_args = 1;
                 mode = EXPR_LIST_NAME;
             } else if (t == "L") {
-                nargs = 2;
+                min_args = max_args = 2;
                 mode = EXPR_LIST_LVALUE;
             } else if (t == "ITEM") {
-                nargs = -2;
+                min_args = 2;
+                max_args = 3;
                 mode = EXPR_LIST_NAME;
             } else if (t == "\5") {
-                nargs = 5;
+                min_args = max_args = 5;
                 mode = EXPR_LIST_NAME;
+            } else if (t == "\3") {
+                min_args = max_args = 4;
+                mode = EXPR_LIST_INTEG_XEQ;
             } else if (t == "XEQ") {
-                nargs = -1;
+                min_args = 1;
+                max_args = INT_MAX;
                 mode = EXPR_LIST_NAME;
             } else {
                 // Call
-                nargs = -1;
+                min_args = 0;
+                max_args = INT_MAX;
                 mode = EXPR_LIST_EXPR;
             }
-            std::vector<Evaluator *> *evs = parseExprList(nargs, mode);
+            std::vector<Evaluator *> *evs = parseExprList(min_args, max_args, mode);
             if (evs == NULL)
                 return NULL;
             if (!nextToken(&t2, &t2pos) || t2 != ")") {
@@ -4175,6 +4305,24 @@ Evaluator *Parser::parseThing() {
                 std::string n = name->name();
                 delete name;
                 return new Sigma(tpos, n, from, to, step, ev);
+            } else if (t == "\3") {
+                bool xeq = false;
+                Evaluator *ev = (*evs)[0];
+                if (ev->name() == "XEQ") {
+                    xeq = true;
+                    delete ev;
+                    evs->erase(evs->begin());
+                    ev = (*evs)[0];
+                }
+                std::string name = ev->name();
+                delete ev;
+                ev = (*evs)[1];
+                std::string integ_var = ev->name();
+                delete ev;
+                Evaluator *llim = (*evs)[2];
+                Evaluator *ulim = (*evs)[3];
+                delete evs;
+                return new Integ(tpos, xeq, name, integ_var, llim, ulim);
             } else
                 return new Call(tpos, t, evs);
         } else if (!lex->compatMode && t2 == "[") {

@@ -61,6 +61,8 @@ class Evaluator {
     virtual void generateAssignmentCode(GeneratorContext *ctx) {} /* For lvalues */
     virtual void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) = 0;
     virtual int howMany(const std::string *name) = 0;
+    
+    void addIfNew(std::string name, std::vector<std::string> *vars, std::vector<std::string> *locals);
 };
 
 class Lexer;
@@ -94,7 +96,7 @@ class Parser {
     Evaluator *parseTerm();
     Evaluator *parseFactor();
     Evaluator *parseThing();
-    std::vector<Evaluator *> *parseExprList(int nargs, int mode);
+    std::vector<Evaluator *> *parseExprList(int min_args, int max_args, int mode);
     bool isIdentifier(const std::string &s);
     bool nextToken(std::string *tok, int *tpos);
     void pushback(std::string o, int p);

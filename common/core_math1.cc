@@ -397,6 +397,9 @@ static int call_solve_fn(int which, int state) {
         }
     } else {
         clean_stack(solve.prev_sp);
+        err = recall_result(new_real(0));
+        if (err != ERR_NONE)
+            return err;
         vartype_equation *eq = (vartype_equation *) solve.active_eq;
         current_prgm = eq->data;
         pc = 0;
@@ -1161,6 +1164,9 @@ static int call_integ_fn() {
         }
     } else {
         clean_stack(integ.prev_sp);
+        err = recall_result(new_real(0));
+        if (err != ERR_NONE)
+            return err;
         vartype_equation *eq = (vartype_equation *) integ.active_eq;
         current_prgm = eq->data;
         pc = 0;

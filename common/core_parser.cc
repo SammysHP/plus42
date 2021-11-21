@@ -2589,32 +2589,43 @@ class Sinh : public UnaryEvaluator {
     }
 };
 
-///////////////////
-/////  Sizes  /////
-///////////////////
+//////////////////
+/////  Size  /////
+//////////////////
 
-class Sizes : public UnaryEvaluator {
+class Size : public UnaryEvaluator {
+
+    private:
+
+    char mode;
 
     public:
 
-    Sizes(int pos, Evaluator *ev) : UnaryEvaluator(pos, ev, false) {}
+    Size(int pos, Evaluator *ev, char mode) : UnaryEvaluator(pos, ev, false), mode(mode) {}
 
     Evaluator *clone() {
-        return new Sizes(tpos, ev->clone());
+        return new Size(tpos, ev->clone(), mode);
     }
 
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
-        int lbl1 = ctx->nextLabel();
-        int lbl2 = ctx->nextLabel();
-        ctx->addLine(CMD_LIST_T);
-        ctx->addLine(CMD_GTOL, lbl1);
-        ctx->addLine(CMD_DIM_T);
-        ctx->addLine(CMD_MUL);
-        ctx->addLine(CMD_GTOL, lbl2);
-        ctx->addLine(CMD_LBL, lbl1);
-        ctx->addLine(CMD_LENGTH);
-        ctx->addLine(CMD_LBL, lbl2);
+        if (mode == 'S') {
+            int lbl1 = ctx->nextLabel();
+            int lbl2 = ctx->nextLabel();
+            ctx->addLine(CMD_LIST_T);
+            ctx->addLine(CMD_GTOL, lbl1);
+            ctx->addLine(CMD_DIM_T);
+            ctx->addLine(CMD_MUL);
+            ctx->addLine(CMD_GTOL, lbl2);
+            ctx->addLine(CMD_LBL, lbl1);
+            ctx->addLine(CMD_LENGTH);
+            ctx->addLine(CMD_LBL, lbl2);
+        } else {
+            ctx->addLine(CMD_DIM_T);
+            if (mode == 'C')
+                ctx->addLine(CMD_SWAP);
+            ctx->addLine(CMD_DROP);
+        }
     }
 };
 
@@ -3899,6 +3910,7 @@ Evaluator *Parser::parseThing() {
                     || t == "ABS" || t == "FACT" || t == "GAMMA"
                     || t == "INT" || t == "IP" || t == "FP"
                     || t == "HMS" || t == "HRS" || t == "SIZES"
+                    || t == "MROWS" || t == "MCOLS"
                     || t == "SGN" || t == "DEC" || t == "OCT"
                     || t == "BNOT" || t == "BNEG") {
                 nargs = 1;
@@ -3961,6 +3973,7 @@ Evaluator *Parser::parseThing() {
                     || t == "ABS" || t == "FACT" || t == "GAMMA"
                     || t == "INT" || t == "IP" || t == "FP"
                     || t == "HMS" || t == "HRS" || t == "SIZES"
+                    || t == "MROWS" || t == "MCOLS"
                     || t == "SGN" || t == "DEC" || t == "OCT"
                     || t == "BNOT" || t == "BNEG") {
                 Evaluator *ev = (*evs)[0];
@@ -4028,7 +4041,11 @@ Evaluator *Parser::parseThing() {
                 else if (t == "HRS")
                     return new Hrs(tpos, ev);
                 else if (t == "SIZES")
-                    return new Sizes(tpos, ev);
+                    return new Size(tpos, ev, 'S');
+                else if (t == "MROWS")
+                    return new Size(tpos, ev, 'R');
+                else if (t == "MCOLS")
+                    return new Size(tpos, ev, 'C');
                 else if (t == "SGN")
                     return new Sgn(tpos, ev);
                 else if (t == "DEC")

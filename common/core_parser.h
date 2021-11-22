@@ -50,6 +50,7 @@ class Evaluator {
     virtual std::string eqnName() { return ""; }
     virtual std::vector<std::string> *eqnParamNames() { return NULL; }
     virtual Evaluator *removeName() { return this; }
+    virtual std::string getText() { return ""; }
     virtual void getSides(const std::string *name, Evaluator **lhs, Evaluator **rhs);
     virtual bool is(const std::string *name) { return false; }
     virtual Evaluator *clone(For *f) = 0;

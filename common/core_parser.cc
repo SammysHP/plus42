@@ -1781,40 +1781,35 @@ class Integ : public Evaluator {
 
     private:
 
-    bool xeq;
-    std::string name;
+    Evaluator *expr;
     std::string integ_var;
     Evaluator *llim;
     Evaluator *ulim;
 
     public:
 
-    Integ(int tpos, bool xeq, std::string name, std::string integ_var, Evaluator *llim, Evaluator *ulim)
-        : Evaluator(tpos), xeq(xeq), name(name), integ_var(integ_var), llim(llim), ulim(ulim) {}
+    Integ(int tpos, Evaluator *expr, std::string integ_var, Evaluator *llim, Evaluator *ulim)
+        : Evaluator(tpos), expr(expr), integ_var(integ_var), llim(llim), ulim(ulim) {}
 
     ~Integ() {
+        delete expr;
         delete llim;
         delete ulim;
     }
 
     Evaluator *clone(For *f) {
-        return new Integ(tpos, xeq, name, integ_var, llim->clone(f), ulim->clone(f));
+        return new Integ(tpos, expr->clone(f), integ_var, llim->clone(f), ulim->clone(f));
     }
 
     void generateCode(GeneratorContext *ctx) {
-        if (xeq) {
-            ctx->addLine(CMD_PGMINT, name);
-        } else {
-            ctx->addLine(CMD_XSTR, name);
-            ctx->addLine(CMD_GETEQN);
-            ctx->addLine(CMD_PGMINT, std::string(""));
-            ctx->addLine(CMD_DROP);
-        }
+        ctx->addLine(CMD_XSTR, expr->getText());
+        ctx->addLine(CMD_PARSE);
+        ctx->addLine(CMD_PGMINT, std::string(""));
         llim->generateCode(ctx);
         ctx->addLine(CMD_LSTO, std::string("LLIM"));
         ulim->generateCode(ctx);
         ctx->addLine(CMD_LSTO, std::string("ULIM"));
-        ctx->addLine(CMD_DROPN, 2);
+        ctx->addLine(CMD_DROPN, 3);
         ctx->addLine(CMD_INTEG, integ_var);
         ctx->addLine(CMD_SWAP);
         ctx->addLine(CMD_DROP);
@@ -1822,18 +1817,10 @@ class Integ : public Evaluator {
     
     void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
         locals->push_back(integ_var);
+        expr->collectVariables(vars, locals);
         llim->collectVariables(vars, locals);
         ulim->collectVariables(vars, locals);
         addIfNew("ACC", vars, locals);
-        if (xeq) {
-            std::vector<std::string> names = get_mvars(name.c_str(), name.length());
-            for (int i = 0; i < names.size(); i++)
-                addIfNew(names[i], vars, locals);
-        } else {
-            equation_data *eqd = find_equation_data(name.c_str(), name.length());
-            if (eqd != NULL && eqd->ev != NULL)
-                eqd->ev->collectVariables(vars, locals);
-        }
         locals->pop_back();
     }
 
@@ -2939,6 +2926,46 @@ class Sqrt : public UnaryEvaluator {
     }
 };
 
+///////////////////////////
+/////  Subexpression  /////
+///////////////////////////
+
+class Subexpression : public Evaluator {
+
+    private:
+
+    Evaluator *ev;
+    std::string text;
+
+    public:
+
+    Subexpression(int pos, Evaluator *ev, std::string text) : Evaluator(pos), ev(ev), text(text) {}
+
+    ~Subexpression() {
+        delete ev;
+    }
+
+    Evaluator *clone(For *) {
+        return new Subexpression(tpos, ev->clone(NULL), text);
+    }
+
+    std::string getText() {
+        return text;
+    }
+
+    void generateCode(GeneratorContext *ctx) {
+        // this is handled by Integ
+    }
+
+    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
+        ev->collectVariables(vars, locals);
+    }
+
+    int howMany(const std::string *name) {
+        return ev->howMany(name) == 0 ? 0 : -1;
+    }
+};
+
 /////////////////
 /////  Sum  /////
 /////////////////
@@ -3565,6 +3592,14 @@ class Lexer {
         return prevpos;
     }
     
+    int cpos() {
+        return pos;
+    }
+    
+    std::string substring(int start, int end) {
+        return text.substr(start, end - start);
+    }
+
     bool isIdentifierStartChar(char c) {
         return !isspace(c) && c != '+' && c != '-' && c != '\1' && c != '\0'
                 && c != '^' && c != '(' && c != ')' && c != '<'
@@ -4074,10 +4109,9 @@ Evaluator *Parser::parseFactor() {
 #define EXPR_LIST_EXPR 0
 #define EXPR_LIST_BOOLEAN 1
 #define EXPR_LIST_NAME 2
-#define EXPR_LIST_INTEG 3
-#define EXPR_LIST_INTEG_XEQ 4
-#define EXPR_LIST_LVALUE 5
-#define EXPR_LIST_FOR 6
+#define EXPR_LIST_SUBEXPR 3
+#define EXPR_LIST_LVALUE 4
+#define EXPR_LIST_FOR 5
 
 std::vector<Evaluator *> *Parser::parseExprList(int min_args, int max_args, int mode) {
     std::string t;
@@ -4102,27 +4136,16 @@ std::vector<Evaluator *> *Parser::parseExprList(int min_args, int max_args, int 
 
     while (true) {
         Evaluator *ev;
-        if (mode == EXPR_LIST_NAME || mode == EXPR_LIST_INTEG || mode == EXPR_LIST_INTEG_XEQ) {
+        if (mode == EXPR_LIST_NAME) {
             if (!nextToken(&t, &tpos) || t == "")
                 goto fail;
             if (!lex->isIdentifier(t))
                 goto fail;
             ev = new Variable(tpos, t);
-            if (mode == EXPR_LIST_INTEG_XEQ) {
-                if (t == "XEQ") {
-                    min_args++;
-                    max_args++;
-                    mode = EXPR_LIST_INTEG;
-                } else {
-                    mode = EXPR_LIST_NAME;
-                }
-            } else if (mode == EXPR_LIST_INTEG) {
-                mode = EXPR_LIST_NAME;
-            } else {
-                mode = EXPR_LIST_EXPR;
-            }
+            mode = EXPR_LIST_EXPR;
         } else {
             bool wantBool = mode == EXPR_LIST_BOOLEAN;
+            int startPos = pbpos != -1 ? pbpos : lex->cpos();
             ev = parseExpr(wantBool ? CTX_BOOLEAN : CTX_VALUE);
             if (ev == NULL)
                 goto fail;
@@ -4135,10 +4158,16 @@ std::vector<Evaluator *> *Parser::parseExprList(int min_args, int max_args, int 
                 delete ev;
                 goto fail;
             }
-            if (mode == EXPR_LIST_FOR)
+            if (mode == EXPR_LIST_SUBEXPR) {
+                int endPos = pbpos != -1 ? pbpos : lex->cpos();
+                std::string text = lex->substring(startPos, endPos);
+                ev = new Subexpression(startPos, ev, text);
+                mode = EXPR_LIST_NAME;
+            } else if (mode == EXPR_LIST_FOR) {
                 mode = EXPR_LIST_BOOLEAN;
-            else
+            } else {
                 mode = EXPR_LIST_EXPR;
+            }
         }
         evs->push_back(ev);
         if (!nextToken(&t, &tpos))
@@ -4264,7 +4293,9 @@ Evaluator *Parser::parseThing() {
                 forStack.push_back(f);
             } else if (t == "\3") {
                 min_args = max_args = 4;
-                mode = EXPR_LIST_INTEG_XEQ;
+                mode = EXPR_LIST_SUBEXPR;
+                For *f = new For(-1);
+                forStack.push_back(f);
             } else if (t == "XEQ") {
                 min_args = 1;
                 max_args = INT_MAX;
@@ -4280,7 +4311,7 @@ Evaluator *Parser::parseThing() {
                 mode = EXPR_LIST_EXPR;
             }
             std::vector<Evaluator *> *evs = parseExprList(min_args, max_args, mode);
-            if (t == "\5")
+            if (t == "\5" || t == "\3")
                 forStack.pop_back();
             For *f = NULL;
             if (t == "FOR") {
@@ -4523,23 +4554,14 @@ Evaluator *Parser::parseThing() {
                 delete name;
                 return new Sigma(tpos, n, from, to, step, ev);
             } else if (t == "\3") {
-                bool xeq = false;
-                Evaluator *ev = (*evs)[0];
-                if (ev->name() == "XEQ") {
-                    xeq = true;
-                    delete ev;
-                    evs->erase(evs->begin());
-                    ev = (*evs)[0];
-                }
-                std::string name = ev->name();
-                delete ev;
-                ev = (*evs)[1];
-                std::string integ_var = ev->name();
-                delete ev;
+                Evaluator *expr = (*evs)[0];
+                Evaluator *name = (*evs)[1];
+                std::string integ_var = name->name();
+                delete name;
                 Evaluator *llim = (*evs)[2];
                 Evaluator *ulim = (*evs)[3];
                 delete evs;
-                return new Integ(tpos, xeq, name, integ_var, llim, ulim);
+                return new Integ(tpos, expr, integ_var, llim, ulim);
             } else
                 return new Call(tpos, t, evs);
         } else if (!lex->compatMode && t2 == "[") {

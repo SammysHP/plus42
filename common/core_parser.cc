@@ -1441,8 +1441,8 @@ class For : public Evaluator {
         For *f = new For(tpos);
         std::vector<Evaluator *> *evs2 = new std::vector<Evaluator *>;
         for (int i = 0; i < evs->size(); i++)
-            evs2->push_back((*evs)[i]->clone(this));
-        f->finish_init(init->clone(this), cond->clone(this), next->clone(this), evs2);
+            evs2->push_back((*evs)[i]->clone(f));
+        f->finish_init(init->clone(f), cond->clone(f), next->clone(f), evs2);
         return f;
     }
 

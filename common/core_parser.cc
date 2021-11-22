@@ -151,7 +151,7 @@ class GeneratorContext {
                     || line->cmd == CMD_INDEX) {
                 do_string:
                 arg.type = ARGTYPE_STR;
-                arg.length = line->s->size();
+                arg.length = (unsigned short) line->s->size();
                 if (arg.length > 7)
                     arg.length = 7;
                 memcpy(arg.val.text, line->s->c_str(), arg.length);

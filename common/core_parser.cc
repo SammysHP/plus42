@@ -147,7 +147,8 @@ class GeneratorContext {
                     || line->cmd == CMD_GSTO
                     || line->cmd == CMD_GRCL
                     || line->cmd == CMD_XEQ
-                    || line->cmd == CMD_INTEG) {
+                    || line->cmd == CMD_INTEG
+                    || line->cmd == CMD_INDEX) {
                 do_string:
                 arg.type = ARGTYPE_STR;
                 arg.length = line->s->size();
@@ -450,6 +451,99 @@ class Asinh : public UnaryEvaluator {
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
         ctx->addLine(CMD_ASINH);
+    }
+};
+
+///////////////////
+/////  Array  /////
+///////////////////
+
+class Array : public Evaluator {
+    
+    private:
+    
+    std::vector<std::vector<Evaluator *> > data;
+    bool trans;
+    
+public:
+    
+    Array(int pos, std::vector<std::vector<Evaluator *> > data, bool trans) : Evaluator(pos), data(data), trans(trans) {}
+    Array(int pos, std::vector<std::vector<Evaluator *> > data, bool trans, int dummy) : Evaluator(pos), trans(trans) {
+        for (int i = 0; i < data.size(); i++) {
+            std::vector<Evaluator *> row;
+            for (int j = 0; j < data[i].size(); j++)
+                row.push_back(data[i][j]->clone(NULL));
+            this->data.push_back(row);
+        }
+    }
+
+    ~Array() {
+        for (int i = 0; i < data.size(); i++)
+            for (int j = 0; j < data[i].size(); j++)
+                delete data[i][j];
+    }
+    
+    Evaluator *clone(For *) {
+        return new Array(tpos, data, trans, true);
+    }
+    
+    void generateCode(GeneratorContext *ctx) {
+        int rows = data.size();
+        int cols = 0;
+        for (int i = 0; i < data.size(); i++) {
+            int c = data[i].size();
+            if (cols < c)
+                cols = c;
+        }
+        int lbl = ctx->nextLabel();
+        ctx->addLine(CMD_XEQL, lbl);
+        ctx->pushSubroutine();
+        ctx->addLine(CMD_LBL, lbl);
+        ctx->addLine(CMD_NUMBER, (phloat) rows);
+        ctx->addLine(CMD_NUMBER, (phloat) cols);
+        ctx->addLine(CMD_NEWMAT);
+        ctx->addLine(CMD_LSTO, std::string("_TMPMAT"));
+        ctx->addLine(CMD_DROP);
+        ctx->addLine(CMD_INDEX, std::string("_TMPMAT"));
+        for (int i = 0; i < rows; i++) {
+            int c = data[i].size();
+            for (int j = 0; j < c; j++) {
+                data[i][j]->generateCode(ctx);
+                ctx->addLine(CMD_STOEL);
+                ctx->addLine(CMD_DROP);
+                if (j < c - 1)
+                    ctx->addLine(CMD_J_ADD);
+            }
+            int gap = cols - c + 1;
+            if (i < rows - 1)
+                if (gap > 2) {
+                    ctx->addLine(CMD_NUMBER, (phloat) (i + 2));
+                    ctx->addLine(CMD_NUMBER, (phloat) 1);
+                    ctx->addLine(CMD_STOIJ);
+                    ctx->addLine(CMD_DROPN, 2);
+                } else {
+                    while (gap-- > 0)
+                        ctx->addLine(CMD_J_ADD);
+                }
+        }
+        ctx->addLine(CMD_RCL, "_TMPMAT");
+        if (trans)
+            ctx->addLine(CMD_TRANS);
+        ctx->popSubroutine();
+    }
+    
+    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
+        for (int i = 0; i < data.size(); i++)
+            for (int j = 0; j < data[i].size(); j++)
+                data[i][j]->collectVariables(vars, locals);
+    }
+
+    int howMany(const std::string *name) {
+        for (int i = 0; i < data.size(); i++)
+            for (int j = 0; j < data[i].size(); j++)
+                if (data[i][j]->howMany(name) != 0)
+                    return -1;
+        return 0;
     }
 };
 
@@ -1053,6 +1147,27 @@ class Cosh : public UnaryEvaluator {
 };
 
 ///////////////////
+/////  Cross  /////
+///////////////////
+
+class Cross : public BinaryEvaluator {
+
+    public:
+
+    Cross(int pos, Evaluator *left, Evaluator *right) : BinaryEvaluator(pos, left, right, false) {}
+
+    Evaluator *clone(For *f) {
+        return new Cross(tpos, left->clone(f), right->clone(f));
+    }
+
+    void generateCode(GeneratorContext *ctx) {
+        left->generateCode(ctx);
+        right->generateCode(ctx);
+        ctx->addLine(CMD_CROSS);
+    }
+};
+
+///////////////////
 /////  Ctime  /////
 ///////////////////
 
@@ -1198,6 +1313,26 @@ class Deg : public UnaryEvaluator {
     }
 };
 
+/////////////////
+/////  Det  /////
+/////////////////
+
+class Det : public UnaryEvaluator {
+
+    public:
+
+    Det(int pos, Evaluator *ev) : UnaryEvaluator(pos, ev, false) {}
+
+    Evaluator *clone(For *f) {
+        return new Det(tpos, ev->clone(f));
+    }
+
+    void generateCode(GeneratorContext *ctx) {
+        ev->generateCode(ctx);
+        ctx->addLine(CMD_DET);
+    }
+};
+
 ////////////////////////
 /////  Difference  /////
 ////////////////////////
@@ -1221,6 +1356,27 @@ class Difference : public BinaryEvaluator {
         if (swapArgs)
             ctx->addLine(CMD_SWAP);
         ctx->addLine(CMD_SUB);
+    }
+};
+
+/////////////////
+/////  Dot  /////
+/////////////////
+
+class Dot : public BinaryEvaluator {
+
+    public:
+
+    Dot(int pos, Evaluator *left, Evaluator *right) : BinaryEvaluator(pos, left, right, false) {}
+
+    Evaluator *clone(For *f) {
+        return new Dot(tpos, left->clone(f), right->clone(f));
+    }
+
+    void generateCode(GeneratorContext *ctx) {
+        left->generateCode(ctx);
+        right->generateCode(ctx);
+        ctx->addLine(CMD_DOT);
     }
 };
 
@@ -1410,6 +1566,26 @@ class Fact : public UnaryEvaluator {
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
         ctx->addLine(CMD_FACT);
+    }
+};
+
+//////////////////
+/////  Fnrm  /////
+//////////////////
+
+class Fnrm : public UnaryEvaluator {
+
+    public:
+
+    Fnrm(int pos, Evaluator *ev) : UnaryEvaluator(pos, ev, false) {}
+
+    Evaluator *clone(For *f) {
+        return new Fnrm(tpos, ev->clone(f));
+    }
+
+    void generateCode(GeneratorContext *ctx) {
+        ev->generateCode(ctx);
+        ctx->addLine(CMD_FNRM);
     }
 };
 
@@ -1876,6 +2052,26 @@ class Inv : public UnaryEvaluator {
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
         ctx->addLine(CMD_INV);
+    }
+};
+
+///////////////////
+/////  Invrt  /////
+///////////////////
+
+class Invrt : public UnaryEvaluator {
+
+    public:
+
+    Invrt(int pos, Evaluator *ev) : UnaryEvaluator(pos, ev, false) {}
+
+    Evaluator *clone(For *f) {
+        return new Invrt(tpos, ev->clone(f));
+    }
+
+    void generateCode(GeneratorContext *ctx) {
+        ev->generateCode(ctx);
+        ctx->addLine(CMD_INVRT);
     }
 };
 
@@ -2650,6 +2846,46 @@ class Rnd : public BinaryEvaluator {
     }
 };
 
+//////////////////
+/////  Rnrm  /////
+//////////////////
+
+class Rnrm : public UnaryEvaluator {
+
+    public:
+
+    Rnrm(int pos, Evaluator *ev) : UnaryEvaluator(pos, ev, false) {}
+
+    Evaluator *clone(For *f) {
+        return new Rnrm(tpos, ev->clone(f));
+    }
+
+    void generateCode(GeneratorContext *ctx) {
+        ev->generateCode(ctx);
+        ctx->addLine(CMD_RNRM);
+    }
+};
+
+//////////////////
+/////  Rsum  /////
+//////////////////
+
+class Rsum : public UnaryEvaluator {
+
+    public:
+
+    Rsum(int pos, Evaluator *ev) : UnaryEvaluator(pos, ev, false) {}
+
+    Evaluator *clone(For *f) {
+        return new Rsum(tpos, ev->clone(f));
+    }
+
+    void generateCode(GeneratorContext *ctx) {
+        ev->generateCode(ctx);
+        ctx->addLine(CMD_RSUM);
+    }
+};
+
 /////////////////
 /////  Seq  /////
 /////////////////
@@ -3033,6 +3269,46 @@ class Tanh : public UnaryEvaluator {
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
         ctx->addLine(CMD_TANH);
+    }
+};
+
+///////////////////
+/////  Trans  /////
+///////////////////
+
+class Trans : public UnaryEvaluator {
+
+    public:
+
+    Trans(int pos, Evaluator *ev) : UnaryEvaluator(pos, ev, false) {}
+
+    Evaluator *clone(For *f) {
+        return new Trans(tpos, ev->clone(f));
+    }
+
+    void generateCode(GeneratorContext *ctx) {
+        ev->generateCode(ctx);
+        ctx->addLine(CMD_TRANS);
+    }
+};
+
+//////////////////
+/////  Uvec  /////
+//////////////////
+
+class Uvec : public UnaryEvaluator {
+
+    public:
+
+    Uvec(int pos, Evaluator *ev) : UnaryEvaluator(pos, ev, false) {}
+
+    Evaluator *clone(For *f) {
+        return new Uvec(tpos, ev->clone(f));
+    }
+
+    void generateCode(GeneratorContext *ctx) {
+        ev->generateCode(ctx);
+        ctx->addLine(CMD_UVEC);
     }
 };
 
@@ -3760,6 +4036,7 @@ class Lexer {
 #define CTX_TOP 0
 #define CTX_VALUE 1
 #define CTX_BOOLEAN 2
+#define CTX_ARRAY 3
 
 /* static */ Evaluator *Parser::parse(std::string expr, bool compatMode, int *errpos) {
     std::string t, t2, eqnName;
@@ -4230,6 +4507,67 @@ Evaluator *Parser::parseThing() {
             return NULL;
         }
         return ev;
+    } else if (t == "[" && context != CTX_ARRAY) {
+        // Array literal
+        int apos = tpos;
+        if (!nextToken(&t, &tpos))
+            return NULL;
+        bool one_d = t != "[";
+        if (one_d)
+            pushback(t, tpos);
+        int width = 0;
+        std::vector<std::vector<Evaluator *> > data;
+        std::vector<Evaluator *> row;
+        forStack.push_back(new For(-1));
+        while (true) {
+            if (!nextToken(&t, &tpos))
+                goto array_fail;
+            if (t == "]") {
+                end_row:
+                int w = row.size();
+                if (w == 0)
+                    goto array_fail;
+                if (width < w)
+                    width = w;
+                data.push_back(row);
+                row.clear();
+                if (one_d)
+                    goto array_success;
+                if (!nextToken(&t, &tpos))
+                    goto array_fail;
+                if (t == "]")
+                    goto array_success;
+                if (t != ":")
+                    goto array_fail;
+                if (!nextToken(&t, &tpos))
+                    goto array_fail;
+                if (t != "[")
+                    goto array_fail;
+            } else {
+                pushback(t, tpos);
+                do_element:
+                Evaluator *ev = parseExpr(CTX_ARRAY);
+                if (ev == NULL)
+                    goto array_fail;
+                row.push_back(ev);
+                if (!nextToken(&t, &tpos))
+                    goto array_fail;
+                if (t == "]")
+                    goto end_row;
+                if (t != ":")
+                    goto array_fail;
+                goto do_element;
+            }
+        }
+        array_fail:
+        forStack.pop_back();
+        for (int i = 0; i < data.size(); i++)
+            for (int j = 0; j < data[i].size(); j++)
+                delete data[i][j];
+        return NULL;
+        array_success:
+        forStack.pop_back();
+        return new Array(apos, data, one_d);
     } else if (lex->isIdentifier(t)) {
         std::string t2;
         int t2pos;
@@ -4251,7 +4589,10 @@ Evaluator *Parser::parseThing() {
                     || t == "HMS" || t == "HRS" || t == "SIZES"
                     || t == "MROWS" || t == "MCOLS"
                     || t == "SGN" || t == "DEC" || t == "OCT"
-                    || t == "BNOT" || t == "BNEG") {
+                    || t == "BNOT" || t == "BNEG"
+                    || t == "INVRT" || t == "DET" || t == "TRANS"
+                    || t == "UVEC" || t == "FNRM" || t == "RNRM"
+                    || t == "RSUM") {
                 min_args = max_args = 1;
                 mode = EXPR_LIST_EXPR;
             } else if (t == "ANGLE" || t == "RADIUS" || t == "XCOORD"
@@ -4260,7 +4601,8 @@ Evaluator *Parser::parseThing() {
                     || t == "TRN" || t == "DATE" || t == "BAND"
                     || t == "BOR" || t == "BXOR" || t == "BADD"
                     || t == "BSUB" || t == "BMUL" || t == "BDIV"
-                    || t == "HMSADD" || t == "HMSSUB") {
+                    || t == "HMSADD" || t == "HMSSUB"
+                    || t == "DOT" || t == "CROSS") {
                 min_args = max_args = 2;
                 mode = EXPR_LIST_EXPR;
             } else if (t == "DDAYS") {
@@ -4345,7 +4687,10 @@ Evaluator *Parser::parseThing() {
                     || t == "HMS" || t == "HRS" || t == "SIZES"
                     || t == "MROWS" || t == "MCOLS"
                     || t == "SGN" || t == "DEC" || t == "OCT"
-                    || t == "BNOT" || t == "BNEG") {
+                    || t == "BNOT" || t == "BNEG"
+                    || t == "INVRT" || t == "DET" || t == "TRANS"
+                    || t == "UVEC" || t == "FNRM" || t == "RNRM"
+                    || t == "RSUM") {
                 Evaluator *ev = (*evs)[0];
                 delete evs;
                 if (t == "SIN")
@@ -4426,6 +4771,20 @@ Evaluator *Parser::parseThing() {
                     return new Bnot(tpos, ev);
                 else if (t == "BNEG")
                     return new Bneg(tpos, ev);
+                else if (t == "INVRT")
+                    return new Invrt(tpos, ev);
+                else if (t == "DET")
+                    return new Det(tpos, ev);
+                else if (t == "TRANS")
+                    return new Trans(tpos, ev);
+                else if (t == "UVEC")
+                    return new Uvec(tpos, ev);
+                else if (t == "FNRM")
+                    return new Fnrm(tpos, ev);
+                else if (t == "RNRM")
+                    return new Rnrm(tpos, ev);
+                else if (t == "RSUM")
+                    return new Rsum(tpos, ev);
                 else
                     // Shouldn't get here
                     return NULL;
@@ -4435,7 +4794,8 @@ Evaluator *Parser::parseThing() {
                     || t == "TRN" || t == "DATE" || t == "BAND"
                     || t == "BOR" || t == "BXOR" || t == "BADD"
                     || t == "BSUB" || t == "BMUL" || t == "BDIV"
-                    || t == "HMSADD" || t == "HMSSUB") {
+                    || t == "HMSADD" || t == "HMSSUB"
+                    || t == "DOT" || t == "CROSS") {
                 Evaluator *left = (*evs)[0];
                 Evaluator *right = (*evs)[1];
                 delete evs;
@@ -4479,6 +4839,10 @@ Evaluator *Parser::parseThing() {
                     return new Hmsadd(tpos, left, right);
                 else if (t == "HMSSUB")
                     return new Hmssub(tpos, left, right);
+                else if (t == "DOT")
+                    return new Dot(tpos, left, right);
+                else if (t == "CROSS")
+                    return new Cross(tpos, left, right);
                 else
                     // Shouldn't get here
                     return NULL;

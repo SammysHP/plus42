@@ -2410,12 +2410,13 @@ bool store_command(int4 pc, int command, arg_struct *arg, const char *num_str) {
     if (command != CMD_END && flags.f.printer_exists && (flags.f.trace_print || flags.f.normal_print))
         print_program_line(current_prgm, pc);
     
+    if (command == CMD_END ||
+            (command == CMD_LBL && arg->type == ARGTYPE_STR))
+        rebuild_label_table();
+    else
+        update_label_table(current_prgm, pc, bufptr);
+
     if (!loading_state) {
-        if (command == CMD_END ||
-                (command == CMD_LBL && arg->type == ARGTYPE_STR))
-            rebuild_label_table();
-        else
-            update_label_table(current_prgm, pc, bufptr);
         invalidate_lclbls(current_prgm, false);
         clear_all_rtns();
         draw_varmenu();

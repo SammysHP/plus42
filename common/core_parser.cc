@@ -526,7 +526,7 @@ public:
                         ctx->addLine(CMD_J_ADD);
                 }
         }
-        ctx->addLine(CMD_RCL, "_TMPMAT");
+        ctx->addLine(CMD_RCL, std::string("_TMPMAT"));
         if (trans)
             ctx->addLine(CMD_TRANS);
         ctx->popSubroutine();

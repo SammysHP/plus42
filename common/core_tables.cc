@@ -554,7 +554,7 @@ const command_spec cmd_array[] =
     { /* GEN_EQ */     docmd_gen_eq,      "=",                   0x00, 0x00, 0xa7, 0xa9,  1, ARG_NONE,   2, ALLT },
     { /* GEN_NE */     docmd_gen_ne,      "\014",                0x00, 0x00, 0xa7, 0xaa,  1, ARG_NONE,   2, ALLT },
     { /* GEN_LT */     docmd_gen_lt,      "<",                   0x00, 0x00, 0xa7, 0xab,  1, ARG_NONE,   2, 0x01 },
-    { /* GEN_GT */     docmd_gen_gt,      ">",                   0x04, 0x00, 0xa7, 0xac,  1, ARG_NONE,   2, 0x01 },
+    { /* GEN_GT */     docmd_gen_gt,      ">",                   0x00, 0x00, 0xa7, 0xac,  1, ARG_NONE,   2, 0x01 },
     { /* GEN_LE */     docmd_gen_le,      "\011",                0x00, 0x00, 0xa7, 0xad,  1, ARG_NONE,   2, 0x01 },
     { /* GEN_GE */     docmd_gen_ge,      "\013",                0x00, 0x00, 0xa7, 0xae,  1, ARG_NONE,   2, 0x01 },
     { /* GEN_AND */    docmd_gen_and,     "&&",                  0x00, 0x00, 0xa7, 0xaf,  2, ARG_NONE,   2, 0x01 },

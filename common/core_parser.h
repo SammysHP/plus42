@@ -31,6 +31,7 @@
 ////////////////////////////////
 
 class GeneratorContext;
+class For;
 
 class Evaluator {
 
@@ -51,7 +52,7 @@ class Evaluator {
     virtual Evaluator *removeName() { return this; }
     virtual void getSides(const std::string *name, Evaluator **lhs, Evaluator **rhs);
     virtual bool is(const std::string *name) { return false; }
-    virtual Evaluator *clone() = 0;
+    virtual Evaluator *clone(For *f) = 0;
     virtual void detach() {}
 
     int pos() { return tpos; }
@@ -77,6 +78,7 @@ class Parser {
     std::string pb;
     int pbpos;
     int context;
+    std::vector<For *> forStack;
 
     public:
 

@@ -284,8 +284,8 @@ class Abs : public UnaryEvaluator {
 
     Abs(int pos, Evaluator *ev) : UnaryEvaluator(pos, ev, false) {}
 
-    Evaluator *clone() {
-        return new Abs(tpos, ev->clone());
+    Evaluator *clone(For *f) {
+        return new Abs(tpos, ev->clone(f));
     }
 
     void generateCode(GeneratorContext *ctx) {
@@ -304,8 +304,8 @@ class Acos : public UnaryEvaluator {
 
     Acos(int pos, Evaluator *ev) : UnaryEvaluator(pos, ev, true) {}
 
-    Evaluator *clone() {
-        return new Acos(tpos, ev->clone());
+    Evaluator *clone(For *f) {
+        return new Acos(tpos, ev->clone(f));
     }
 
     bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
@@ -326,8 +326,8 @@ class Acosh : public UnaryEvaluator {
 
     Acosh(int pos, Evaluator *ev) : UnaryEvaluator(pos, ev, true) {}
 
-    Evaluator *clone() {
-        return new Acosh(tpos, ev->clone());
+    Evaluator *clone(For *f) {
+        return new Acosh(tpos, ev->clone(f));
     }
 
     bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
@@ -348,8 +348,8 @@ class Alog : public UnaryEvaluator {
 
     Alog(int pos, Evaluator *ev) : UnaryEvaluator(pos, ev, true) {}
 
-    Evaluator *clone() {
-        return new Alog(tpos, ev->clone());
+    Evaluator *clone(For *f) {
+        return new Alog(tpos, ev->clone(f));
     }
 
     bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
@@ -370,8 +370,8 @@ class And : public BinaryEvaluator {
 
     And(int pos, Evaluator *left, Evaluator *right) : BinaryEvaluator(pos, left, right, false) {}
 
-    Evaluator *clone() {
-        return new And(tpos, left->clone(), right->clone());
+    Evaluator *clone(For *f) {
+        return new And(tpos, left->clone(f), right->clone(f));
     }
 
     bool isBool() { return true; }
@@ -393,8 +393,8 @@ class Angle : public BinaryEvaluator {
 
     Angle(int pos, Evaluator *left, Evaluator *right) : BinaryEvaluator(pos, left, right, false) {}
 
-    Evaluator *clone() {
-        return new Angle(tpos, left->clone(), right->clone());
+    Evaluator *clone(For *f) {
+        return new Angle(tpos, left->clone(f), right->clone(f));
     }
 
     void generateCode(GeneratorContext *ctx) {
@@ -416,8 +416,8 @@ class Asin : public UnaryEvaluator {
 
     Asin(int pos, Evaluator *ev) : UnaryEvaluator(pos, ev, true) {}
 
-    Evaluator *clone() {
-        return new Asin(tpos, ev->clone());
+    Evaluator *clone(For *f) {
+        return new Asin(tpos, ev->clone(f));
     }
 
     bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
@@ -438,8 +438,8 @@ class Asinh : public UnaryEvaluator {
 
     Asinh(int pos, Evaluator *ev) : UnaryEvaluator(pos, ev, true) {}
 
-    Evaluator *clone() {
-        return new Asinh(tpos, ev->clone());
+    Evaluator *clone(For *f) {
+        return new Asinh(tpos, ev->clone(f));
     }
 
     bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
@@ -460,8 +460,8 @@ class Atan : public UnaryEvaluator {
 
     Atan(int pos, Evaluator *ev) : UnaryEvaluator(pos, ev, true) {}
 
-    Evaluator *clone() {
-        return new Atan(tpos, ev->clone());
+    Evaluator *clone(For *f) {
+        return new Atan(tpos, ev->clone(f));
     }
 
     bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
@@ -482,8 +482,8 @@ class Atanh : public UnaryEvaluator {
 
     Atanh(int pos, Evaluator *ev) : UnaryEvaluator(pos, ev, true) {}
 
-    Evaluator *clone() {
-        return new Atanh(tpos, ev->clone());
+    Evaluator *clone(For *f) {
+        return new Atanh(tpos, ev->clone(f));
     }
 
     bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
@@ -504,8 +504,8 @@ class Badd : public BinaryEvaluator {
 
     Badd(int pos, Evaluator *left, Evaluator *right) : BinaryEvaluator(pos, left, right, true) {}
 
-    Evaluator *clone() {
-        return new Badd(tpos, left->clone(), right->clone());
+    Evaluator *clone(For *f) {
+        return new Badd(tpos, left->clone(f), right->clone(f));
     }
 
     bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
@@ -527,8 +527,8 @@ class Band : public BinaryEvaluator {
 
     Band(int pos, Evaluator *left, Evaluator *right) : BinaryEvaluator(pos, left, right, false) {}
 
-    Evaluator *clone() {
-        return new Band(tpos, left->clone(), right->clone());
+    Evaluator *clone(For *f) {
+        return new Band(tpos, left->clone(f), right->clone(f));
     }
 
     void generateCode(GeneratorContext *ctx) {
@@ -549,8 +549,8 @@ class Bdiv : public BinaryEvaluator {
     Bdiv(int pos, Evaluator *left, Evaluator *right) : BinaryEvaluator(pos, left, right, true) {}
     Bdiv(int pos, Evaluator *left, Evaluator *right, bool swapArgs) : BinaryEvaluator(pos, left, right, true, swapArgs) {}
 
-    Evaluator *clone() {
-        return new Bdiv(tpos, left->clone(), right->clone());
+    Evaluator *clone(For *f) {
+        return new Bdiv(tpos, left->clone(f), right->clone(f));
     }
 
     bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
@@ -574,8 +574,8 @@ class Bmul : public BinaryEvaluator {
 
     Bmul(int pos, Evaluator *left, Evaluator *right) : BinaryEvaluator(pos, left, right, true) {}
 
-    Evaluator *clone() {
-        return new Bmul(tpos, left->clone(), right->clone());
+    Evaluator *clone(For *f) {
+        return new Bmul(tpos, left->clone(f), right->clone(f));
     }
 
     bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
@@ -597,8 +597,8 @@ class Bneg : public UnaryEvaluator {
 
     Bneg(int pos, Evaluator *ev) : UnaryEvaluator(pos, ev, true) {}
 
-    Evaluator *clone() {
-        return new Bneg(tpos, ev->clone());
+    Evaluator *clone(For *f) {
+        return new Bneg(tpos, ev->clone(f));
     }
 
     bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
@@ -619,8 +619,8 @@ class Bnot : public UnaryEvaluator {
 
     Bnot(int pos, Evaluator *ev) : UnaryEvaluator(pos, ev, true) {}
 
-    Evaluator *clone() {
-        return new Bnot(tpos, ev->clone());
+    Evaluator *clone(For *f) {
+        return new Bnot(tpos, ev->clone(f));
     }
 
     bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
@@ -641,14 +641,43 @@ class Bor : public BinaryEvaluator {
 
     Bor(int pos, Evaluator *left, Evaluator *right) : BinaryEvaluator(pos, left, right, false) {}
 
-    Evaluator *clone() {
-        return new Bor(tpos, left->clone(), right->clone());
+    Evaluator *clone(For *f) {
+        return new Bor(tpos, left->clone(f), right->clone(f));
     }
 
     void generateCode(GeneratorContext *ctx) {
         left->generateCode(ctx);
         right->generateCode(ctx);
         ctx->addLine(CMD_OR);
+    }
+};
+
+///////////////////
+/////  Break  /////
+///////////////////
+
+class Break : public Evaluator {
+
+    private:
+
+    For *f;
+
+    public:
+
+    Break(int pos, For *f) : Evaluator(pos), f(f) {}
+    
+    Evaluator *clone(For *f) {
+        return new Break(tpos, f);
+    }
+
+    void generateCode(GeneratorContext *ctx);
+
+    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
+        // nope
+    }
+
+    int howMany(const std::string *name) {
+        return 0;
     }
 };
 
@@ -663,8 +692,8 @@ class Bsub : public BinaryEvaluator {
     Bsub(int pos, Evaluator *left, Evaluator *right) : BinaryEvaluator(pos, left, right, true) {}
     Bsub(int pos, Evaluator *left, Evaluator *right, bool swapArgs) : BinaryEvaluator(pos, left, right, true, swapArgs) {}
 
-    Evaluator *clone() {
-        return new Bsub(tpos, left->clone(), right->clone());
+    Evaluator *clone(For *f) {
+        return new Bsub(tpos, left->clone(f), right->clone(f));
     }
 
     bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
@@ -688,8 +717,8 @@ class Bxor : public BinaryEvaluator {
 
     Bxor(int pos, Evaluator *left, Evaluator *right) : BinaryEvaluator(pos, left, right, true) {}
 
-    Evaluator *clone() {
-        return new Bxor(tpos, left->clone(), right->clone());
+    Evaluator *clone(For *f) {
+        return new Bxor(tpos, left->clone(f), right->clone(f));
     }
 
     bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
@@ -722,14 +751,10 @@ class Call : public Evaluator {
         delete evs;
     }
 
-    void detach() {
-        delete evs;
-    }
-
-    Evaluator *clone() {
+    Evaluator *clone(For *f) {
         std::vector<Evaluator *> *evs2 = new std::vector<Evaluator *>;
         for (int i = 0; i < evs->size(); i++)
-            evs2->push_back((*evs)[i]->clone());
+            evs2->push_back((*evs)[i]->clone(f));
         return new Call(tpos, name, evs2);
     }
 
@@ -775,7 +800,7 @@ class Cdate : public Evaluator {
 
     Cdate(int pos) : Evaluator(pos) {}
 
-    Evaluator *clone() {
+    Evaluator *clone(For *f) {
         return new Cdate(tpos);
     }
 
@@ -802,8 +827,8 @@ class Comb : public BinaryEvaluator {
 
     Comb(int pos, Evaluator *left, Evaluator *right) : BinaryEvaluator(pos, left, right, false) {}
 
-    Evaluator *clone() {
-        return new Comb(tpos, left->clone(), right->clone());
+    Evaluator *clone(For *f) {
+        return new Comb(tpos, left->clone(f), right->clone(f));
     }
 
     void generateCode(GeneratorContext *ctx) {
@@ -823,8 +848,8 @@ class CompareEQ : public BinaryEvaluator {
 
     CompareEQ(int pos, Evaluator *left, Evaluator *right) : BinaryEvaluator(pos, left, right, false) {}
 
-    Evaluator *clone() {
-        return new CompareEQ(tpos, left->clone(), right->clone());
+    Evaluator *clone(For *f) {
+        return new CompareEQ(tpos, left->clone(f), right->clone(f));
     }
 
     bool isBool() { return true; }
@@ -846,8 +871,8 @@ class CompareNE : public BinaryEvaluator {
 
     CompareNE(int pos, Evaluator *left, Evaluator *right) : BinaryEvaluator(pos, left, right, false) {}
 
-    Evaluator *clone() {
-        return new CompareNE(tpos, left->clone(), right->clone());
+    Evaluator *clone(For *f) {
+        return new CompareNE(tpos, left->clone(f), right->clone(f));
     }
 
     bool isBool() { return true; }
@@ -869,8 +894,8 @@ class CompareLT : public BinaryEvaluator {
 
     CompareLT(int pos, Evaluator *left, Evaluator *right) : BinaryEvaluator(pos, left, right, false) {}
 
-    Evaluator *clone() {
-        return new CompareLT(tpos, left->clone(), right->clone());
+    Evaluator *clone(For *f) {
+        return new CompareLT(tpos, left->clone(f), right->clone(f));
     }
 
     bool isBool() { return true; }
@@ -892,8 +917,8 @@ class CompareLE : public BinaryEvaluator {
 
     CompareLE(int pos, Evaluator *left, Evaluator *right) : BinaryEvaluator(pos, left, right, false) {}
 
-    Evaluator *clone() {
-        return new CompareLE(tpos, left->clone(), right->clone());
+    Evaluator *clone(For *f) {
+        return new CompareLE(tpos, left->clone(f), right->clone(f));
     }
 
     bool isBool() { return true; }
@@ -915,8 +940,8 @@ class CompareGT : public BinaryEvaluator {
 
     CompareGT(int pos, Evaluator *left, Evaluator *right) : BinaryEvaluator(pos, left, right, false) {}
 
-    Evaluator *clone() {
-        return new CompareGT(tpos, left->clone(), right->clone());
+    Evaluator *clone(For *f) {
+        return new CompareGT(tpos, left->clone(f), right->clone(f));
     }
 
     bool isBool() { return true; }
@@ -938,8 +963,8 @@ class CompareGE : public BinaryEvaluator {
 
     CompareGE(int pos, Evaluator *left, Evaluator *right) : BinaryEvaluator(pos, left, right, false) {}
 
-    Evaluator *clone() {
-        return new CompareGE(tpos, left->clone(), right->clone());
+    Evaluator *clone(For *f) {
+        return new CompareGE(tpos, left->clone(f), right->clone(f));
     }
 
     bool isBool() { return true; }
@@ -948,6 +973,35 @@ class CompareGE : public BinaryEvaluator {
         left->generateCode(ctx);
         right->generateCode(ctx);
         ctx->addLine(CMD_GEN_GE);
+    }
+};
+
+//////////////////////
+/////  Continue  /////
+//////////////////////
+
+class Continue : public Evaluator {
+
+    private:
+
+    For *f;
+
+    public:
+
+    Continue(int pos, For *f) : Evaluator(pos), f(f) {}
+    
+    Evaluator *clone(For *f) {
+        return new Continue(tpos, f);
+    }
+
+    void generateCode(GeneratorContext *ctx);
+
+    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
+        // nope
+    }
+
+    int howMany(const std::string *name) {
+        return 0;
     }
 };
 
@@ -961,8 +1015,8 @@ class Cos : public UnaryEvaluator {
 
     Cos(int pos, Evaluator *ev) : UnaryEvaluator(pos, ev, true) {}
 
-    Evaluator *clone() {
-        return new Cos(tpos, ev->clone());
+    Evaluator *clone(For *f) {
+        return new Cos(tpos, ev->clone(f));
     }
 
     bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
@@ -983,8 +1037,8 @@ class Cosh : public UnaryEvaluator {
 
     Cosh(int pos, Evaluator *ev) : UnaryEvaluator(pos, ev, true) {}
 
-    Evaluator *clone() {
-        return new Cosh(tpos, ev->clone());
+    Evaluator *clone(For *f) {
+        return new Cosh(tpos, ev->clone(f));
     }
 
     bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
@@ -1005,7 +1059,7 @@ class Ctime : public Evaluator {
 
     Ctime(int pos) : Evaluator(pos) {}
 
-    Evaluator *clone() {
+    Evaluator *clone(For *f) {
         return new Ctime(tpos);
     }
 
@@ -1033,8 +1087,8 @@ class Date : public BinaryEvaluator {
     Date(int pos, Evaluator *left, Evaluator *right) : BinaryEvaluator(pos, left, right, true) {}
     Date(int pos, Evaluator *left, Evaluator *right, bool swapArgs) : BinaryEvaluator(pos, left, right, true, swapArgs) {}
 
-    Evaluator *clone() {
-        return new Date(tpos, left->clone(), right->clone());
+    Evaluator *clone(For *f) {
+        return new Date(tpos, left->clone(f), right->clone(f));
     }
 
     bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
@@ -1064,20 +1118,14 @@ class Ddays : public Evaluator {
 
     Ddays(int pos, Evaluator *date1, Evaluator *date2, Evaluator *cal) : Evaluator(pos), date1(date1), date2(date2), cal(cal) {}
 
-    Evaluator *clone() {
-        return new Ddays(tpos, date1->clone(), date2->clone(), cal->clone());
+    Evaluator *clone(For *f) {
+        return new Ddays(tpos, date1->clone(f), date2->clone(f), cal->clone(f));
     }
 
     ~Ddays() {
         delete date1;
         delete date2;
         delete cal;
-    }
-
-    void detach() {
-        date1 = NULL;
-        date2 = NULL;
-        cal = NULL;
     }
 
     void generateCode(GeneratorContext *ctx) {
@@ -1113,8 +1161,8 @@ class Dec : public UnaryEvaluator {
 
     Dec(int pos, Evaluator *ev) : UnaryEvaluator(pos, ev, true) {}
 
-    Evaluator *clone() {
-        return new Dec(tpos, ev->clone());
+    Evaluator *clone(For *f) {
+        return new Dec(tpos, ev->clone(f));
     }
 
     bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
@@ -1135,8 +1183,8 @@ class Deg : public UnaryEvaluator {
 
     Deg(int pos, Evaluator *ev) : UnaryEvaluator(pos, ev, true) {}
 
-    Evaluator *clone() {
-        return new Deg(tpos, ev->clone());
+    Evaluator *clone(For *f) {
+        return new Deg(tpos, ev->clone(f));
     }
 
     bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
@@ -1158,8 +1206,8 @@ class Difference : public BinaryEvaluator {
     Difference(int pos, Evaluator *left, Evaluator *right) : BinaryEvaluator(pos, left, right, true) {}
     Difference(int pos, Evaluator *left, Evaluator *right, bool swapArgs) : BinaryEvaluator(pos, left, right, true, swapArgs) {}
 
-    Evaluator *clone() {
-        return new Difference(tpos, left->clone(), right->clone());
+    Evaluator *clone(For *f) {
+        return new Difference(tpos, left->clone(f), right->clone(f));
     }
 
     bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
@@ -1195,16 +1243,11 @@ class Ell : public Evaluator {
         delete right;
     }
 
-    void detach() {
-        left = NULL;
-        right = NULL;
-    }
-
-    Evaluator *clone() {
+    Evaluator *clone(For *f) {
         if (name != "")
-            return new Ell(tpos, name, right->clone(), compatMode);
+            return new Ell(tpos, name, right->clone(f), compatMode);
         else
-            return new Ell(tpos, left->clone(), right->clone(), compatMode);
+            return new Ell(tpos, left->clone(f), right->clone(f), compatMode);
     }
 
     void generateCode(GeneratorContext *ctx) {
@@ -1241,8 +1284,8 @@ class Equation : public BinaryEvaluator {
 
     Equation(int pos, Evaluator *left, Evaluator *right) : BinaryEvaluator(pos, left, right, true) {}
 
-    Evaluator *clone() {
-        return new Equation(tpos, left->clone(), right->clone());
+    Evaluator *clone(For *f) {
+        return new Equation(tpos, left->clone(f), right->clone(f));
     }
 
     bool isEquation() {
@@ -1283,7 +1326,7 @@ class Ess : public Evaluator {
 
     Ess(int pos, std::string name) : Evaluator(pos), name(name) {}
 
-    Evaluator *clone() {
+    Evaluator *clone(For *f) {
         return new Ess(tpos, name);
     }
 
@@ -1313,8 +1356,8 @@ class Exp : public UnaryEvaluator {
 
     Exp(int pos, Evaluator *ev) : UnaryEvaluator(pos, ev, true) {}
 
-    Evaluator *clone() {
-        return new Exp(tpos, ev->clone());
+    Evaluator *clone(For *f) {
+        return new Exp(tpos, ev->clone(f));
     }
 
     bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
@@ -1335,8 +1378,8 @@ class Expm1 : public UnaryEvaluator {
 
     Expm1(int pos, Evaluator *ev) : UnaryEvaluator(pos, ev, true) {}
 
-    Evaluator *clone() {
-        return new Expm1(tpos, ev->clone());
+    Evaluator *clone(For *f) {
+        return new Expm1(tpos, ev->clone(f));
     }
 
     bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
@@ -1357,13 +1400,107 @@ class Fact : public UnaryEvaluator {
 
     Fact(int pos, Evaluator *ev) : UnaryEvaluator(pos, ev, false) {}
 
-    Evaluator *clone() {
-        return new Fact(tpos, ev->clone());
+    Evaluator *clone(For *f) {
+        return new Fact(tpos, ev->clone(f));
     }
 
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
         ctx->addLine(CMD_FACT);
+    }
+};
+
+/////////////////
+/////  For  /////
+/////////////////
+
+class For : public Evaluator {
+
+    private:
+
+    Evaluator *init, *cond, *next;
+    std::vector<Evaluator *> *evs;
+    int breakLbl, continueLbl;
+
+    public:
+
+    For(int pos) : Evaluator(pos), init(NULL), cond(NULL), next(NULL), evs(NULL) {}
+
+    ~For() {
+        delete init;
+        delete cond;
+        delete next;
+        if (evs != NULL) {
+            for (int i = 0; i < evs->size(); i++)
+                delete (*evs)[i];
+            delete evs;
+        }
+    }
+
+    Evaluator *clone(For *) {
+        For *f = new For(tpos);
+        std::vector<Evaluator *> *evs2 = new std::vector<Evaluator *>;
+        for (int i = 0; i < evs->size(); i++)
+            evs2->push_back((*evs)[i]->clone(this));
+        f->finish_init(init->clone(this), cond->clone(this), next->clone(this), evs2);
+        return f;
+    }
+
+    void finish_init(Evaluator *init, Evaluator *cond, Evaluator *next, std::vector<Evaluator *> *evs) {
+        this->init = init;
+        this->cond = cond;
+        this->next = next;
+        this->evs = evs;
+    }
+
+    int getBreak() {
+        return breakLbl;
+    }
+
+    int getContinue() {
+        return continueLbl;
+    }
+
+    void generateCode(GeneratorContext *ctx) {
+        breakLbl = ctx->nextLabel();
+        continueLbl = ctx->nextLabel();
+        int top = ctx->nextLabel();
+        int test = ctx->nextLabel();
+        init->generateCode(ctx);
+        ctx->addLine(CMD_GTOL, test);
+        ctx->addLine(CMD_LBL, top);
+        for (int i = 0; i < evs->size(); i++) {
+            (*evs)[i]->generateCode(ctx);
+            ctx->addLine(CMD_SWAP);
+            ctx->addLine(CMD_DROP);
+        }
+        ctx->addLine(CMD_LBL, continueLbl);
+        next->generateCode(ctx);
+        ctx->addLine(CMD_DROP);
+        ctx->addLine(CMD_LBL, test);
+        cond->generateCode(ctx);
+        ctx->addLine(CMD_IF_T);
+        ctx->addLine(CMD_GTOL, top);
+        ctx->addLine(CMD_LBL, breakLbl);
+    }
+
+    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
+        init->collectVariables(vars, locals);
+        cond->collectVariables(vars, locals);
+        next->collectVariables(vars, locals);
+        for (int i = 0; i < evs->size(); i++)
+            (*evs)[i]->collectVariables(vars, locals);
+    }
+
+    int howMany(const std::string *name) {
+        if (init->howMany(name) != 0
+                || cond->howMany(name) != 0
+                || next->howMany(name) != 0)
+            return -1;
+        for (int i = 0; i < evs->size(); i++)
+            if ((*evs)[i]->howMany(name) != 0)
+                return -1;
+        return 0;
     }
 };
 
@@ -1377,8 +1514,8 @@ class Fp : public UnaryEvaluator {
 
     Fp(int pos, Evaluator *ev) : UnaryEvaluator(pos, ev, false) {}
 
-    Evaluator *clone() {
-        return new Fp(tpos, ev->clone());
+    Evaluator *clone(For *f) {
+        return new Fp(tpos, ev->clone(f));
     }
 
     void generateCode(GeneratorContext *ctx) {
@@ -1397,8 +1534,8 @@ class Gamma : public UnaryEvaluator {
 
     Gamma(int pos, Evaluator *ev) : UnaryEvaluator(pos, ev, false) {}
 
-    Evaluator *clone() {
-        return new Gamma(tpos, ev->clone());
+    Evaluator *clone(For *f) {
+        return new Gamma(tpos, ev->clone(f));
     }
 
     void generateCode(GeneratorContext *ctx) {
@@ -1422,7 +1559,7 @@ class Gee : public Evaluator {
 
     Gee(int pos, std::string name, bool compatMode) : Evaluator(pos), name(name), compatMode(compatMode) {}
 
-    Evaluator *clone() {
+    Evaluator *clone(For *f) {
         return new Gee(tpos, name, compatMode);
     }
 
@@ -1449,8 +1586,8 @@ class Hms : public UnaryEvaluator {
 
     Hms(int pos, Evaluator *ev) : UnaryEvaluator(pos, ev, true) {}
 
-    Evaluator *clone() {
-        return new Hms(tpos, ev->clone());
+    Evaluator *clone(For *f) {
+        return new Hms(tpos, ev->clone(f));
     }
 
     bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
@@ -1471,8 +1608,8 @@ class Hmsadd : public BinaryEvaluator {
 
     Hmsadd(int pos, Evaluator *left, Evaluator *right) : BinaryEvaluator(pos, left, right, true) {}
 
-    Evaluator *clone() {
-        return new Hmsadd(tpos, left->clone(), right->clone());
+    Evaluator *clone(For *f) {
+        return new Hmsadd(tpos, left->clone(f), right->clone(f));
     }
 
     bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
@@ -1495,8 +1632,8 @@ class Hmssub : public BinaryEvaluator {
     Hmssub(int pos, Evaluator *left, Evaluator *right) : BinaryEvaluator(pos, left, right, true) {}
     Hmssub(int pos, Evaluator *left, Evaluator *right, bool swapArgs) : BinaryEvaluator(pos, left, right, true, swapArgs) {}
 
-    Evaluator *clone() {
-        return new Hmssub(tpos, left->clone(), right->clone());
+    Evaluator *clone(For *f) {
+        return new Hmssub(tpos, left->clone(f), right->clone(f));
     }
 
     bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
@@ -1520,8 +1657,8 @@ class Hrs : public UnaryEvaluator {
 
     Hrs(int pos, Evaluator *ev) : UnaryEvaluator(pos, ev, true) {}
 
-    Evaluator *clone() {
-        return new Hrs(tpos, ev->clone());
+    Evaluator *clone(For *f) {
+        return new Hrs(tpos, ev->clone(f));
     }
 
     bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
@@ -1542,8 +1679,8 @@ class Idiv : public BinaryEvaluator {
 
     Idiv(int pos, Evaluator *left, Evaluator *right) : BinaryEvaluator(pos, left, right, false) {}
 
-    Evaluator *clone() {
-        return new Idiv(tpos, left->clone(), right->clone());
+    Evaluator *clone(For *f) {
+        return new Idiv(tpos, left->clone(f), right->clone(f));
     }
 
     void generateCode(GeneratorContext *ctx) {
@@ -1575,14 +1712,8 @@ class If : public Evaluator {
         delete falseEv;
     }
 
-    void detach() {
-        condition = NULL;
-        trueEv = NULL;
-        falseEv = NULL;
-    }
-
-    Evaluator *clone() {
-        return new If(tpos, condition->clone(), trueEv->clone(), falseEv->clone());
+    Evaluator *clone(For *f) {
+        return new If(tpos, condition->clone(f), trueEv->clone(f), falseEv->clone(f));
     }
 
     void generateCode(GeneratorContext *ctx) {
@@ -1624,8 +1755,8 @@ class Int : public UnaryEvaluator {
 
     Int(int pos, Evaluator *ev) : UnaryEvaluator(pos, ev, false) {}
 
-    Evaluator *clone() {
-        return new Int(tpos, ev->clone());
+    Evaluator *clone(For *f) {
+        return new Int(tpos, ev->clone(f));
     }
 
     void generateCode(GeneratorContext *ctx) {
@@ -1666,13 +1797,8 @@ class Integ : public Evaluator {
         delete ulim;
     }
 
-    void detach() {
-        llim = NULL;
-        ulim = NULL;
-    }
-
-    Evaluator *clone() {
-        return new Integ(tpos, xeq, name, integ_var, llim->clone(), ulim->clone());
+    Evaluator *clone(For *f) {
+        return new Integ(tpos, xeq, name, integ_var, llim->clone(f), ulim->clone(f));
     }
 
     void generateCode(GeneratorContext *ctx) {
@@ -1731,8 +1857,8 @@ class Ip : public UnaryEvaluator {
 
     Ip(int pos, Evaluator *ev) : UnaryEvaluator(pos, ev, false) {}
 
-    Evaluator *clone() {
-        return new Ip(tpos, ev->clone());
+    Evaluator *clone(For *f) {
+        return new Ip(tpos, ev->clone(f));
     }
 
     void generateCode(GeneratorContext *ctx) {
@@ -1751,8 +1877,8 @@ class Inv : public UnaryEvaluator {
 
     Inv(int pos, Evaluator *ev) : UnaryEvaluator(pos, ev, true) {}
 
-    Evaluator *clone() {
-        return new Inv(tpos, ev->clone());
+    Evaluator *clone(For *f) {
+        return new Inv(tpos, ev->clone(f));
     }
 
     bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
@@ -1784,13 +1910,8 @@ class Item : public Evaluator {
         delete ev2;
     }
 
-    void detach() {
-        ev1 = NULL;
-        ev2 = NULL;
-    }
-
-    Evaluator *clone() {
-        Evaluator *ret = new Item(tpos, name, ev1->clone(), ev2 == NULL ? NULL : ev2->clone());
+    Evaluator *clone(For *f) {
+        Evaluator *ret = new Item(tpos, name, ev1->clone(f), ev2 == NULL ? NULL : ev2->clone(f));
         if (lvalue)
             ret->makeLvalue();
         return ret;
@@ -1842,7 +1963,7 @@ class Literal : public Evaluator {
 
     Literal(int pos, phloat value) : Evaluator(pos), value(value) {}
 
-    Evaluator *clone() {
+    Evaluator *clone(For *f) {
         return new Literal(tpos, value);
     }
 
@@ -1869,8 +1990,8 @@ class Ln : public UnaryEvaluator {
 
     Ln(int pos, Evaluator *ev) : UnaryEvaluator(pos, ev, true) {}
 
-    Evaluator *clone() {
-        return new Ln(tpos, ev->clone());
+    Evaluator *clone(For *f) {
+        return new Ln(tpos, ev->clone(f));
     }
 
     bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
@@ -1891,8 +2012,8 @@ class Ln1p : public UnaryEvaluator {
 
     Ln1p(int pos, Evaluator *ev) : UnaryEvaluator(pos, ev, true) {}
 
-    Evaluator *clone() {
-        return new Ln1p(tpos, ev->clone());
+    Evaluator *clone(For *f) {
+        return new Ln1p(tpos, ev->clone(f));
     }
 
     bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
@@ -1913,8 +2034,8 @@ class Log : public UnaryEvaluator {
 
     Log(int pos, Evaluator *ev) : UnaryEvaluator(pos, ev, true) {}
 
-    Evaluator *clone() {
-        return new Log(tpos, ev->clone());
+    Evaluator *clone(For *f) {
+        return new Log(tpos, ev->clone(f));
     }
 
     bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
@@ -1944,15 +2065,11 @@ class Max : public Evaluator {
             delete (*evs)[i];
         delete evs;
     }
-    
-    void detach() {
-        delete evs;
-    }
 
-    Evaluator *clone() {
+    Evaluator *clone(For *f) {
         std::vector<Evaluator *> *evs2 = new std::vector<Evaluator *>;
         for (int i = 0; i < evs->size(); i++)
-            evs2->push_back((*evs)[i]->clone());
+            evs2->push_back((*evs)[i]->clone(f));
         return new Max(tpos, evs2);
     }
 
@@ -2005,14 +2122,10 @@ class Min : public Evaluator {
         delete evs;
     }
 
-    void detach() {
-        delete evs;
-    }
-
-    Evaluator *clone() {
+    Evaluator *clone(For *f) {
         std::vector<Evaluator *> *evs2 = new std::vector<Evaluator *>;
         for (int i = 0; i < evs->size(); i++)
-            evs2->push_back((*evs)[i]->clone());
+            evs2->push_back((*evs)[i]->clone(f));
         return new Min(tpos, evs2);
     }
 
@@ -2055,8 +2168,8 @@ class Mod : public BinaryEvaluator {
 
     Mod(int pos, Evaluator *left, Evaluator *right) : BinaryEvaluator(pos, left, right, false) {}
 
-    Evaluator *clone() {
-        return new Mod(tpos, left->clone(), right->clone());
+    Evaluator *clone(For *f) {
+        return new Mod(tpos, left->clone(f), right->clone(f));
     }
 
     void generateCode(GeneratorContext *ctx) {
@@ -2086,8 +2199,8 @@ class NameTag : public UnaryEvaluator {
         delete params;
     }
 
-    Evaluator *clone() {
-        return new NameTag(tpos, name, new std::vector<std::string>(*params), ev->clone());
+    Evaluator *clone(For *f) {
+        return new NameTag(tpos, name, new std::vector<std::string>(*params), ev->clone(f));
     }
     
     std::string eqnName() {
@@ -2120,8 +2233,8 @@ class Negative : public UnaryEvaluator {
 
     Negative(int pos, Evaluator *ev) : UnaryEvaluator(pos, ev, true) {}
 
-    Evaluator *clone() {
-        return new Negative(tpos, ev->clone());
+    Evaluator *clone(For *f) {
+        return new Negative(tpos, ev->clone(f));
     }
 
     bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
@@ -2142,7 +2255,7 @@ class Newstr : public Evaluator {
 
     Newstr(int pos) : Evaluator(pos) {}
 
-    Evaluator *clone() {
+    Evaluator *clone(For *f) {
         return new Newstr(tpos);
     }
 
@@ -2169,7 +2282,7 @@ class Newlist : public Evaluator {
 
     Newlist(int pos) : Evaluator(pos) {}
 
-    Evaluator *clone() {
+    Evaluator *clone(For *f) {
         return new Newlist(tpos);
     }
 
@@ -2196,8 +2309,8 @@ class Not : public UnaryEvaluator {
 
     Not(int pos, Evaluator *ev) : UnaryEvaluator(pos, ev, false) {}
 
-    Evaluator *clone() {
-        return new Not(tpos, ev->clone());
+    Evaluator *clone(For *f) {
+        return new Not(tpos, ev->clone(f));
     }
 
     bool isBool() { return true; }
@@ -2218,8 +2331,8 @@ class Oct : public UnaryEvaluator {
 
     Oct(int pos, Evaluator *ev) : UnaryEvaluator(pos, ev, true) {}
 
-    Evaluator *clone() {
-        return new Oct(tpos, ev->clone());
+    Evaluator *clone(For *f) {
+        return new Oct(tpos, ev->clone(f));
     }
 
     bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
@@ -2240,8 +2353,8 @@ class Or : public BinaryEvaluator {
 
     Or(int pos, Evaluator *left, Evaluator *right) : BinaryEvaluator(pos, left, right, false) {}
 
-    Evaluator *clone() {
-        return new Or(tpos, left->clone(), right->clone());
+    Evaluator *clone(For *f) {
+        return new Or(tpos, left->clone(f), right->clone(f));
     }
 
     bool isBool() { return true; }
@@ -2263,8 +2376,8 @@ class Perm : public BinaryEvaluator {
 
     Perm(int pos, Evaluator *left, Evaluator *right) : BinaryEvaluator(pos, left, right, false) {}
 
-    Evaluator *clone() {
-        return new Perm(tpos, left->clone(), right->clone());
+    Evaluator *clone(For *f) {
+        return new Perm(tpos, left->clone(f), right->clone(f));
     }
 
     bool isBool() { return true; }
@@ -2286,7 +2399,7 @@ class Pi : public Evaluator {
 
     Pi(int pos) : Evaluator(pos) {}
 
-    Evaluator *clone() {
+    Evaluator *clone(For *f) {
         return new Pi(tpos);
     }
 
@@ -2314,8 +2427,8 @@ class Power : public BinaryEvaluator {
     Power(int pos, Evaluator *left, Evaluator *right) : BinaryEvaluator(pos, left, right, true) {}
     Power(int pos, Evaluator *left, Evaluator *right, bool swapArgs) : BinaryEvaluator(pos, left, right, true, swapArgs) {}
 
-    Evaluator *clone() {
-        return new Power(tpos, left->clone(), right->clone());
+    Evaluator *clone(For *f) {
+        return new Power(tpos, left->clone(f), right->clone(f));
     }
 
     bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
@@ -2339,8 +2452,8 @@ class Product : public BinaryEvaluator {
 
     Product(int pos, Evaluator *left, Evaluator *right) : BinaryEvaluator(pos, left, right, true) {}
 
-    Evaluator *clone() {
-        return new Product(tpos, left->clone(), right->clone());
+    Evaluator *clone(For *f) {
+        return new Product(tpos, left->clone(f), right->clone(f));
     }
 
     bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
@@ -2363,8 +2476,8 @@ class Quotient : public BinaryEvaluator {
     Quotient(int pos, Evaluator *left, Evaluator *right) : BinaryEvaluator(pos, left, right, true) {}
     Quotient(int pos, Evaluator *left, Evaluator *right, bool swapArgs) : BinaryEvaluator(pos, left, right, true, swapArgs) {}
 
-    Evaluator *clone() {
-        return new Quotient(tpos, left->clone(), right->clone());
+    Evaluator *clone(For *f) {
+        return new Quotient(tpos, left->clone(f), right->clone(f));
     }
 
     bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
@@ -2388,8 +2501,8 @@ class Rad : public UnaryEvaluator {
 
     Rad(int pos, Evaluator *ev) : UnaryEvaluator(pos, ev, true) {}
 
-    Evaluator *clone() {
-        return new Rad(tpos, ev->clone());
+    Evaluator *clone(For *f) {
+        return new Rad(tpos, ev->clone(f));
     }
 
     bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
@@ -2410,8 +2523,8 @@ class Radius : public BinaryEvaluator {
 
     Radius(int pos, Evaluator *left, Evaluator *right) : BinaryEvaluator(pos, left, right, false) {}
 
-    Evaluator *clone() {
-        return new Radius(tpos, left->clone(), right->clone());
+    Evaluator *clone(For *f) {
+        return new Radius(tpos, left->clone(f), right->clone(f));
     }
 
     void generateCode(GeneratorContext *ctx) {
@@ -2434,7 +2547,7 @@ class Random : public Evaluator {
 
     Random(int pos) : Evaluator(pos) {}
 
-    Evaluator *clone() {
+    Evaluator *clone(For *f) {
         return new Random(tpos);
     }
 
@@ -2471,11 +2584,7 @@ class Register : public Evaluator {
         delete ev;
     }
 
-    void detach() {
-        ev = NULL;
-    }
-
-    Evaluator *clone() {
+    Evaluator *clone(For *f) {
         if (ev == NULL)
             return new Register(tpos, index);
         else
@@ -2522,8 +2631,8 @@ class Rnd : public BinaryEvaluator {
 
     Rnd(int pos, Evaluator *left, Evaluator *right, bool trunc) : BinaryEvaluator(pos, left, right, false), trunc(trunc) {}
 
-    Evaluator *clone() {
-        return new Rnd(tpos, left->clone(), right->clone(), trunc);
+    Evaluator *clone(For *f) {
+        return new Rnd(tpos, left->clone(f), right->clone(f), trunc);
     }
 
     void generateCode(GeneratorContext *ctx) {
@@ -2552,6 +2661,54 @@ class Rnd : public BinaryEvaluator {
 };
 
 /////////////////
+/////  Seq  /////
+/////////////////
+
+class Seq : public Evaluator {
+
+    private:
+
+    std::vector<Evaluator *> *evs;
+
+    public:
+
+    Seq(int pos, std::vector<Evaluator *> *evs) : Evaluator(pos), evs(evs) {}
+
+    ~Seq() {
+        for (int i = 0; i < evs->size(); i++)
+            delete (*evs)[i];
+        delete evs;
+    }
+
+    Evaluator *clone(For *f) {
+        std::vector<Evaluator *> *evs2 = new std::vector<Evaluator *>;
+        for (int i = 0; i < evs->size(); i++)
+            evs2->push_back((*evs)[i]->clone(f));
+        return new Seq(tpos, evs2);
+    }
+
+    void generateCode(GeneratorContext *ctx) {
+        for (int i = 0; i < evs->size() - 1; i++) {
+            (*evs)[i]->generateCode(ctx);
+            ctx->addLine(CMD_DROP);
+        }
+        evs->back()->generateCode(ctx);
+    }
+
+    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
+        for (int i = 0; i < evs->size(); i++)
+            (*evs)[i]->collectVariables(vars, locals);
+    }
+
+    int howMany(const std::string *name) {
+        for (int i = 0; i < evs->size(); i++)
+            if ((*evs)[i]->howMany(name) != 0)
+                return -1;
+        return 0;
+    }
+};
+
+/////////////////
 /////  Sgn  /////
 /////////////////
 
@@ -2561,8 +2718,8 @@ class Sgn : public UnaryEvaluator {
 
     Sgn(int pos, Evaluator *ev) : UnaryEvaluator(pos, ev, false) {}
 
-    Evaluator *clone() {
-        return new Sgn(tpos, ev->clone());
+    Evaluator *clone(For *f) {
+        return new Sgn(tpos, ev->clone(f));
     }
 
     void generateCode(GeneratorContext *ctx) {
@@ -2598,15 +2755,8 @@ class Sigma : public Evaluator {
         delete ev;
     }
 
-    void detach() {
-        from = NULL;
-        to = NULL;
-        step = NULL;
-        ev = NULL;
-    }
-
-    Evaluator *clone() {
-        return new Sigma(tpos, name, from->clone(), to->clone(), step->clone(), ev->clone());
+    Evaluator *clone(For *f) {
+        return new Sigma(tpos, name, from->clone(NULL), to->clone(NULL), step->clone(NULL), ev->clone(NULL));
     }
 
     void generateCode(GeneratorContext *ctx) {
@@ -2671,8 +2821,8 @@ class Sin : public UnaryEvaluator {
 
     Sin(int pos, Evaluator *ev) : UnaryEvaluator(pos, ev, true) {}
 
-    Evaluator *clone() {
-        return new Sin(tpos, ev->clone());
+    Evaluator *clone(For *f) {
+        return new Sin(tpos, ev->clone(f));
     }
 
     bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
@@ -2693,8 +2843,8 @@ class Sinh : public UnaryEvaluator {
 
     Sinh(int pos, Evaluator *ev) : UnaryEvaluator(pos, ev, true) {}
 
-    Evaluator *clone() {
-        return new Sinh(tpos, ev->clone());
+    Evaluator *clone(For *f) {
+        return new Sinh(tpos, ev->clone(f));
     }
 
     bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
@@ -2719,8 +2869,8 @@ class Size : public UnaryEvaluator {
 
     Size(int pos, Evaluator *ev, char mode) : UnaryEvaluator(pos, ev, false), mode(mode) {}
 
-    Evaluator *clone() {
-        return new Size(tpos, ev->clone(), mode);
+    Evaluator *clone(For *f) {
+        return new Size(tpos, ev->clone(f), mode);
     }
 
     void generateCode(GeneratorContext *ctx) {
@@ -2755,8 +2905,8 @@ class Sq : public UnaryEvaluator {
 
     Sq(int pos, Evaluator *ev) : UnaryEvaluator(pos, ev, true) {}
 
-    Evaluator *clone() {
-        return new Sq(tpos, ev->clone());
+    Evaluator *clone(For *f) {
+        return new Sq(tpos, ev->clone(f));
     }
 
     bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
@@ -2777,8 +2927,8 @@ class Sqrt : public UnaryEvaluator {
 
     Sqrt(int pos, Evaluator *ev) : UnaryEvaluator(pos, ev, true) {}
 
-    Evaluator *clone() {
-        return new Sqrt(tpos, ev->clone());
+    Evaluator *clone(For *f) {
+        return new Sqrt(tpos, ev->clone(f));
     }
 
     bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
@@ -2799,8 +2949,8 @@ class Sum : public BinaryEvaluator {
 
     Sum(int pos, Evaluator *left, Evaluator *right) : BinaryEvaluator(pos, left, right, true) {}
 
-    Evaluator *clone() {
-        return new Sum(tpos, left->clone(), right->clone());
+    Evaluator *clone(For *f) {
+        return new Sum(tpos, left->clone(f), right->clone(f));
     }
 
     bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
@@ -2822,8 +2972,8 @@ class Tan : public UnaryEvaluator {
 
     Tan(int pos, Evaluator *ev) : UnaryEvaluator(pos, ev, true) {}
 
-    Evaluator *clone() {
-        return new Tan(tpos, ev->clone());
+    Evaluator *clone(For *f) {
+        return new Tan(tpos, ev->clone(f));
     }
 
     bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
@@ -2844,8 +2994,8 @@ class Tanh : public UnaryEvaluator {
 
     Tanh(int pos, Evaluator *ev) : UnaryEvaluator(pos, ev, true) {}
 
-    Evaluator *clone() {
-        return new Tanh(tpos, ev->clone());
+    Evaluator *clone(For *f) {
+        return new Tanh(tpos, ev->clone(f));
     }
 
     bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
@@ -2870,7 +3020,7 @@ class Variable : public Evaluator {
 
     Variable(int pos, std::string name) : Evaluator(pos), nam(name) {}
 
-    Evaluator *clone() {
+    Evaluator *clone(For *f) {
         return new Variable(tpos, nam);
     }
     
@@ -2901,8 +3051,8 @@ class Xcoord : public BinaryEvaluator {
 
     Xcoord(int pos, Evaluator *left, Evaluator *right) : BinaryEvaluator(pos, left, right, false) {}
 
-    Evaluator *clone() {
-        return new Xcoord(tpos, left->clone(), right->clone());
+    Evaluator *clone(For *f) {
+        return new Xcoord(tpos, left->clone(f), right->clone(f));
     }
 
     void generateCode(GeneratorContext *ctx) {
@@ -2936,14 +3086,10 @@ class Xeq : public Evaluator {
         delete evs;
     }
 
-    void detach() {
-        delete evs;
-    }
-
-    Evaluator *clone() {
+    Evaluator *clone(For *f) {
         std::vector<Evaluator *> *evs2 = new std::vector<Evaluator *>;
         for (int i = 0; i < evs->size(); i++)
-            evs2->push_back((*evs)[i]->clone());
+            evs2->push_back((*evs)[i]->clone(f));
         return new Xeq(tpos, name, evs2);
     }
 
@@ -2987,8 +3133,8 @@ class Xor : public BinaryEvaluator {
 
     Xor(int pos, Evaluator *left, Evaluator *right) : BinaryEvaluator(pos, left, right, false) {}
 
-    Evaluator *clone() {
-        return new Xor(tpos, left->clone(), right->clone());
+    Evaluator *clone(For *f) {
+        return new Xor(tpos, left->clone(f), right->clone(f));
     }
 
     bool isBool() { return true; }
@@ -3010,8 +3156,8 @@ class Ycoord : public BinaryEvaluator {
 
     Ycoord(int pos, Evaluator *left, Evaluator *right) : BinaryEvaluator(pos, left, right, false) {}
 
-    Evaluator *clone() {
-        return new Ycoord(tpos, left->clone(), right->clone());
+    Evaluator *clone(For *f) {
+        return new Ycoord(tpos, left->clone(f), right->clone(f));
     }
 
     void generateCode(GeneratorContext *ctx) {
@@ -3357,6 +3503,20 @@ bool Tanh::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
     *lhs = ev;
     *rhs = new Atanh(0, *rhs);
     return true;
+}
+
+void Break::generateCode(GeneratorContext *ctx) {
+    if (f == NULL)
+        ctx->addLine(CMD_XSTR, std::string("BREAK"));
+    else
+        ctx->addLine(CMD_GTOL, f->getBreak());
+}
+
+void Continue::generateCode(GeneratorContext *ctx) {
+    if (f == NULL)
+        ctx->addLine(CMD_XSTR, std::string("CONTINUE"));
+    else
+        ctx->addLine(CMD_GTOL, f->getContinue());
 }
 
 void Evaluator::getSides(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
@@ -3917,6 +4077,7 @@ Evaluator *Parser::parseFactor() {
 #define EXPR_LIST_INTEG 3
 #define EXPR_LIST_INTEG_XEQ 4
 #define EXPR_LIST_LVALUE 5
+#define EXPR_LIST_FOR 6
 
 std::vector<Evaluator *> *Parser::parseExprList(int min_args, int max_args, int mode) {
     std::string t;
@@ -3974,7 +4135,10 @@ std::vector<Evaluator *> *Parser::parseExprList(int min_args, int max_args, int 
                 delete ev;
                 goto fail;
             }
-            mode = EXPR_LIST_EXPR;
+            if (mode == EXPR_LIST_FOR)
+                mode = EXPR_LIST_BOOLEAN;
+            else
+                mode = EXPR_LIST_EXPR;
         }
         evs->push_back(ev);
         if (!nextToken(&t, &tpos))
@@ -4087,9 +4251,17 @@ Evaluator *Parser::parseThing() {
                 min_args = 2;
                 max_args = 3;
                 mode = EXPR_LIST_NAME;
+            } else if (t == "FOR") {
+                min_args = 4;
+                max_args = INT_MAX;
+                mode = EXPR_LIST_FOR;
+                For *f = new For(tpos);
+                forStack.push_back(f);
             } else if (t == "\5") {
                 min_args = max_args = 5;
                 mode = EXPR_LIST_NAME;
+                For *f = new For(-1);
+                forStack.push_back(f);
             } else if (t == "\3") {
                 min_args = max_args = 4;
                 mode = EXPR_LIST_INTEG_XEQ;
@@ -4097,6 +4269,10 @@ Evaluator *Parser::parseThing() {
                 min_args = 1;
                 max_args = INT_MAX;
                 mode = EXPR_LIST_NAME;
+            } else if (t == "SEQ") {
+                min_args = 1;
+                max_args = INT_MAX;
+                mode = EXPR_LIST_EXPR;
             } else {
                 // Call
                 min_args = 0;
@@ -4104,12 +4280,22 @@ Evaluator *Parser::parseThing() {
                 mode = EXPR_LIST_EXPR;
             }
             std::vector<Evaluator *> *evs = parseExprList(min_args, max_args, mode);
-            if (evs == NULL)
+            if (t == "\5")
+                forStack.pop_back();
+            For *f = NULL;
+            if (t == "FOR") {
+                f = forStack.back();
+                forStack.pop_back();
+            }
+            if (evs == NULL) {
+                delete f;
                 return NULL;
+            }
             if (!nextToken(&t2, &t2pos) || t2 != ")") {
                 for (int i = 0; i < evs->size(); i++)
                     delete (*evs)[i];
                 delete evs;
+                delete f;
                 return NULL;
             }
             if (t == "SIN" || t == "COS" || t == "TAN"
@@ -4278,6 +4464,8 @@ Evaluator *Parser::parseThing() {
                 std::string n = name->name();
                 evs->erase(evs->begin());
                 return new Xeq(tpos, n, evs);
+            } else if (t == "SEQ") {
+                return new Seq(tpos, evs);
             } else if (t == "IF") {
                 Evaluator *condition = (*evs)[0];
                 Evaluator *trueEv = (*evs)[1];
@@ -4315,6 +4503,15 @@ Evaluator *Parser::parseThing() {
                 std::string n = name->name();
                 delete name;
                 return new Item(tpos, n, ev1, ev2);
+            } else if (t == "FOR") {
+                Evaluator *init = (*evs)[0];
+                evs->erase(evs->begin());
+                Evaluator *cond = (*evs)[0];
+                evs->erase(evs->begin());
+                Evaluator *next = (*evs)[0];
+                evs->erase(evs->begin());
+                f->finish_init(init, cond, next, evs);
+                return f;
             } else if (t == "\5") {
                 Evaluator *name = (*evs)[0];
                 Evaluator *from = (*evs)[1];
@@ -4396,7 +4593,17 @@ Evaluator *Parser::parseThing() {
                 return new Register(tpos, 3);
             else if (t == "REGT")
                 return new Register(tpos, 4);
-            else
+            else if (t == "BREAK" || t == "CONTINUE") {
+                if (forStack.size() == 0)
+                    return NULL;
+                For *f = forStack.back();
+                if (f->pos() == -1)
+                    return NULL;
+                else if (t == "BREAK")
+                    return new Break(tpos, f);
+                else
+                    return new Continue(tpos, f);
+            } else
                 return new Variable(tpos, t);
         }
     } else {
@@ -4452,7 +4659,7 @@ int isolate(vartype *eqn, const char *name, int length) {
     std::string n(name, length);
     if (ev->howMany(&n) != 1)
         return -1;
-    ev = ev->clone()->removeName();
+    ev = ev->clone(NULL)->removeName();
     Evaluator *lhs, *rhs;
     ev->getSides(&n, &lhs, &rhs);
 

@@ -1485,6 +1485,10 @@ static int keydown_list(int key, bool shift, int *repeat) {
             equation_data *eqd = prgms[((vartype_equation *) v)->data.index()].eq_data;
             std::vector<std::string> params, locals;
             eqd->ev->collectVariables(&params, &locals);
+            if (params.size() == 0) {
+                show_error(ERR_NO_MENU_VARIABLES);
+                return 1;
+            }
             for (int i = 0; i < params.size(); i++) {
                 std::string n = params[i];
                 vartype *p = recall_var(n.c_str(), (int) n.length());

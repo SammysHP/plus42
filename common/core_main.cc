@@ -194,6 +194,10 @@ bool core_hex_menu() {
     return get_front_menu() == MENU_BASE_A_THRU_F;
 }
 
+int core_special_menu_key(int which) {
+    return special_menu_key(which);
+}
+
 bool core_keydown_command(const char *name, bool *enqueued, int *repeat) {
     char hpname[70];
     int len = ascii2hp(hpname, 63, name);

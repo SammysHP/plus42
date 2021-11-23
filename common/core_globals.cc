@@ -718,8 +718,9 @@ bool no_keystrokes_yet;
  * State file versions correspond to application releases as follows:
  * 
  * Version  0: 1.0    first release
+ * Version  1: 1.0    cursor left, cursor right, del key handling
  */
-#define PLUS42_VERSION 0
+#define PLUS42_VERSION 1
 
 
 /*******************/

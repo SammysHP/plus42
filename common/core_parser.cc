@@ -2431,33 +2431,6 @@ class Negative : public UnaryEvaluator {
     }
 };
 
-////////////////////
-/////  Newstr  /////
-////////////////////
-
-class Newstr : public Evaluator {
-
-    public:
-
-    Newstr(int pos) : Evaluator(pos) {}
-
-    Evaluator *clone(For *f) {
-        return new Newstr(tpos);
-    }
-
-    void generateCode(GeneratorContext *ctx) {
-        ctx->addLine(CMD_NEWSTR);
-    }
-
-    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
-        // nope
-    }
-
-    int howMany(const std::string *name) {
-        return 0;
-    }
-};
-
 /////////////////////
 /////  Newlist  /////
 /////////////////////
@@ -2482,6 +2455,27 @@ class Newlist : public Evaluator {
 
     int howMany(const std::string *name) {
         return 0;
+    }
+};
+
+////////////////////
+/////  Newmat  /////
+////////////////////
+
+class Newmat : public BinaryEvaluator {
+
+    public:
+
+    Newmat(int pos, Evaluator *left, Evaluator *right) : BinaryEvaluator(pos, left, right, false) {}
+
+    Evaluator *clone(For *f) {
+        return new Newmat(tpos, left->clone(f), right->clone(f));
+    }
+
+    void generateCode(GeneratorContext *ctx) {
+        left->generateCode(ctx);
+        right->generateCode(ctx);
+        ctx->addLine(CMD_NEWMAT);
     }
 };
 
@@ -4602,7 +4596,7 @@ Evaluator *Parser::parseThing() {
                     || t == "BOR" || t == "BXOR" || t == "BADD"
                     || t == "BSUB" || t == "BMUL" || t == "BDIV"
                     || t == "HMSADD" || t == "HMSSUB"
-                    || t == "DOT" || t == "CROSS") {
+                    || t == "NEWMAT" || t == "DOT" || t == "CROSS") {
                 min_args = max_args = 2;
                 mode = EXPR_LIST_EXPR;
             } else if (t == "DDAYS") {
@@ -4795,7 +4789,7 @@ Evaluator *Parser::parseThing() {
                     || t == "BOR" || t == "BXOR" || t == "BADD"
                     || t == "BSUB" || t == "BMUL" || t == "BDIV"
                     || t == "HMSADD" || t == "HMSSUB"
-                    || t == "DOT" || t == "CROSS") {
+                    || t == "NEWMAT" || t == "DOT" || t == "CROSS") {
                 Evaluator *left = (*evs)[0];
                 Evaluator *right = (*evs)[1];
                 delete evs;
@@ -4839,6 +4833,8 @@ Evaluator *Parser::parseThing() {
                     return new Hmsadd(tpos, left, right);
                 else if (t == "HMSSUB")
                     return new Hmssub(tpos, left, right);
+                else if (t == "NEWMAT")
+                    return new Newmat(tpos, left, right);
                 else if (t == "DOT")
                     return new Dot(tpos, left, right);
                 else if (t == "CROSS")
@@ -4970,8 +4966,6 @@ Evaluator *Parser::parseThing() {
                 return new Cdate(tpos);
             else if (t == "CTIME")
                 return new Ctime(tpos);
-            else if (t == "NEWSTR")
-                return new Newstr(tpos);
             else if (t == "NEWLIST")
                 return new Newlist(tpos);
             else if (t == "REGX")

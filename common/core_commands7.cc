@@ -2169,9 +2169,10 @@ static int item_helper(arg_struct *arg, bool get) {
     int4 n = to_int4(d);
     if (n < 0)
         n = -n;
-    if (n == 0)
+    if (two_d)
+        n--;
+    if (n < 0)
         return ERR_DIMENSION_ERROR;
-    n--;
 
     if (two_d) {
         if (v->type == TYPE_LIST)
@@ -2182,9 +2183,9 @@ static int item_helper(arg_struct *arg, bool get) {
         int4 m = to_int4(d);
         if (m < 0)
             m = -m;
-        if (m == 0)
-            return ERR_DIMENSION_ERROR;
         m--;
+        if (m < 0)
+            return ERR_DIMENSION_ERROR;
         int4 cols = v->type == TYPE_REALMATRIX
                 ? ((vartype_realmatrix *) v)->columns
                 : ((vartype_complexmatrix *) v)->columns;
@@ -2268,15 +2269,34 @@ static int item_helper(arg_struct *arg, bool get) {
         }
         case TYPE_LIST: {
             vartype_list *list = (vartype_list *) v;
-            if (n >= list->size)
-                goto dim_fail;
             if (get) {
+                if (n >= list->size)
+                    goto dim_fail;
                 r = dup_vartype(list->array->data[n]);
             } else {
                 vartype *v2 = dup_vartype(stack[sp]);
                 if (v2 == NULL) 
                     goto put_fail;
-                free_vartype(list->array->data[n]);
+                if (n >= list->size) {
+                    vartype **new_data = (vartype **) realloc(list->array->data, (n + 1) * sizeof(vartype *));
+                    if (new_data == NULL)
+                        goto put_fail;
+                    for (int i = list->size; i < n; i++) {
+                        new_data[i] = new_real(0);
+                        if (new_data[i] == NULL) {
+                            while (--i >= list->size)
+                                free_vartype(new_data[i]);
+                            new_data = (vartype **) realloc(new_data, list->size * sizeof(vartype *));
+                            if (new_data != NULL)
+                                list->array->data = new_data;
+                            goto put_fail;
+                        }
+                    }
+                    list->array->data = new_data;
+                    list->size = n + 1;
+                } else {
+                    free_vartype(list->array->data[n]);
+                }
                 list->array->data[n] = v2;
             }
             break;

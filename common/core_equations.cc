@@ -474,7 +474,7 @@ bool eqn_active() {
 }
 
 bool eqn_editing() {
-    return active && edit_pos != -1;
+    return active && edit_pos != -1 && dialog == DIALOG_NONE;
 }
 
 char *eqn_copy() {

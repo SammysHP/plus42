@@ -415,7 +415,7 @@ static int call_solve_fn(int which, int state) {
         return ERR_RUN;
 }
 
-static int start_solve_2(phloat x1, phloat x2);
+static int start_solve_2(phloat x1, phloat x2, bool after_direct);
 
 int start_solve(const char *name, int length, vartype *v1, vartype *v2) {
     if (solve_active())
@@ -469,10 +469,10 @@ int start_solve(const char *name, int length, vartype *v1, vartype *v2) {
         else
             x2 = ((vartype_real *) v2)->x;
     }
-    return start_solve_2(x1, x2);
+    return start_solve_2(x1, x2, false);
 }
 
-static int start_solve_2(phloat x1, phloat x2) {
+static int start_solve_2(phloat x1, phloat x2, bool after_direct) {
     if (solve.eq != NULL) {
         vartype *eq = dup_vartype(solve.eq);
         if (eq == NULL)
@@ -513,7 +513,8 @@ static int start_solve_2(phloat x1, phloat x2) {
     solve.second_f = POS_HUGE_PHLOAT;
     solve.last_disp_time = 0;
     solve.toggle = 1;
-    solve.keep_running = !should_i_stop_at_this_level() && program_running();
+    if (!after_direct)
+        solve.keep_running = !should_i_stop_at_this_level() && program_running();
     return call_solve_fn(1, 1);
 }
 
@@ -656,7 +657,7 @@ int return_to_solve(int failure, bool stop) {
         if (failure)
             // Proceed to numerical solver
             // TODO: What about stack state? Is it OK like this?
-            return start_solve_2(solve.x1, solve.x2);
+            return start_solve_2(solve.x1, solve.x2, true);
         if (sp == -1)
             return ERR_TOO_FEW_ARGUMENTS;
         vartype *v = dup_vartype(stack[sp]);

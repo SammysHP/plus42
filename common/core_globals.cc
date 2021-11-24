@@ -3410,10 +3410,18 @@ bool unwind_stack_until_solve() {
     pgm_index prgm;
     int4 pc;
     bool stop;
+    int st_mode = -1;
     while (true) {
+        get_saved_stack_mode(&st_mode);
         pop_rtn_addr(&prgm, &pc, &stop);
         if (prgm.unified() == -2)
             break;
+    }
+    if (st_mode == 0) {
+        arg_struct dummy_arg;
+        docmd_4stk(&dummy_arg);
+    } else if (st_mode == 1) {
+        docmd_nstk(NULL);
     }
     return stop;
 }

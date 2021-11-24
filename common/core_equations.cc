@@ -85,6 +85,9 @@ static int rep_key = -1;
 #define EQCMD_MCOLS    1010
 #define EQCMD_TRN      1011
 #define EQCMD_IDIV     1012
+#define EQCMD_SEQ      1013
+#define EQCMD_MAX      1014
+#define EQCMD_MIN      1015
 
 struct eqn_cmd_spec {
     const char *name;
@@ -105,6 +108,9 @@ const eqn_cmd_spec eqn_cmds[] = {
     { /* MCOLS */    "MCOLS",    5 },
     { /* TRN */      "TRN",      3 },
     { /* IDIV */     "IDIV",     4 },
+    { /* SEQ */      "SEQ",      3 },
+    { /* MAX */      "MAX",      3 },
+    { /* MIN */      "MIN",      3 }
 };
 
 const menu_spec eqn_menus[] = {
@@ -113,15 +119,15 @@ const menu_spec eqn_menus[] = {
                         { 0x0000 + EQCMD_FOR,      3, "FOR"   },
                         { 0x0000 + EQCMD_BREAK,    3, "BRK"   },
                         { 0x0000 + EQCMD_CONTINUE, 4, "CONT"  },
-                        { 0x1000 + CMD_XEQ,        0, ""      },
-                        { 0x1000 + CMD_NULL,       0, ""      } } },
+                        { 0x1000 + EQCMD_SEQ,      0, ""      },
+                        { 0x1000 + CMD_XEQ,        0, ""      } } },
     { /* EQMN_PGM_FCN2 */ MENU_NONE, EQMN_PGM_FCN1, EQMN_PGM_FCN1,
                       { { 0x0000 + CMD_GSTO,    1, "L"     },
                         { 0x0000 + CMD_GRCL,    1, "G"     },
                         { 0x0000 + CMD_SVAR,    1, "S"     },
                         { 0x0000 + CMD_GETITEM, 4, "ITEM"  },
-                        { 0x1000 + CMD_NULL,    0, ""      },
-                        { 0x1000 + CMD_NULL,    0, ""      } } },
+                        { 0x1000 + EQCMD_MAX,   0, ""      },
+                        { 0x1000 + EQCMD_MIN,   0, ""      } } },
     { /* EQMN_MATRIX1 */ MENU_NONE, EQMN_MATRIX2, EQMN_MATRIX2,
                       { { 0x1000 + CMD_NEWMAT, 0, "" },
                         { 0x1000 + CMD_INVRT,  0, "" },
@@ -188,20 +194,20 @@ static const menu_spec *getmenu(int id) {
 }
 
 static short catalog[] = {
-    CMD_ABS,     CMD_ACOS,     CMD_ACOSH,     CMD_AND,       EQCMD_ANGLE,    CMD_ASIN,
-    CMD_ASINH,   CMD_ATAN,     CMD_ATANH,     CMD_BASEADD,   CMD_BASESUB,    CMD_BASEMUL,
-    CMD_BASEDIV, CMD_BASECHS,  EQCMD_BREAK,   CMD_COMB,      EQCMD_CONTINUE, CMD_COS,
-    CMD_COSH,    CMD_CROSS,    CMD_DATE,      CMD_DATE_PLUS, CMD_DDAYS,      CMD_DET,
-    CMD_DOT,     CMD_E_POW_X,  CMD_E_POW_X_1, CMD_FNRM,      EQCMD_FOR,      CMD_FP,
-    CMD_GAMMA,   CMD_HMSADD,   CMD_HMSSUB,    EQCMD_IDIV,    CMD_IF_T,       EQCMD_INT,
-    CMD_INVRT,   CMD_IP,       CMD_LN,        CMD_LN_1_X,    CMD_LOG,        CMD_MOD,
-    EQCMD_MCOLS, EQCMD_MROWS,  CMD_FACT,      CMD_NEWLIST,   CMD_NEWMAT,     CMD_NOT,
-    CMD_OR,      CMD_PERM,     EQCMD_RADIUS,  CMD_RAN,       CMD_RND,        CMD_RNRM,
-    CMD_RSUM,    CMD_SEED,     CMD_SIGN,      CMD_SIN,       CMD_SINH,       EQCMD_SIZES,
-    CMD_SQRT,    CMD_TAN,      CMD_TANH,      CMD_TIME,      CMD_TRANS,      EQCMD_TRN,
-    CMD_UVEC,    EQCMD_XCOORD, CMD_XEQ,       CMD_XOR,       CMD_SQUARE,     EQCMD_YCOORD,
-    CMD_Y_POW_X, CMD_INV,      CMD_10_POW_X,  CMD_TO_DEC,    CMD_TO_DEG,     CMD_TO_HMS,
-    CMD_TO_HR,   CMD_TO_OCT,   CMD_TO_RAD,    CMD_NULL,      CMD_NULL,       CMD_NULL
+    CMD_ABS,     CMD_ACOS,    CMD_ACOSH,     CMD_AND,       EQCMD_ANGLE,    CMD_ASIN,
+    CMD_ASINH,   CMD_ATAN,    CMD_ATANH,     CMD_BASEADD,   CMD_BASESUB,    CMD_BASEMUL,
+    CMD_BASEDIV, CMD_BASECHS, EQCMD_BREAK,   CMD_COMB,      EQCMD_CONTINUE, CMD_COS,
+    CMD_COSH,    CMD_CROSS,   CMD_DATE,      CMD_DATE_PLUS, CMD_DDAYS,      CMD_DET,
+    CMD_DOT,     CMD_E_POW_X, CMD_E_POW_X_1, CMD_FNRM,      EQCMD_FOR,      CMD_FP,
+    CMD_GAMMA,   CMD_HMSADD,  CMD_HMSSUB,    EQCMD_IDIV,    CMD_IF_T,       EQCMD_INT,
+    CMD_INVRT,   CMD_IP,      CMD_LN,        CMD_LN_1_X,    CMD_LOG,        EQCMD_MAX,
+    EQCMD_MIN,   CMD_MOD,     EQCMD_MCOLS,   EQCMD_MROWS,   CMD_FACT,       CMD_NEWLIST,
+    CMD_NEWMAT,  CMD_NOT,     CMD_OR,        CMD_PERM,      EQCMD_RADIUS,   CMD_RAN,
+    CMD_RND,     CMD_RNRM,    CMD_RSUM,      CMD_SEED,      EQCMD_SEQ,      CMD_SIGN,
+    CMD_SIN,     CMD_SINH,    EQCMD_SIZES,   CMD_SQRT,      CMD_TAN,        CMD_TANH,
+    CMD_TIME,    CMD_TRANS,   EQCMD_TRN,     CMD_UVEC,      EQCMD_XCOORD,   CMD_XEQ,
+    CMD_XOR,     CMD_SQUARE,  EQCMD_YCOORD,  CMD_Y_POW_X,   CMD_INV,        CMD_10_POW_X,
+    CMD_TO_DEC,  CMD_TO_DEG,  CMD_TO_HMS,    CMD_TO_HR,     CMD_TO_OCT,     CMD_TO_RAD
 };
 
 static int catalog_rows = 14;

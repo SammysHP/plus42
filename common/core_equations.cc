@@ -61,25 +61,150 @@ static int timeout_action = 0;
 static int timeout_edit_pos;
 static int rep_key = -1;
 
-static short catalog[] = {
-    CMD_ABS,       CMD_ACOS,   CMD_ACOSH,    CMD_AND,     CMD_ASIN,    CMD_ASINH,
-    CMD_ATAN,      CMD_ATANH,  CMD_BASEADD,  CMD_BASESUB, CMD_BASEMUL, CMD_BASEDIV,
-    CMD_BASECHS,   CMD_COMB,   CMD_COMPLEX,  CMD_COS,     CMD_COSH,    CMD_CPX_T,
-    CMD_CROSS,     CMD_DET,    CMD_DIM,      CMD_DIM_T,   CMD_DOT,     CMD_E_POW_X,
-    CMD_E_POW_X_1, CMD_FNRM,   CMD_FP,       CMD_GAMMA,   CMD_HMSADD,  CMD_HMSSUB,
-    CMD_INVRT,     CMD_IP,     CMD_LN,       CMD_LN_1_X,  CMD_LOG,     CMD_MAT_T,
-    CMD_MOD,       CMD_FACT,   CMD_NEWMAT,   CMD_NOT,     CMD_OR,      CMD_PERM,
-    CMD_RAN,       CMD_REAL_T, CMD_RND,      CMD_RNRM,    CMD_ROTXY,   CMD_RSUM,
-    CMD_SEED,      CMD_SIGN,   CMD_SIN,      CMD_SINH,    CMD_SQRT,    CMD_STR_T,
-    CMD_TAN,       CMD_TANH,   CMD_TRANS,    CMD_UVEC,    CMD_XOR,     CMD_SQUARE,
-    CMD_Y_POW_X,   CMD_INV,    CMD_10_POW_X, CMD_TO_DEC,  CMD_TO_DEG,  CMD_TO_HMS,
-    CMD_TO_HR,     CMD_TO_OCT, CMD_TO_POL,   CMD_TO_RAD,  CMD_TO_REC,  CMD_DATE,
-    CMD_DATE_PLUS, CMD_DDAYS,  CMD_DOW,      CMD_TIME,    CMD_APPEND,  CMD_C_TO_N,
-    CMD_EXTEND,    CMD_LENGTH, CMD_LIST_T,   CMD_NEWLIST, CMD_NEWSTR,  CMD_N_TO_C,
-    CMD_N_TO_S,    CMD_POS,    CMD_REV,      CMD_SUBSTR,  CMD_S_TO_N,  CMD_FMA
+#define EQMN_PGM_FCN1 1000
+#define EQMN_PGM_FCN2 1001
+#define EQMN_MATRIX1  1002
+#define EQMN_MATRIX2  1003
+#define EQMN_BASE1    1004
+#define EQMN_BASE2    1005
+#define EQMN_CONVERT1 1006
+#define EQMN_CONVERT2 1007
+#define EQMN_CONVERT3 1008
+#define EQMN_CONVERT4 1009
+
+#define EQCMD_XCOORD   1000
+#define EQCMD_YCOORD   1001
+#define EQCMD_RADIUS   1002
+#define EQCMD_ANGLE    1003
+#define EQCMD_INT      1004
+#define EQCMD_FOR      1005
+#define EQCMD_BREAK    1006
+#define EQCMD_CONTINUE 1007
+#define EQCMD_SIZES    1008
+#define EQCMD_MROWS    1009
+#define EQCMD_MCOLS    1010
+#define EQCMD_TRN      1011
+#define EQCMD_IDIV     1012
+
+struct eqn_cmd_spec {
+    const char *name;
+    int namelen;
 };
 
-static int catalog_rows = 15;
+const eqn_cmd_spec eqn_cmds[] = {
+    { /* XCOORD */   "XCOORD",   6 },
+    { /* YCOORD */   "YCOORD",   6 },
+    { /* RADIUS */   "RADIUS",   6 },
+    { /* ANGLE */    "ANGLE",    5 },
+    { /* INT */      "INT",      3 },
+    { /* FOR */      "FOR",      3 },
+    { /* BREAK */    "BREAK",    5 },
+    { /* CONTINUE */ "CONTINUE", 8 },
+    { /* SIZES */    "SIZES",    5 },
+    { /* MROWS */    "MROWS",    5 },
+    { /* MCOLS */    "MCOLS",    5 },
+    { /* TRN */      "TRN",      3 },
+    { /* IDIV */     "IDIV",     4 },
+};
+
+const menu_spec eqn_menus[] = {
+    { /* EQMN_PGM_FCN1 */ MENU_NONE, EQMN_PGM_FCN2, EQMN_PGM_FCN2,
+                      { { 0x0000 + CMD_IF_T,       2, "IF"    },
+                        { 0x0000 + EQCMD_FOR,      3, "FOR"   },
+                        { 0x0000 + EQCMD_BREAK,    3, "BRK"   },
+                        { 0x0000 + EQCMD_CONTINUE, 4, "CONT"  },
+                        { 0x1000 + CMD_XEQ,        0, ""      },
+                        { 0x1000 + CMD_NULL,       0, ""      } } },
+    { /* EQMN_PGM_FCN2 */ MENU_NONE, EQMN_PGM_FCN1, EQMN_PGM_FCN1,
+                      { { 0x0000 + CMD_GSTO,    1, "L"     },
+                        { 0x0000 + CMD_GRCL,    1, "G"     },
+                        { 0x0000 + CMD_SVAR,    1, "S"     },
+                        { 0x0000 + CMD_GETITEM, 4, "ITEM"  },
+                        { 0x1000 + CMD_NULL,    0, ""      },
+                        { 0x1000 + CMD_NULL,    0, ""      } } },
+    { /* EQMN_MATRIX1 */ MENU_NONE, EQMN_MATRIX2, EQMN_MATRIX2,
+                      { { 0x1000 + CMD_NEWMAT, 0, "" },
+                        { 0x1000 + CMD_INVRT,  0, "" },
+                        { 0x1000 + CMD_DET,    0, "" },
+                        { 0x1000 + CMD_TRANS,  0, "" },
+                        { 0x1000 + CMD_FNRM,   0, "" },
+                        { 0x1000 + CMD_RNRM,   0, "" } } },
+    { /* EQMN_MATRIX2 */ MENU_NONE, EQMN_MATRIX1, EQMN_MATRIX1,
+                      { { 0x1000 + CMD_DOT,     0, ""  },
+                        { 0x1000 + CMD_CROSS,   0, ""  },
+                        { 0x1000 + CMD_UVEC,    0, ""  },
+                        { 0x1000 + CMD_RSUM,    0, ""  },
+                        { 0x1000 + EQCMD_MROWS, 0, ""  },
+                        { 0x1000 + EQCMD_MCOLS, 0, ""  } } },
+    { /* EQMN_BASE1 */ MENU_NONE, EQMN_BASE2, EQMN_BASE2,
+                      { { 0x1000 + CMD_BASEADD, 0, "" },
+                        { 0x1000 + CMD_BASESUB, 0, "" },
+                        { 0x1000 + CMD_BASEMUL, 0, "" },
+                        { 0x1000 + CMD_BASEDIV, 0, "" },
+                        { 0x1000 + CMD_BASECHS, 0, "" },
+                        { 0x1000 + CMD_NULL,    0, "" } } },
+    { /* EQMN_BASE2 */ MENU_NONE, EQMN_BASE1, EQMN_BASE1,
+                      { { 0x1000 + CMD_AND,  0, "" },
+                        { 0x1000 + CMD_OR,   0, "" },
+                        { 0x1000 + CMD_XOR,  0, "" },
+                        { 0x1000 + CMD_NOT,  0, "" },
+                        { 0x1000 + CMD_NULL, 0, "" },
+                        { 0x1000 + CMD_NULL, 0, "" } } },
+    { /* EQMN_CONVERT1 */ MENU_NONE, EQMN_CONVERT2, EQMN_CONVERT4,
+                      { { 0x1000 + CMD_TO_DEG,   0, "" },
+                        { 0x1000 + CMD_TO_RAD,   0, "" },
+                        { 0x1000 + EQCMD_XCOORD, 0, "" },
+                        { 0x1000 + EQCMD_YCOORD, 0, "" },
+                        { 0x1000 + EQCMD_RADIUS, 0, "" },
+                        { 0x1000 + EQCMD_ANGLE,  0, "" } } },
+    { /* EQMN_CONVERT2 */ MENU_NONE, EQMN_CONVERT3, EQMN_CONVERT1,
+                      { { 0x1000 + CMD_TO_HR,  0, "" },
+                        { 0x1000 + CMD_TO_HMS, 0, "" },
+                        { 0x1000 + CMD_HMSADD, 0, "" },
+                        { 0x1000 + CMD_HMSSUB, 0, "" },
+                        { 0x1000 + CMD_TO_DEC, 0, "" },
+                        { 0x1000 + CMD_TO_OCT, 0, "" } } },
+    { /* EQMN_CONVERT3 */ MENU_NONE, EQMN_CONVERT4, EQMN_CONVERT2,
+                      { { 0x1000 + CMD_IP,     0, "" },
+                        { 0x1000 + CMD_FP,     0, "" },
+                        { 0x1000 + CMD_RND,    0, "" },
+                        { 0x1000 + EQCMD_TRN,  0, "" },
+                        { 0x1000 + EQCMD_IDIV, 0, "" },
+                        { 0x1000 + CMD_MOD,    0, "" } } },
+    { /* EQMN_CONVERT4 */ MENU_NONE, EQMN_CONVERT1, EQMN_CONVERT3,
+                      { { 0x1000 + CMD_ABS,       0, "" },
+                        { 0x1000 + CMD_SIGN,      0, "" },
+                        { 0x1000 + CMD_TIME,      0, "" },
+                        { 0x1000 + CMD_DATE,      0, "" },
+                        { 0x1000 + CMD_DATE_PLUS, 0, "" },
+                        { 0x1000 + CMD_DDAYS,     0, "" } } },
+};
+
+static const menu_spec *getmenu(int id) {
+    if (id >= 1000)
+        return eqn_menus + id - 1000;
+    else
+        return menus + id;
+}
+
+static short catalog[] = {
+    CMD_ABS,     CMD_ACOS,     CMD_ACOSH,     CMD_AND,       EQCMD_ANGLE,    CMD_ASIN,
+    CMD_ASINH,   CMD_ATAN,     CMD_ATANH,     CMD_BASEADD,   CMD_BASESUB,    CMD_BASEMUL,
+    CMD_BASEDIV, CMD_BASECHS,  EQCMD_BREAK,   CMD_COMB,      EQCMD_CONTINUE, CMD_COS,
+    CMD_COSH,    CMD_CROSS,    CMD_DATE,      CMD_DATE_PLUS, CMD_DDAYS,      CMD_DET,
+    CMD_DOT,     CMD_E_POW_X,  CMD_E_POW_X_1, CMD_FNRM,      EQCMD_FOR,      CMD_FP,
+    CMD_GAMMA,   CMD_HMSADD,   CMD_HMSSUB,    EQCMD_IDIV,    CMD_IF_T,       EQCMD_INT,
+    CMD_INVRT,   CMD_IP,       CMD_LN,        CMD_LN_1_X,    CMD_LOG,        CMD_MOD,
+    EQCMD_MCOLS, EQCMD_MROWS,  CMD_FACT,      CMD_NEWLIST,   CMD_NEWMAT,     CMD_NOT,
+    CMD_OR,      CMD_PERM,     EQCMD_RADIUS,  CMD_RAN,       CMD_RND,        CMD_RNRM,
+    CMD_RSUM,    CMD_SEED,     CMD_SIGN,      CMD_SIN,       CMD_SINH,       EQCMD_SIZES,
+    CMD_SQRT,    CMD_TAN,      CMD_TANH,      CMD_TIME,      CMD_TRANS,      EQCMD_TRN,
+    CMD_UVEC,    EQCMD_XCOORD, CMD_XEQ,       CMD_XOR,       CMD_SQUARE,     EQCMD_YCOORD,
+    CMD_Y_POW_X, CMD_INV,      CMD_10_POW_X,  CMD_TO_DEC,    CMD_TO_DEG,     CMD_TO_HMS,
+    CMD_TO_HR,   CMD_TO_OCT,   CMD_TO_RAD,    CMD_NULL,      CMD_NULL,       CMD_NULL
+};
+
+static int catalog_rows = 14;
 
 
 static void restart_cursor();
@@ -229,8 +354,6 @@ static eqn_name_entry eqn_name[] = {
     { CMD_MUL,       1, "\001"     },
     { CMD_DIV,       1, "\000"     },
     { CMD_SIGMAADD,  2, "\005("    },
-    { CMD_STO,       2, "L("       },
-    { CMD_RCL,       2, "G("       },
     { CMD_INV,       4, "INV("     },
     { CMD_SQUARE,    3, "SQ("      },
     { CMD_E_POW_X,   4, "EXP("     },
@@ -256,13 +379,19 @@ static eqn_name_entry eqn_name[] = {
     { CMD_TO_HMS,    4, "HMS("     },
     { CMD_TO_DEC,    4, "DEC("     },
     { CMD_TO_OCT,    4, "OCT("     },
-    { CMD_TO_REC,    4, "REC("     },
-    { CMD_TO_POL,    4, "POL("     },
-    { CMD_RAN,       4, "RAN#"     },
+    { CMD_TO_OCT,    4, "OCT("     },
+    { CMD_SIGN,      4, "SGN("     },
     { CMD_DATE,      5, "CDATE"    },
     { CMD_TIME,      5, "CTIME"    },
-    { CMD_NEWSTR,    6, "NEWSTR"   },
+    { CMD_RAN,       4, "RAN#"     },
     { CMD_NEWLIST,   7, "NEWLIST"  },
+    { CMD_GSTO,      2, "L("       },
+    { CMD_GRCL,      2, "G("       },
+    { CMD_SVAR,      2, "S("       },
+    { CMD_IF_T,      3, "IF("      },
+    { CMD_GETITEM,   5, "ITEM("    },
+    { EQCMD_BREAK,   5, "BREAK"    },
+    { EQCMD_CONTINUE,8, "CONTINUE" },
     { CMD_NULL,      0, NULL       }
 };
 
@@ -282,9 +411,15 @@ static bool insert_function(int cmd) {
     }
     for (int i = 0; i < catalog_rows * 6; i++) {
         if (cmd == catalog[i]) {
-            const command_spec *cs = cmd_array + cmd;
-            return insert_text(cs->name, cs->name_length)
-                && insert_text("(", 1);
+            if (cmd >= 1000) {
+                const eqn_cmd_spec *cs = eqn_cmds + cmd - 1000;
+                return insert_text(cs->name, cs->namelen)
+                    && insert_text("(", 1);
+            } else {
+                const command_spec *cs = cmd_array + cmd;
+                return insert_text(cs->name, cs->name_length)
+                    && insert_text("(", 1);
+            }
         }
     }
     squeak();
@@ -401,7 +536,8 @@ static void print_eq(bool all) {
 
 static void update_menu(int menuid) {
     edit_menu = menuid;
-    int multirow = edit_menu == MENU_CATALOG || edit_menu != MENU_NONE && menus[edit_menu].next != MENU_NONE;
+    int multirow = edit_menu == MENU_CATALOG
+                || edit_menu != MENU_NONE && getmenu(edit_menu)->next != MENU_NONE;
     shell_annunciators(multirow, -1, -1, -1, -1, -1);
 }
 
@@ -761,17 +897,23 @@ bool eqn_draw() {
         } else if (edit_menu == MENU_CATALOG) {
             for (int k = 0; k < 6; k++) {
                 int cmd = catalog[catalog_row * 6 + k];
-                draw_key(k, 0, 1, cmd_array[cmd].name, cmd_array[cmd].name_length);
+                if (cmd >= 1000)
+                    draw_key(k, 0, 1, eqn_cmds[cmd - 1000].name, eqn_cmds[cmd - 1000].namelen);
+                else
+                    draw_key(k, 0, 1, cmd_array[cmd].name, cmd_array[cmd].name_length);
             }
         } else {
-            const menu_item_spec *mi = menus[edit_menu].child;
+            const menu_item_spec *mi = getmenu(edit_menu)->child;
             for (int i = 0; i < 6; i++) {
                 int id = mi[i].menuid;
                 if (id == MENU_NONE || (id & 0x3000) == 0) {
                     draw_key(i, 0, 0, mi[i].title, mi[i].title_length);
                 } else {
                     id &= 0x0fff;
-                    draw_key(i, 0, 1, cmd_array[id].name, cmd_array[id].name_length);
+                    if (id >= 1000)
+                        draw_key(i, 0, 1, eqn_cmds[id - 1000].name, eqn_cmds[id - 1000].namelen);
+                    else
+                        draw_key(i, 0, 1, cmd_array[id].name, cmd_array[id].name_length);
                 }
             }
         }
@@ -1364,19 +1506,42 @@ static int keydown_sto_overwrite(int key, bool shift, int *repeat) {
 
 static bool is_function_menu(int menu) {
     return menu == MENU_TOP_FCN
-            || menu == MENU_CONVERT1
-            || menu == MENU_CONVERT2
             || menu == MENU_PROB
             || menu == MENU_CUSTOM1
             || menu == MENU_CUSTOM2
             || menu == MENU_CUSTOM3
-            || menu == MENU_CATALOG;
+            || menu == MENU_CATALOG
+            || menu == EQMN_MATRIX1
+            || menu == EQMN_MATRIX2
+            || menu == EQMN_BASE1
+            || menu == EQMN_BASE2
+            || menu == EQMN_PGM_FCN1
+            || menu == EQMN_PGM_FCN2
+            || menu == EQMN_CONVERT1
+            || menu == EQMN_CONVERT2
+            || menu == EQMN_CONVERT3
+            || menu == EQMN_CONVERT4;
+}
+
+static bool sibling_menus(int menu1, int menu2) {
+    if (menu1 == MENU_NONE || menu2 == MENU_NONE)
+        return false;
+    if (menu1 == menu2)
+        return true;
+    int first = menu1;
+    while (true) {
+        menu1 = getmenu(menu1)->next;
+        if (menu1 == MENU_NONE || menu1 == first)
+            return false;
+        if (menu1 == menu2)
+            return true;
+    }
 }
 
 static void select_function_menu(int menu) {
     if (!is_function_menu(edit_menu))
         prev_edit_menu = edit_menu;
-    menu_sticky = menu == edit_menu || edit_menu != MENU_NONE && menus[edit_menu].next == menu;
+    menu_sticky = sibling_menus(menu, edit_menu);
     if (!menu_sticky) {
         update_menu(menu);
         eqn_draw();
@@ -1755,15 +1920,15 @@ static int keydown_edit_2(int key, bool shift, int *repeat) {
             }
         } else if (edit_menu == MENU_ALPHA1 || edit_menu == MENU_ALPHA2) {
             /* ALPHA menu */
-            update_menu(menus[edit_menu].child[key - 1].menuid);
+            update_menu(getmenu(edit_menu)->child[key - 1].menuid);
             eqn_draw();
             return 1;
         } else if (edit_menu >= MENU_ALPHA_ABCDE1 && edit_menu <= MENU_ALPHA_MISC2) {
             /* ALPHA sub-menus */
-            char c = menus[edit_menu].child[key - 1].title[0];
+            char c = getmenu(edit_menu)->child[key - 1].title[0];
             if (shift && c >= 'A' && c <= 'Z')
                 c += 32;
-            update_menu(menus[edit_menu].parent);
+            update_menu(getmenu(edit_menu)->parent);
             insert_text(&c, 1);
             return 1;
         } else if (edit_menu >= MENU_CUSTOM1 && edit_menu <= MENU_CUSTOM3) {
@@ -1815,8 +1980,8 @@ static int keydown_edit_2(int key, bool shift, int *repeat) {
                     case KEY_XEQ: cmd = CMD_GTO; break;
                 }
             } else {
-                cmd = menus[edit_menu].child[key - 1].menuid;
-                if (cmd == MENU_NONE || (cmd & 0xf000) == 0)
+                cmd = getmenu(edit_menu)->child[key - 1].menuid;
+                if (cmd == MENU_NONE /*|| (cmd & 0xf000) == 0*/)
                     cmd = CMD_NULL;
                 else
                     cmd = cmd & 0x0fff;
@@ -1834,14 +1999,14 @@ static int keydown_edit_2(int key, bool shift, int *repeat) {
                 if (shift)
                     squeak();
                 else
-                    insert_function(CMD_STO);
+                    insert_function(CMD_GSTO);
                 break;
             }
             case KEY_RCL: {
                 if (shift)
                     insert_text("%", 1);
                 else
-                    insert_function(CMD_RCL);
+                    insert_function(CMD_GRCL);
                 break;
             }
             case KEY_RDN: {
@@ -1947,21 +2112,21 @@ static int keydown_edit_2(int key, bool shift, int *repeat) {
             }
             case KEY_3: {
                 if (shift)
-                    squeak();
+                    select_function_menu(EQMN_PGM_FCN1);
                 else
                     insert_text("3", 1);
                 break;
             }
             case KEY_4: {
                 if (shift)
-                    squeak();
+                    select_function_menu(EQMN_BASE1);
                 else
                     insert_text("4", 1);
                 break;
             }
             case KEY_5: {
                 if (shift)
-                    select_function_menu(MENU_CONVERT1);
+                    select_function_menu(EQMN_CONVERT1);
                 else
                     insert_text("5", 1);
                 break;
@@ -1989,7 +2154,7 @@ static int keydown_edit_2(int key, bool shift, int *repeat) {
             }
             case KEY_9: {
                 if (shift)
-                    squeak();
+                    select_function_menu(EQMN_MATRIX1);
                 else
                     insert_text("9", 1);
                 break;
@@ -2054,11 +2219,11 @@ static int keydown_edit_2(int key, bool shift, int *repeat) {
                     }
                     *repeat = 1;
                     eqn_draw();
-                } else if (edit_menu != MENU_NONE && menus[edit_menu].next != MENU_NONE) {
-                    /* No need to handle Up and Down separately, since none of the
-                     * menus we're using here have more than two rows.
-                     */
-                    update_menu(menus[edit_menu].next);
+                } else if (edit_menu != MENU_NONE && getmenu(edit_menu)->next != MENU_NONE) {
+                    if (key == KEY_DOWN)
+                        update_menu(getmenu(edit_menu)->next);
+                    else
+                        update_menu(getmenu(edit_menu)->prev);
                     *repeat = 1;
                     eqn_draw();
                 } else
@@ -2102,7 +2267,7 @@ static int keydown_edit_2(int key, bool shift, int *repeat) {
                     menu_sticky = false;
                     goto_prev_menu();
                 } else {
-                    update_menu(menus[edit_menu].parent);
+                    update_menu(getmenu(edit_menu)->parent);
                 }
                 eqn_draw();
                 break;

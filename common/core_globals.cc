@@ -3947,8 +3947,9 @@ bool load_state(int4 ver_p, bool *clear, bool *too_new) {
         fclose(f);
     } else {
         // No output file present; perform cleanup silently
-        for (int i = prgms_count; i < prgms_and_eqns_count; i++) {
-            equation_data *eqd = prgms[i].eq_data;
+        for (int idx = prgms_count; idx < prgms_and_eqns_count; idx++) {
+            equation_data *eqd = prgms[idx].eq_data;
+            int i = idx - prgms_count;
             if (eqd != NULL) {
                 int r = 0;
                 if (i < var_refs->size())
@@ -3956,7 +3957,7 @@ bool load_state(int4 ver_p, bool *clear, bool *too_new) {
                 if (r == 0) {
                     // delete orphaned equation
                     delete eqd;
-                    prgms[i].eq_data = NULL;
+                    prgms[idx].eq_data = NULL;
                 } else {
                     // fix refcount
                     eqd->refcount = r;

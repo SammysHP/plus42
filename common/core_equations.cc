@@ -220,10 +220,12 @@ bool unpersist_eqn(int4 ver) {
     if (!read_int(&menu_whence)) return false;
     bool have_eqns;
     if (!read_bool(&have_eqns)) return false;
-    if (have_eqns)
-        eqns = (vartype_list *) recall_var("EQNS", 4);
-    else
-        eqns = NULL;
+    eqns = NULL;
+    if (have_eqns) {
+        vartype *v = recall_var("EQNS", 4);
+        if (v != NULL && v->type == TYPE_LIST)
+            eqns = (vartype_list *) v;
+    }
     if (eqns != NULL)
         num_eqns = eqns->size;
     else

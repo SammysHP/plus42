@@ -1197,6 +1197,7 @@ bool unpersist_vartype(vartype **v) {
                 return false;
             eq->type = TYPE_EQUATION;
             eq->data.init_eqn_from_state(eqn_index);
+            track_eqn(TRACK_VAR, eqn_index);
             *v = (vartype *) eq;
             return true;
         }
@@ -1471,6 +1472,7 @@ static bool unpersist_globals() {
         goto done;
     }
     current_prgm.init_unified_from_state(currprgm);
+    track_unified(TRACK_IDX, currprgm);
     if (!read_int4(&pc)) {
         pc = -1;
         goto done;
@@ -1568,6 +1570,7 @@ static bool unpersist_globals() {
             rtn_stack[i].prgm = prgm;
             matrix_entry_follows = rtn_stack[i].has_matrix();
             current_prgm.init_unified_from_state(rtn_stack[i].get_prgm());
+            track_unified(TRACK_STK, rtn_stack[i].get_prgm());
             if (!current_prgm.is_special())
                 line = line2pc(line);
             rtn_stack[i].pc = line;
@@ -3864,10 +3867,107 @@ static bool load_state2(bool *clear, bool *too_new) {
     return true;
 }
 
+std::vector<int> *var_refs;
+std::vector<int> *stk_refs;
+std::vector<int> *idx_refs;
+
+void track_eqn(int which, int eqn_index) {
+    std::vector<int> *v;
+    switch (which) {
+        case TRACK_VAR: v = var_refs; break;
+        case TRACK_STK: v = stk_refs; break;
+        case TRACK_IDX: v = idx_refs; break;
+    }
+    if (eqn_index >= v->size()) {
+        var_refs->resize(eqn_index + 1);
+        stk_refs->resize(eqn_index + 1);
+        idx_refs->resize(eqn_index + 1);
+    }
+    (*v)[eqn_index]++;
+}
+
+void track_unified(int which, int uni) {
+    if (uni > 0 && (uni & 1) != 0)
+        track_eqn(which, uni >> 1);
+}
+
 bool load_state(int4 ver_p, bool *clear, bool *too_new) {
     loading_state = true;
+    var_refs = new std::vector<int>;
+    stk_refs = new std::vector<int>;
+    idx_refs = new std::vector<int>;
     bool ret = load_state2(clear, too_new);
     loading_state = false;
+    char fn[1024];
+    sprintf(fn, "%s/plus42-memory-stats.txt", getenv("HOME"));
+    FILE *f = fopen(fn, "r+");
+    if (f != NULL) {
+        fseek(f, 0, SEEK_END);
+        fprintf(f, "===================================\n");
+        int max = prgms_and_eqns_count - prgms_count;
+        if (max < var_refs->size())
+            max = var_refs->size();
+        for (int i = 0; i < max; i++) {
+            int idx = i + prgms_count;
+            fprintf(f, "%3d: ", i);
+            equation_data *eqd = NULL;
+            int r;
+            if (i >= var_refs->size()) {
+                fprintf(f, "var: 0 stk: 0 idx: 0 ");
+                r = 0;
+            } else {
+                fprintf(f, "var:%2d stk:%2d idx:%2d ", (*var_refs)[i], (*stk_refs)[i], (*idx_refs)[i]);
+                r = (*var_refs)[i] + (*stk_refs)[i] + (*idx_refs)[i];
+            }
+            if (idx >= prgms_and_eqns_count)
+                fprintf(f, "index out of range\n");
+            else if (prgms[idx].eq_data == NULL)
+                fprintf(f, "unused index\n");
+            else {
+                eqd = prgms[idx].eq_data;
+                fprintf(f, "[%d] \"%s\"\n", eqd->refcount, std::string(eqd->text, eqd->length).c_str());
+                if (eqd->eqn_index != i)
+                    fprintf(f, "    mismatched equation index: %d\n", eqd->eqn_index);
+            }
+            if (eqd == NULL) {
+                if (r != 0)
+                    fprintf(f, "    nonzero refcount for nonexistent equation\n");
+            } else {
+                if (r != eqd->refcount)
+                    if (r == 0) {
+                        fprintf(f, "    mismatched refcount; deleting equation\n");
+                        delete eqd;
+                        prgms[idx].eq_data = NULL;
+                    } else {
+                        fprintf(f, "    mismatched refcount; correcting\n");
+                        eqd->refcount = r;
+                    }
+            }
+        }
+        fclose(f);
+    } else {
+        // No output file present; perform cleanup silently
+        for (int i = prgms_count; i < prgms_and_eqns_count; i++) {
+            equation_data *eqd = prgms[i].eq_data;
+            if (eqd != NULL) {
+                int r = 0;
+                if (i < var_refs->size())
+                    r = (*var_refs)[i] + (*stk_refs)[i] + (*idx_refs)[i];
+                if (r == 0) {
+                    // delete orphaned equation
+                    delete eqd;
+                    prgms[i].eq_data = NULL;
+                } else {
+                    // fix refcount
+                    eqd->refcount = r;
+                }
+            }
+        }
+    }
+    delete var_refs;
+    delete stk_refs;
+    delete idx_refs;
+    var_refs = stk_refs = idx_refs = NULL;
     return ret;
 }
 

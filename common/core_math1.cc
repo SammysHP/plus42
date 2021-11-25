@@ -197,6 +197,7 @@ bool unpersist_math(int ver, bool discard) {
     int4 idx;
     if (!read_int4(&idx)) return false;
     solve.prev_prgm.init_unified_from_state(idx);
+    track_unified(TRACK_IDX, idx);
     if (!read_int4(&solve.prev_pc)) return false;
     if (!read_int(&solve.state)) return false;
     if (!read_int(&solve.which)) return false;
@@ -237,6 +238,7 @@ bool unpersist_math(int ver, bool discard) {
     if (!read_int(&integ.keep_running)) return false;
     if (!read_int4(&idx)) return false;
     integ.prev_prgm.init_unified_from_state(idx);
+    track_unified(TRACK_IDX, idx);
     if (!read_int4(&integ.prev_pc)) return false;
     if (!read_int(&integ.state)) return false;
     if (!read_phloat(&integ.llim)) return false;

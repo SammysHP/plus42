@@ -575,6 +575,17 @@ bool write_phloat(phloat d);
 bool read_arg(arg_struct *arg, bool old);
 bool write_arg(const arg_struct *arg);
 
+#define TRACK_VAR 0
+#define TRACK_STK 1
+#define TRACK_IDX 2
+
+extern std::vector<int> *var_refs;
+extern std::vector<int> *stk_refs;
+extern std::vector<int> *idx_refs;
+
+void track_eqn(int which, int eqn_index);
+void track_unified(int which, int uni);
+
 bool load_state(int4 version, bool *clear, bool *too_new);
 void save_state();
 // Reason:

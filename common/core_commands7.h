@@ -119,6 +119,7 @@ int docmd_newstr(arg_struct *arg);
 int docmd_parse(arg_struct *arg);
 int docmd_unparse(arg_struct *arg);
 int docmd_eval(arg_struct *arg);
+int docmd_evaln(arg_struct *arg);
 int docmd_eqn_t(arg_struct *arg);
 int docmd_std(arg_struct *arg);
 int docmd_comp(arg_struct *arg);

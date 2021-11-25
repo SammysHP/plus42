@@ -63,14 +63,19 @@ static int rep_key = -1;
 
 #define EQMN_PGM_FCN1 1000
 #define EQMN_PGM_FCN2 1001
-#define EQMN_MATRIX1  1002
-#define EQMN_MATRIX2  1003
-#define EQMN_BASE1    1004
-#define EQMN_BASE2    1005
-#define EQMN_CONVERT1 1006
-#define EQMN_CONVERT2 1007
-#define EQMN_CONVERT3 1008
-#define EQMN_CONVERT4 1009
+#define EQMN_PGM_FCN3 1002
+#define EQMN_PGM_FCN4 1003
+#define EQMN_MATRIX1  1004
+#define EQMN_MATRIX2  1005
+#define EQMN_BASE1    1006
+#define EQMN_BASE2    1007
+#define EQMN_CONVERT1 1008
+#define EQMN_CONVERT2 1009
+#define EQMN_CONVERT3 1010
+#define EQMN_CONVERT4 1011
+#define EQMN_TOP_FCN1 1012
+#define EQMN_TOP_FCN2 1013
+#define EQMN_TOP_FCN3 1014
 
 #define EQCMD_XCOORD   1000
 #define EQCMD_YCOORD   1001
@@ -114,20 +119,34 @@ const eqn_cmd_spec eqn_cmds[] = {
 };
 
 const menu_spec eqn_menus[] = {
-    { /* EQMN_PGM_FCN1 */ MENU_NONE, EQMN_PGM_FCN2, EQMN_PGM_FCN2,
+    { /* EQMN_PGM_FCN1 */ MENU_NONE, EQMN_PGM_FCN2, EQMN_PGM_FCN4,
                       { { 0x0000 + CMD_IF_T,       2, "IF"    },
                         { 0x0000 + EQCMD_FOR,      3, "FOR"   },
                         { 0x0000 + EQCMD_BREAK,    3, "BRK"   },
                         { 0x0000 + EQCMD_CONTINUE, 4, "CONT"  },
                         { 0x1000 + EQCMD_SEQ,      0, ""      },
                         { 0x1000 + CMD_XEQ,        0, ""      } } },
-    { /* EQMN_PGM_FCN2 */ MENU_NONE, EQMN_PGM_FCN1, EQMN_PGM_FCN1,
+    { /* EQMN_PGM_FCN2 */ MENU_NONE, EQMN_PGM_FCN3, EQMN_PGM_FCN1,
                       { { 0x0000 + CMD_GSTO,    1, "L"     },
                         { 0x0000 + CMD_GRCL,    1, "G"     },
                         { 0x0000 + CMD_SVAR,    1, "S"     },
                         { 0x0000 + CMD_GETITEM, 4, "ITEM"  },
                         { 0x1000 + EQCMD_MAX,   0, ""      },
                         { 0x1000 + EQCMD_MIN,   0, ""      } } },
+    { /* EQMN_PGM_FCN3 */ MENU_NONE, EQMN_PGM_FCN4, EQMN_PGM_FCN2,
+                      { { 0x1000 + CMD_REAL_T, 0, "" },
+                        { 0x1000 + CMD_CPX_T,  0, "" },
+                        { 0x1000 + CMD_MAT_T,  0, "" },
+                        { 0x1000 + CMD_LIST_T, 0, "" },
+                        { 0x1000 + CMD_TIME,   0, "" },
+                        { 0x1000 + CMD_DATE,   0, "" } } },
+    { /* EQMN_PGM_FCN4 */ MENU_NONE, EQMN_PGM_FCN1, EQMN_PGM_FCN3,
+                      { { 0x0000 + CMD_SIGMAADD, 1, "\5" },
+                        { 0x0000 + CMD_SIGMASUB, 1, "\3" },
+                        { 0x1000 + CMD_NULL,     0, "" },
+                        { 0x1000 + CMD_NULL,     0, "" },
+                        { 0x1000 + CMD_NULL,     0, ""   },
+                        { 0x1000 + CMD_NULL,     0, ""   } } },
     { /* EQMN_MATRIX1 */ MENU_NONE, EQMN_MATRIX2, EQMN_MATRIX2,
                       { { 0x1000 + CMD_NEWMAT, 0, "" },
                         { 0x1000 + CMD_INVRT,  0, "" },
@@ -157,33 +176,54 @@ const menu_spec eqn_menus[] = {
                         { 0x1000 + CMD_NULL, 0, "" },
                         { 0x1000 + CMD_NULL, 0, "" } } },
     { /* EQMN_CONVERT1 */ MENU_NONE, EQMN_CONVERT2, EQMN_CONVERT4,
-                      { { 0x1000 + CMD_TO_DEG,   0, "" },
-                        { 0x1000 + CMD_TO_RAD,   0, "" },
-                        { 0x1000 + EQCMD_XCOORD, 0, "" },
+                      { { 0x1000 + EQCMD_XCOORD, 0, "" },
                         { 0x1000 + EQCMD_YCOORD, 0, "" },
                         { 0x1000 + EQCMD_RADIUS, 0, "" },
-                        { 0x1000 + EQCMD_ANGLE,  0, "" } } },
+                        { 0x1000 + EQCMD_ANGLE,  0, "" },
+                        { 0x1000 + CMD_RCOMPLX,  0, "" },
+                        { 0x1000 + CMD_PCOMPLX,  0, "" } } },
     { /* EQMN_CONVERT2 */ MENU_NONE, EQMN_CONVERT3, EQMN_CONVERT1,
-                      { { 0x1000 + CMD_TO_HR,  0, "" },
-                        { 0x1000 + CMD_TO_HMS, 0, "" },
-                        { 0x1000 + CMD_HMSADD, 0, "" },
-                        { 0x1000 + CMD_HMSSUB, 0, "" },
-                        { 0x1000 + CMD_TO_DEC, 0, "" },
-                        { 0x1000 + CMD_TO_OCT, 0, "" } } },
+                      { { 0x1000 + CMD_TO_DEG,   0, "" },
+                        { 0x1000 + CMD_TO_RAD,   0, "" },
+                        { 0x1000 + CMD_TO_HR,    0, "" },
+                        { 0x1000 + CMD_TO_HMS,   0, "" },
+                        { 0x1000 + CMD_HMSADD,   0, "" },
+                        { 0x1000 + CMD_HMSSUB,   0, "" } } },
     { /* EQMN_CONVERT3 */ MENU_NONE, EQMN_CONVERT4, EQMN_CONVERT2,
                       { { 0x1000 + CMD_IP,     0, "" },
                         { 0x1000 + CMD_FP,     0, "" },
+                        { 0x1000 + EQCMD_INT,  0, "" },
                         { 0x1000 + CMD_RND,    0, "" },
                         { 0x1000 + EQCMD_TRN,  0, "" },
-                        { 0x1000 + EQCMD_IDIV, 0, "" },
-                        { 0x1000 + CMD_MOD,    0, "" } } },
+                        { 0x1000 + CMD_NULL,   0, "" } } },
     { /* EQMN_CONVERT4 */ MENU_NONE, EQMN_CONVERT1, EQMN_CONVERT3,
-                      { { 0x1000 + CMD_ABS,       0, "" },
-                        { 0x1000 + CMD_SIGN,      0, "" },
-                        { 0x1000 + CMD_TIME,      0, "" },
-                        { 0x1000 + CMD_DATE,      0, "" },
+                      { { 0x1000 + CMD_ABS,    0, "" },
+                        { 0x1000 + CMD_SIGN,   0, "" },
+                        { 0x1000 + EQCMD_IDIV, 0, "" },
+                        { 0x1000 + CMD_MOD,    0, "" },
+                        { 0x1000 + CMD_TO_DEC, 0, "" },
+                        { 0x1000 + CMD_TO_OCT, 0, "" } } },
+    { /* EQMN_TOP_FCN1 */ MENU_NONE, EQMN_TOP_FCN2, EQMN_TOP_FCN3,
+                      { { 0x0000 + CMD_SIGMAADD, 1, "\5" },
+                        { 0x1000 + CMD_INV,      0, ""   },
+                        { 0x1000 + CMD_SQRT,     0, ""   },
+                        { 0x1000 + CMD_LOG,      0, ""   },
+                        { 0x1000 + CMD_LN,       0, ""   },
+                        { 0x1000 + CMD_XEQ,      0, ""   } } },
+    { /* EQMN_TOP_FCN2 */ MENU_NONE, EQMN_TOP_FCN3, EQMN_TOP_FCN1,
+                      { { 0x1000 + CMD_SINH,  0, "" },
+                        { 0x1000 + CMD_ASINH, 0, "" },
+                        { 0x1000 + CMD_COSH,  0, "" },
+                        { 0x1000 + CMD_ACOSH, 0, "" },
+                        { 0x1000 + CMD_TANH,  0, "" },
+                        { 0x1000 + CMD_ATANH, 0, "" } } },
+    { /* EQMN_TOP_FCN3 */ MENU_NONE, EQMN_TOP_FCN1, EQMN_TOP_FCN3,
+                      { { 0x1000 + CMD_LN_1_X,    0, "" },
+                        { 0x1000 + CMD_E_POW_X_1, 0, "" },
                         { 0x1000 + CMD_DATE_PLUS, 0, "" },
-                        { 0x1000 + CMD_DDAYS,     0, "" } } },
+                        { 0x1000 + CMD_DDAYS,     0, "" },
+                        { 0x1000 + CMD_NULL,      0, "" },
+                        { 0x1000 + CMD_NULL,      0, "" } } },
 };
 
 static const menu_spec *getmenu(int id) {
@@ -194,23 +234,24 @@ static const menu_spec *getmenu(int id) {
 }
 
 static short catalog[] = {
-    CMD_ABS,     CMD_ACOS,    CMD_ACOSH,     CMD_AND,       EQCMD_ANGLE,    CMD_ASIN,
-    CMD_ASINH,   CMD_ATAN,    CMD_ATANH,     CMD_BASEADD,   CMD_BASESUB,    CMD_BASEMUL,
-    CMD_BASEDIV, CMD_BASECHS, EQCMD_BREAK,   CMD_COMB,      EQCMD_CONTINUE, CMD_COS,
-    CMD_COSH,    CMD_CROSS,   CMD_DATE,      CMD_DATE_PLUS, CMD_DDAYS,      CMD_DET,
-    CMD_DOT,     CMD_E_POW_X, CMD_E_POW_X_1, CMD_FNRM,      EQCMD_FOR,      CMD_FP,
-    CMD_GAMMA,   CMD_HMSADD,  CMD_HMSSUB,    EQCMD_IDIV,    CMD_IF_T,       EQCMD_INT,
-    CMD_INVRT,   CMD_IP,      CMD_LN,        CMD_LN_1_X,    CMD_LOG,        EQCMD_MAX,
-    EQCMD_MIN,   CMD_MOD,     EQCMD_MCOLS,   EQCMD_MROWS,   CMD_FACT,       CMD_NEWLIST,
-    CMD_NEWMAT,  CMD_NOT,     CMD_OR,        CMD_PERM,      EQCMD_RADIUS,   CMD_RAN,
-    CMD_RND,     CMD_RNRM,    CMD_RSUM,      CMD_SEED,      EQCMD_SEQ,      CMD_SIGN,
-    CMD_SIN,     CMD_SINH,    EQCMD_SIZES,   CMD_SQRT,      CMD_TAN,        CMD_TANH,
-    CMD_TIME,    CMD_TRANS,   EQCMD_TRN,     CMD_UVEC,      EQCMD_XCOORD,   CMD_XEQ,
-    CMD_XOR,     CMD_SQUARE,  EQCMD_YCOORD,  CMD_Y_POW_X,   CMD_INV,        CMD_10_POW_X,
-    CMD_TO_DEC,  CMD_TO_DEG,  CMD_TO_HMS,    CMD_TO_HR,     CMD_TO_OCT,     CMD_TO_RAD
+    CMD_ABS,      CMD_ACOS,     CMD_ACOSH,    CMD_AND,       EQCMD_ANGLE,    CMD_ASIN,
+    CMD_ASINH,    CMD_ATAN,     CMD_ATANH,    CMD_BASEADD,   CMD_BASESUB,    CMD_BASEMUL,
+    CMD_BASEDIV,  CMD_BASECHS,  EQCMD_BREAK,  CMD_COMB,      EQCMD_CONTINUE, CMD_COS,
+    CMD_COSH,     CMD_CPX_T,    CMD_CROSS,    CMD_DATE,      CMD_DATE_PLUS,  CMD_DDAYS,
+    CMD_DET,      CMD_DOT,      CMD_E_POW_X,  CMD_E_POW_X_1, CMD_FNRM,       EQCMD_FOR,
+    CMD_FP,       CMD_GAMMA,    CMD_HMSADD,   CMD_HMSSUB,    EQCMD_IDIV,     CMD_IF_T,
+    EQCMD_INT,    CMD_INVRT,    CMD_IP,       CMD_LN,        CMD_LN_1_X,     CMD_LOG,
+    CMD_LIST_T,   CMD_MAT_T,    EQCMD_MAX,    EQCMD_MIN,     CMD_MOD,        EQCMD_MCOLS,
+    EQCMD_MROWS,  CMD_FACT,     CMD_NEWLIST,  CMD_NEWMAT,    CMD_NOT,        CMD_OR,
+    CMD_PERM,     EQCMD_RADIUS, CMD_RAN,      CMD_REAL_T,    CMD_RND,        CMD_RNRM,
+    CMD_RSUM,     CMD_SEED,     EQCMD_SEQ,    CMD_SIGN,      CMD_SIN,        CMD_SINH,
+    EQCMD_SIZES,  CMD_SQRT,     CMD_TAN,      CMD_TANH,      CMD_TIME,       CMD_TRANS,
+    EQCMD_TRN,    CMD_UVEC,     EQCMD_XCOORD, CMD_XEQ,       CMD_XOR,        CMD_SQUARE,
+    EQCMD_YCOORD, CMD_Y_POW_X,  CMD_INV,      CMD_10_POW_X,  CMD_TO_DEC,     CMD_TO_DEG,
+    CMD_TO_HMS,   CMD_TO_HR,    CMD_TO_OCT,   CMD_TO_RAD,    CMD_NULL,       CMD_NULL
 };
 
-static int catalog_rows = 14;
+static int catalog_rows = 15;
 
 
 static void restart_cursor();
@@ -362,6 +403,7 @@ static eqn_name_entry eqn_name[] = {
     { CMD_MUL,       1, "\001"     },
     { CMD_DIV,       1, "\000"     },
     { CMD_SIGMAADD,  2, "\005("    },
+    { CMD_SIGMASUB,  2, "\003("    },
     { CMD_INV,       4, "INV("     },
     { CMD_SQUARE,    3, "SQ("      },
     { CMD_E_POW_X,   4, "EXP("     },
@@ -1513,7 +1555,9 @@ static int keydown_sto_overwrite(int key, bool shift, int *repeat) {
 }
 
 static bool is_function_menu(int menu) {
-    return menu == MENU_TOP_FCN
+    return menu == EQMN_TOP_FCN1
+            || menu == EQMN_TOP_FCN2
+            || menu == EQMN_TOP_FCN3
             || menu == MENU_PROB
             || menu == MENU_CUSTOM1
             || menu == MENU_CUSTOM2
@@ -1978,14 +2022,14 @@ static int keydown_edit_2(int key, bool shift, int *repeat) {
         } else {
             /* Various function menus */
             int cmd;
-            if (shift && edit_menu == MENU_TOP_FCN) {
+            if (shift && edit_menu == EQMN_TOP_FCN1) {
                 switch (key) {
                     case KEY_SIGMA: cmd = CMD_SIGMASUB; break;
                     case KEY_INV: cmd = CMD_Y_POW_X; break;
                     case KEY_SQRT: cmd = CMD_SQUARE; break;
                     case KEY_LOG: cmd = CMD_10_POW_X; break;
                     case KEY_LN: cmd = CMD_E_POW_X; break;
-                    case KEY_XEQ: cmd = CMD_GTO; break;
+                    case KEY_XEQ: cmd = EQCMD_SEQ; break;
                 }
             } else {
                 cmd = getmenu(edit_menu)->child[key - 1].menuid;
@@ -2099,7 +2143,7 @@ static int keydown_edit_2(int key, bool shift, int *repeat) {
             }
             case KEY_0: {
                 if (shift)
-                    select_function_menu(MENU_TOP_FCN);
+                    select_function_menu(EQMN_TOP_FCN1);
                 else
                     insert_text("0", 1);
                 break;

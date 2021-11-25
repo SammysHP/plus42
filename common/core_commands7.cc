@@ -2006,6 +2006,23 @@ int docmd_unparse(arg_struct *arg) {
 }
 
 int docmd_eval(arg_struct *arg) {
+    vartype_equation *eq = (vartype_equation *) stack[sp];
+    if (program_running()) {
+        int err = push_rtn_addr(current_prgm, pc);
+        if (err != ERR_NONE)
+            return err;
+        current_prgm = eq->data;
+        pc = 0;
+        return ERR_NONE;
+    } else {
+        clear_all_rtns();
+        current_prgm = eq->data;
+        pc = 0;
+        return ERR_RUN;
+    }
+}
+
+int docmd_evaln(arg_struct *arg) {
     if (arg->type == ARGTYPE_IND_NUM
             || arg->type == ARGTYPE_IND_STK
             || arg->type == ARGTYPE_IND_STR) {

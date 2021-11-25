@@ -1668,7 +1668,8 @@ static int ext_stk_cat[] = {
 };
 
 static int ext_eqn_cat[] = {
-    CMD_COMP, CMD_EQN_T, CMD_EVAL, CMD_PARSE, CMD_STD, CMD_UNPARSE
+    CMD_COMP,    CMD_EQN_T, CMD_EVAL, CMD_EVALN, CMD_PARSE, CMD_STD,
+    CMD_UNPARSE, CMD_NULL,  CMD_NULL, CMD_NULL,  CMD_NULL,  CMD_NULL
 };
 
 static int ext_dir_cat[] = {
@@ -1820,7 +1821,7 @@ static void draw_catalog() {
             case CATSECT_EXT_PRGM: subcat = ext_prgm_cat; subcat_rows = 3; break;
             case CATSECT_EXT_STR: subcat = ext_str_cat; subcat_rows = 3; break;
             case CATSECT_EXT_STK: subcat = ext_stk_cat; subcat_rows = 3; break;
-            case CATSECT_EXT_EQN: subcat = ext_eqn_cat; subcat_rows = 1; break;
+            case CATSECT_EXT_EQN: subcat = ext_eqn_cat; subcat_rows = 2; break;
             case CATSECT_EXT_DIR: subcat = ext_dir_cat; subcat_rows = 1; break;
             case CATSECT_EXT_MISC: subcat = ext_misc_cat; subcat_rows = MISC_CAT_ROWS; break;
             case CATSECT_EXT_0_CMP: subcat = ext_0_cmp_cat; subcat_rows = 1; break;

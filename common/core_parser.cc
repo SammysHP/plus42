@@ -160,7 +160,7 @@ class GeneratorContext {
                     goto do_string;
                 arg.type = ARGTYPE_IND_STK;
                 arg.val.stk = 'X';
-            } else if (line->cmd == CMD_EVAL) {
+            } else if (line->cmd == CMD_EVALN) {
                 arg.type = ARGTYPE_STK;
                 arg.val.stk = 'L';
             } else if (line->cmd == CMD_XSTR) {
@@ -401,15 +401,32 @@ class Angle : public BinaryEvaluator {
     Angle(int pos, Evaluator *left, Evaluator *right) : BinaryEvaluator(pos, left, right, false) {}
 
     Evaluator *clone(For *f) {
-        return new Angle(tpos, left->clone(f), right->clone(f));
+        return new Angle(tpos, left->clone(f), right == NULL ? NULL : right->clone(f));
     }
 
     void generateCode(GeneratorContext *ctx) {
         left->generateCode(ctx);
-        right->generateCode(ctx);
-        ctx->addLine(CMD_SWAP);
-        ctx->addLine(CMD_TO_POL);
-        ctx->addLine(CMD_DROP);
+        if (right == NULL) {
+            int lbl1 = ctx->nextLabel();
+            int lbl2 = ctx->nextLabel();
+            ctx->addLine(CMD_CPX_T);
+            ctx->addLine(CMD_GTOL, lbl1);
+            ctx->addLine(CMD_NUMBER, (phloat) 0);
+            ctx->addLine(CMD_SWAP);
+            ctx->addLine(CMD_TO_POL);
+            ctx->addLine(CMD_DROP);
+            ctx->addLine(CMD_GTOL, lbl2);
+            ctx->addLine(CMD_LBL, lbl1);
+            ctx->addLine(CMD_PCOMPLX);
+            ctx->addLine(CMD_SWAP);
+            ctx->addLine(CMD_DROP);
+            ctx->addLine(CMD_LBL, lbl2);
+        } else {
+            right->generateCode(ctx);
+            ctx->addLine(CMD_SWAP);
+            ctx->addLine(CMD_TO_POL);
+            ctx->addLine(CMD_DROP);
+        }
     }
 };
 
@@ -872,7 +889,7 @@ class Call : public Evaluator {
         ctx->addLine(CMD_XSTR, name);
         ctx->addLine(CMD_GETEQN);
         ctx->addLine(CMD_TO_PAR);
-        ctx->addLine(CMD_EVAL); // EVAL ST L; eqn left in LASTx by ->PAR
+        ctx->addLine(CMD_EVALN);
         ctx->popSubroutine();
     }
 
@@ -2548,6 +2565,27 @@ class Or : public BinaryEvaluator {
     }
 };
 
+/////////////////////
+/////  Pcomplx  /////
+/////////////////////
+
+class Pcomplx : public BinaryEvaluator {
+
+    public:
+
+    Pcomplx(int pos, Evaluator *left, Evaluator *right) : BinaryEvaluator(pos, left, right, false) {}
+
+    Evaluator *clone(For *f) {
+        return new Pcomplx(tpos, left->clone(f), right->clone(f));
+    }
+
+    void generateCode(GeneratorContext *ctx) {
+        left->generateCode(ctx);
+        right->generateCode(ctx);
+        ctx->addLine(CMD_PCOMPLX);
+    }
+};
+
 //////////////////
 /////  Perm  /////
 //////////////////
@@ -2561,8 +2599,6 @@ class Perm : public BinaryEvaluator {
     Evaluator *clone(For *f) {
         return new Perm(tpos, left->clone(f), right->clone(f));
     }
-
-    bool isBool() { return true; }
 
     void generateCode(GeneratorContext *ctx) {
         left->generateCode(ctx);
@@ -2706,16 +2742,33 @@ class Radius : public BinaryEvaluator {
     Radius(int pos, Evaluator *left, Evaluator *right) : BinaryEvaluator(pos, left, right, false) {}
 
     Evaluator *clone(For *f) {
-        return new Radius(tpos, left->clone(f), right->clone(f));
+        return new Radius(tpos, left->clone(f), right == NULL ? NULL : right->clone(f));
     }
 
     void generateCode(GeneratorContext *ctx) {
         left->generateCode(ctx);
-        right->generateCode(ctx);
-        ctx->addLine(CMD_SWAP);
-        ctx->addLine(CMD_TO_POL);
-        ctx->addLine(CMD_SWAP);
-        ctx->addLine(CMD_DROP);
+        if (right == NULL) {
+            int lbl1 = ctx->nextLabel();
+            int lbl2 = ctx->nextLabel();
+            ctx->addLine(CMD_CPX_T);
+            ctx->addLine(CMD_GTOL, lbl1);
+            ctx->addLine(CMD_NUMBER, (phloat) 0);
+            ctx->addLine(CMD_SWAP);
+            ctx->addLine(CMD_TO_POL);
+            ctx->addLine(CMD_SWAP);
+            ctx->addLine(CMD_DROP);
+            ctx->addLine(CMD_GTOL, lbl2);
+            ctx->addLine(CMD_LBL, lbl1);
+            ctx->addLine(CMD_PCOMPLX);
+            ctx->addLine(CMD_DROP);
+            ctx->addLine(CMD_LBL, lbl2);
+        } else {
+            right->generateCode(ctx);
+            ctx->addLine(CMD_SWAP);
+            ctx->addLine(CMD_TO_POL);
+            ctx->addLine(CMD_SWAP);
+            ctx->addLine(CMD_DROP);
+        }
     }
 };
 
@@ -2743,6 +2796,27 @@ class Random : public Evaluator {
 
     int howMany(const std::string *name) {
         return 0;
+    }
+};
+
+/////////////////////
+/////  Rcomplx  /////
+/////////////////////
+
+class Rcomplx : public BinaryEvaluator {
+
+    public:
+
+    Rcomplx(int pos, Evaluator *left, Evaluator *right) : BinaryEvaluator(pos, left, right, false) {}
+
+    Evaluator *clone(For *f) {
+        return new Rcomplx(tpos, left->clone(f), right->clone(f));
+    }
+
+    void generateCode(GeneratorContext *ctx) {
+        left->generateCode(ctx);
+        right->generateCode(ctx);
+        ctx->addLine(CMD_RCOMPLX);
     }
 };
 
@@ -3288,6 +3362,42 @@ class Trans : public UnaryEvaluator {
     }
 };
 
+//////////////////////
+/////  TypeTest  /////
+//////////////////////
+
+class TypeTest : public UnaryEvaluator {
+
+    private:
+
+    int cmd;
+
+    public:
+
+    TypeTest(int pos, Evaluator *ev, int cmd) : UnaryEvaluator(pos, ev, false), cmd(cmd) {}
+
+    Evaluator *clone(For *f) {
+        return new TypeTest(tpos, ev->clone(f), cmd);
+    }
+
+    bool isBool() { return true; }
+
+    void generateCode(GeneratorContext *ctx) {
+        ev->generateCode(ctx);
+        int lbl1 = ctx->nextLabel();
+        int lbl2 = ctx->nextLabel();
+        ctx->addLine(cmd);
+        ctx->addLine(CMD_GTOL, lbl1);
+        ctx->addLine(CMD_DROP);
+        ctx->addLine(CMD_NUMBER, (phloat) 0);
+        ctx->addLine(CMD_GTOL, lbl2);
+        ctx->addLine(CMD_LBL, lbl1);
+        ctx->addLine(CMD_DROP);
+        ctx->addLine(CMD_NUMBER, (phloat) 1);
+        ctx->addLine(CMD_LBL, lbl2);
+    }
+};
+
 //////////////////
 /////  Uvec  /////
 //////////////////
@@ -3354,16 +3464,28 @@ class Xcoord : public BinaryEvaluator {
     Xcoord(int pos, Evaluator *left, Evaluator *right) : BinaryEvaluator(pos, left, right, false) {}
 
     Evaluator *clone(For *f) {
-        return new Xcoord(tpos, left->clone(f), right->clone(f));
+        return new Xcoord(tpos, left->clone(f), right == NULL ? NULL : right->clone(f));
     }
 
     void generateCode(GeneratorContext *ctx) {
         left->generateCode(ctx);
-        right->generateCode(ctx);
-        ctx->addLine(CMD_SWAP);
-        ctx->addLine(CMD_TO_REC);
-        ctx->addLine(CMD_SWAP);
-        ctx->addLine(CMD_DROP);
+        if (right == NULL) {
+            int lbl1 = ctx->nextLabel();
+            int lbl2 = ctx->nextLabel();
+            ctx->addLine(CMD_CPX_T);
+            ctx->addLine(CMD_GTOL, lbl1);
+            ctx->addLine(CMD_GTOL, lbl2);
+            ctx->addLine(CMD_LBL, lbl1);
+            ctx->addLine(CMD_RCOMPLX);
+            ctx->addLine(CMD_DROP);
+            ctx->addLine(CMD_LBL, lbl2);
+        } else {
+            right->generateCode(ctx);
+            ctx->addLine(CMD_SWAP);
+            ctx->addLine(CMD_TO_REC);
+            ctx->addLine(CMD_SWAP);
+            ctx->addLine(CMD_DROP);
+        }
     }
 };
 
@@ -3459,15 +3581,30 @@ class Ycoord : public BinaryEvaluator {
     Ycoord(int pos, Evaluator *left, Evaluator *right) : BinaryEvaluator(pos, left, right, false) {}
 
     Evaluator *clone(For *f) {
-        return new Ycoord(tpos, left->clone(f), right->clone(f));
+        return new Ycoord(tpos, left->clone(f), right == NULL ? NULL : right->clone(f));
     }
 
     void generateCode(GeneratorContext *ctx) {
         left->generateCode(ctx);
-        right->generateCode(ctx);
-        ctx->addLine(CMD_SWAP);
-        ctx->addLine(CMD_TO_REC);
-        ctx->addLine(CMD_DROP);
+        if (right == NULL) {
+            int lbl1 = ctx->nextLabel();
+            int lbl2 = ctx->nextLabel();
+            ctx->addLine(CMD_CPX_T);
+            ctx->addLine(CMD_GTOL, lbl1);
+            ctx->addLine(CMD_DROP);
+            ctx->addLine(CMD_NUMBER, (phloat) 0);
+            ctx->addLine(CMD_GTOL, lbl2);
+            ctx->addLine(CMD_LBL, lbl1);
+            ctx->addLine(CMD_RCOMPLX);
+            ctx->addLine(CMD_SWAP);
+            ctx->addLine(CMD_DROP);
+            ctx->addLine(CMD_LBL, lbl2);
+        } else {
+            right->generateCode(ctx);
+            ctx->addLine(CMD_SWAP);
+            ctx->addLine(CMD_TO_REC);
+            ctx->addLine(CMD_DROP);
+        }
     }
 };
 
@@ -4588,18 +4725,24 @@ Evaluator *Parser::parseThing() {
                     || t == "BNOT" || t == "BNEG"
                     || t == "INVRT" || t == "DET" || t == "TRANS"
                     || t == "UVEC" || t == "FNRM" || t == "RNRM"
-                    || t == "RSUM") {
+                    || t == "RSUM" || t == "REAL?" || t == "CPX?"
+                    || t == "MAT?" || t == "LIST?") {
                 min_args = max_args = 1;
                 mode = EXPR_LIST_EXPR;
-            } else if (t == "ANGLE" || t == "RADIUS" || t == "XCOORD"
-                    || t == "YCOORD" || t == "COMB" || t == "PERM"
+            } else if (t == "COMB" || t == "PERM"
                     || t == "IDIV" || t == "MOD" || t == "RND"
                     || t == "TRN" || t == "DATE" || t == "BAND"
                     || t == "BOR" || t == "BXOR" || t == "BADD"
                     || t == "BSUB" || t == "BMUL" || t == "BDIV"
                     || t == "HMSADD" || t == "HMSSUB"
-                    || t == "NEWMAT" || t == "DOT" || t == "CROSS") {
+                    || t == "NEWMAT" || t == "DOT" || t == "CROSS"
+                    || t == "RCOMPLX" || t == "PCOMPLX") {
                 min_args = max_args = 2;
+                mode = EXPR_LIST_EXPR;
+            } else if (t == "ANGLE" || t == "RADIUS" || t == "XCOORD"
+                    || t == "YCOORD") {
+                min_args = 1;
+                max_args = 2;
                 mode = EXPR_LIST_EXPR;
             } else if (t == "DDAYS") {
                 min_args = max_args = 3;
@@ -4686,7 +4829,8 @@ Evaluator *Parser::parseThing() {
                     || t == "BNOT" || t == "BNEG"
                     || t == "INVRT" || t == "DET" || t == "TRANS"
                     || t == "UVEC" || t == "FNRM" || t == "RNRM"
-                    || t == "RSUM") {
+                    || t == "RSUM" || t == "REAL?" || t == "CPX?"
+                    || t == "MAT?" || t == "LIST?") {
                 Evaluator *ev = (*evs)[0];
                 delete evs;
                 if (t == "SIN")
@@ -4781,29 +4925,29 @@ Evaluator *Parser::parseThing() {
                     return new Rnrm(tpos, ev);
                 else if (t == "RSUM")
                     return new Rsum(tpos, ev);
+                else if (t == "REAL?")
+                    return new TypeTest(tpos, ev, CMD_REAL_T);
+                else if (t == "CPX?")
+                    return new TypeTest(tpos, ev, CMD_CPX_T);
+                else if (t == "MAT?")
+                    return new TypeTest(tpos, ev, CMD_MAT_T);
+                else if (t == "LIST?")
+                    return new TypeTest(tpos, ev, CMD_LIST_T);
                 else
                     // Shouldn't get here
                     return NULL;
-            } else if (t == "ANGLE" || t == "RADIUS" || t == "XCOORD"
-                    || t == "YCOORD" || t == "COMB" || t == "PERM"
+            } else if (t == "COMB" || t == "PERM"
                     || t == "IDIV" || t == "MOD" || t == "RND"
                     || t == "TRN" || t == "DATE" || t == "BAND"
                     || t == "BOR" || t == "BXOR" || t == "BADD"
                     || t == "BSUB" || t == "BMUL" || t == "BDIV"
                     || t == "HMSADD" || t == "HMSSUB"
-                    || t == "NEWMAT" || t == "DOT" || t == "CROSS") {
+                    || t == "NEWMAT" || t == "DOT" || t == "CROSS"
+                    || t == "RCOMPLX" || t == "PCOMPLX") {
                 Evaluator *left = (*evs)[0];
                 Evaluator *right = (*evs)[1];
                 delete evs;
-                if (t == "ANGLE")
-                    return new Angle(tpos, left, right);
-                else if (t == "RADIUS")
-                    return new Radius(tpos, left, right);
-                else if (t == "XCOORD")
-                    return new Xcoord(tpos, left, right);
-                else if (t == "YCOORD")
-                    return new Ycoord(tpos, left, right);
-                else if (t == "COMB")
+                if (t == "COMB")
                     return new Comb(tpos, left, right);
                 else if (t == "PERM")
                     return new Perm(tpos, left, right);
@@ -4841,6 +4985,26 @@ Evaluator *Parser::parseThing() {
                     return new Dot(tpos, left, right);
                 else if (t == "CROSS")
                     return new Cross(tpos, left, right);
+                else if (t == "RCOMPLX")
+                    return new Rcomplx(tpos, left, right);
+                else if (t == "PCOMPLX")
+                    return new Pcomplx(tpos, left, right);
+                else
+                    // Shouldn't get here
+                    return NULL;
+            } else if (t == "ANGLE" || t == "RADIUS" || t == "XCOORD"
+                    || t == "YCOORD") {
+                Evaluator *left = (*evs)[0];
+                Evaluator *right = evs->size() > 1 ? (*evs)[1] : NULL;
+                delete evs;
+                if (t == "ANGLE")
+                    return new Angle(tpos, left, right);
+                else if (t == "RADIUS")
+                    return new Radius(tpos, left, right);
+                else if (t == "XCOORD")
+                    return new Xcoord(tpos, left, right);
+                else if (t == "YCOORD")
+                    return new Ycoord(tpos, left, right);
                 else
                     // Shouldn't get here
                     return NULL;

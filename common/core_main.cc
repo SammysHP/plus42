@@ -609,8 +609,8 @@ bool core_keyup() {
             pc = 0;
         get_next_command(&pc, &cmd, &arg, 1, NULL);
         if (pending_command == CMD_SST_RT
-                && (cmd == CMD_XEQ || cmd == CMD_XEQL
-                    || cmd == CMD_EVAL || cmd == CMD_SOLVE || cmd == CMD_INTEG)) {
+                && (cmd == CMD_XEQ || cmd == CMD_XEQL || cmd == CMD_EVAL
+                    || cmd == CMD_EVALN || cmd == CMD_SOLVE || cmd == CMD_INTEG)) {
             pc = oldpc;
             step_over();
             goto do_run;
@@ -1701,7 +1701,7 @@ static int hp42ext[] = {
     CMD_NULL    | 0x3000, /* XEQL */
     CMD_GSTO    | 0x0000,
     CMD_GRCL    | 0x0000,
-    CMD_EVAL    | 0x2000,
+    CMD_EVALN   | 0x2000,
     CMD_NULL    | 0x4000,
     CMD_NULL    | 0x4000,
     CMD_NULL    | 0x4000,
@@ -1716,7 +1716,7 @@ static int hp42ext[] = {
     CMD_PRMVAR  | 0x0000,
     CMD_XSTR    | 0x0000,
     CMD_VARMNU1 | 0x0000,
-    CMD_EVAL    | 0x0000,
+    CMD_EVALN   | 0x0000,
     CMD_NULL    | 0x4000,
     CMD_NULL    | 0x4000,
     CMD_NULL    | 0x4000,
@@ -1724,7 +1724,7 @@ static int hp42ext[] = {
     CMD_PRMVAR  | 0x1000,
     CMD_XSTR    | 0x1000,
     CMD_VARMNU1 | 0x1000,
-    CMD_EVAL    | 0x1000,
+    CMD_EVALN   | 0x1000,
     CMD_NULL    | 0x4000,
     CMD_NULL    | 0x4000,
     CMD_NULL    | 0x4000,
@@ -2128,18 +2128,6 @@ void core_import_programs(int num_progs, const char *raw_file_name) {
                     /* Unparameterized RTNERR: translate to RTNERR IND ST X */
                     cmd = CMD_RTNERR;
                     arg.type = ARGTYPE_IND_STK;
-                    arg.val.stk = 'X';
-                    goto store;
-                } else if (code == 0x0A7FE) {
-                    /* Unparameterized EVAL: translate to EVAL ST X */
-                    /* Note that EVAL ST X is not actually a clean replacement
-                     * for EVAL: the equation is not saved to LASTx and
-                     * replaced by the result, but rather, the result is
-                     * pushed onto the stack, i.e. it's not a unary
-                     * operator but a recall operation.
-                     */
-                    cmd = CMD_EVAL;
-                    arg.type = ARGTYPE_STK;
                     arg.val.stk = 'X';
                     goto store;
                 } else if (code >= 0x0a679 && code <= 0x0a67e) {

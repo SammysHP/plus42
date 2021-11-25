@@ -527,8 +527,9 @@
 #define CMD_TO_PAR      471
 #define CMD_FDEPTH      472
 #define CMD_PUTITEM     473
+#define CMD_EVALN       474
 
-#define CMD_SENTINEL    474
+#define CMD_SENTINEL    475
 
 
 /* command_spec.argtype */

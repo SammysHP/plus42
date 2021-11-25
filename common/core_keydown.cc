@@ -1008,7 +1008,8 @@ void keydown_command_entry(int shift, int key) {
                     || catsect == CATSECT_PGM
                     || catsect == CATSECT_REAL
                     || catsect == CATSECT_CPX
-                    || catsect == CATSECT_MAT) {
+                    || catsect == CATSECT_MAT
+                    || catsect == CATSECT_EQN) {
                 set_cat_section(CATSECT_TOP);
                 redisplay();
             } else if (catsect == CATSECT_EXT_TIME
@@ -1222,7 +1223,8 @@ void keydown_command_entry(int shift, int key) {
                         || incomplete_argtype == ARG_PRGM
                         || incomplete_argtype == ARG_NUM9
                         || incomplete_argtype == ARG_NUM11
-                        || incomplete_argtype == ARG_NUM99) {
+                        || incomplete_argtype == ARG_NUM99
+                        || incomplete_argtype == ARG_EQN) {
                     set_menu(MENULEVEL_COMMAND, MENU_ST);
                     redisplay();
                 }
@@ -1408,6 +1410,21 @@ void keydown_command_entry(int shift, int key) {
             return;
         }
 
+        if (incomplete_argtype == ARG_EQN
+                && !incomplete_ind
+                && incomplete_length == 0
+                && (mode_commandmenu < MENU_ALPHA1
+                    || mode_commandmenu > MENU_ALPHA_MISC2)
+                && !shift && key == KEY_DOT) {
+            // TODO HERE
+            incomplete_ind = false;
+            incomplete_alpha = false;
+            //set_catalog_menu(CATSECT_EQN_ONLY);
+            set_menu(MENULEVEL_COMMAND, MENU_IND_ST);
+            redisplay();
+            return;
+        }
+
         if (incomplete_length == 0 && shift && key == KEY_ADD) {
             if (mode_commandmenu == MENU_CATALOG)
                 squeak();
@@ -1480,7 +1497,8 @@ void keydown_command_entry(int shift, int key) {
                 if (catsect == CATSECT_PGM
                         || catsect == CATSECT_REAL
                         || catsect == CATSECT_CPX
-                        || catsect == CATSECT_MAT) {
+                        || catsect == CATSECT_MAT
+                        || catsect == CATSECT_EQN) {
                     set_cat_section(CATSECT_TOP);
                     redisplay();
                     return;
@@ -1544,6 +1562,11 @@ void keydown_command_entry(int shift, int key) {
                             set_catalog_menu(CATSECT_MAT_ONLY);
                         else
                             set_menu(MENULEVEL_COMMAND, MENU_NONE);
+                    } else if (incomplete_argtype == ARG_EQN) {
+                        if (vars_exist(CATSECT_EQN))
+                            set_catalog_menu(CATSECT_EQN_ONLY);
+                        else
+                            set_menu(MENULEVEL_COMMAND, MENU_NONE);
                     } else if (incomplete_argtype == ARG_PRGM)
                         set_catalog_menu(CATSECT_PGM_ONLY);
                     else if (incomplete_argtype == ARG_XSTR) {
@@ -1557,7 +1580,8 @@ void keydown_command_entry(int shift, int key) {
                                 || catsect == CATSECT_PGM
                                 || catsect == CATSECT_REAL
                                 || catsect == CATSECT_CPX
-                                || catsect == CATSECT_MAT)) {
+                                || catsect == CATSECT_MAT
+                                || catsect == CATSECT_EQN)) {
                     set_catalog_menu(CATSECT_TOP);
                     redisplay();
                 } else if (mode_commandmenu == MENU_CATALOG
@@ -1609,6 +1633,9 @@ void keydown_command_entry(int shift, int key) {
                 } else if (incomplete_argtype == ARG_MAT) {
                     if (vars_exist(CATSECT_MAT))
                         set_catalog_menu(CATSECT_MAT_ONLY);
+                } else if (incomplete_argtype == ARG_EQN) {
+                    if (vars_exist(CATSECT_EQN))
+                        set_catalog_menu(CATSECT_EQN_ONLY);
                 } else if (incomplete_argtype == ARG_PRGM)
                     set_catalog_menu(CATSECT_PGM_ONLY);
                 else if (incomplete_argtype == ARG_XSTR) {
@@ -1659,6 +1686,7 @@ void keydown_command_entry(int shift, int key) {
                             && catsect != CATSECT_REAL
                             && catsect != CATSECT_CPX
                             && catsect != CATSECT_MAT
+                            && catsect != CATSECT_EQN
                             && catsect != CATSECT_EXT_TIME
                             && catsect != CATSECT_EXT_XFCN
                             && catsect != CATSECT_EXT_BASE
@@ -2600,7 +2628,8 @@ void keydown_normal_mode(int shift, int key) {
                         || catsect == CATSECT_PGM
                         || catsect == CATSECT_REAL
                         || catsect == CATSECT_CPX
-                        || catsect == CATSECT_MAT)
+                        || catsect == CATSECT_MAT
+                        || catsect == CATSECT_EQN)
                     set_cat_section(CATSECT_TOP);
                 else if (catsect >= CATSECT_EXT_TIME
                         && catsect <= CATSECT_EXT_STK)

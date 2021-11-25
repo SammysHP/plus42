@@ -808,6 +808,11 @@ bool vars_exist(int section) {
                     return true;
                 else
                     break;
+            case TYPE_EQUATION:
+                if (section == CATSECT_EQN)
+                    return true;
+                else
+                    break;
         }
     }
     return false;

@@ -548,8 +548,9 @@
 #define ARG_PRGM     12 /* Alpha label (CATSECT_PGM) */
 #define ARG_RVAR     13 /* Variable (real only) (MVAR, INTEG, SOLVE) */
 #define ARG_MAT      14 /* Variable (matrix only) (EDITN, INDEX) */
-#define ARG_XSTR     15 /* Long string (XSTR) */
-#define ARG_OTHER    16 /* Weirdos */
+#define ARG_EQN      15 /* Variable (equation only) (EVAL) */
+#define ARG_XSTR     16 /* Long string (XSTR) */
+#define ARG_OTHER    17 /* Weirdos */
 
 
 /* command_spec.flags */
@@ -579,7 +580,6 @@
 #define ARGTYPE_IND_NUM   5
 #define ARGTYPE_IND_STK   6
 #define ARGTYPE_IND_STR   7
-#define ARGTYPE_COMMAND   8 /* For backward compatibility only! */
 #define ARGTYPE_LCLBL     9
 #define ARGTYPE_DOUBLE   10
 #define ARGTYPE_LBLINDEX 11

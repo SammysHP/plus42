@@ -685,7 +685,7 @@ static int generic_loop(arg_struct *arg, bool isg) {
                 v = lastx;
             } else {
                 if (idx > sp)
-                    return ERR_NONEXISTENT;
+                    return ERR_STACK_DEPTH_ERROR;
                 v = stack[sp - idx];
             }
             if (v->type == TYPE_REAL)
@@ -1795,16 +1795,7 @@ int docmd_dim_t(arg_struct *arg) {
 }
 
 static int assign_helper(int num, arg_struct *arg) {
-    if (arg->type == ARGTYPE_COMMAND) {
-        /* For backward compatibility only; we don't allow this type
-         * of assignment command to be created anymore, but we do want
-         * programs that already contain such commands to continue
-         * working.
-         */
-        const command_spec *cs = &cmd_array[arg->val.cmd];
-        assign_custom_key(num, cs->name, cs->name_length);
-    } else
-        assign_custom_key(num, arg->val.text, arg->length);
+    assign_custom_key(num, arg->val.text, arg->length);
     flags.f.local_label = 0;
     return ERR_NONE;
 }

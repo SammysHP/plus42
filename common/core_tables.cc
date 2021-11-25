@@ -539,9 +539,10 @@ const command_spec cmd_array[] =
     { /* 0_GE_NN */    docmd_0_ge_nn,     "0\013?",              0x00, 0x27, 0xf2, 0x1f,  3, ARG_VAR,    0, NA_T },
 
     /* Equations */
+    /* Note: XROM code 0xa7 0xfe is the former no-arg EVAL. */
     { /* PARSE */      docmd_parse,       "PARSE",               0x00, 0x00, 0xa7, 0xfc,  5, ARG_NONE,   1, 0x10 },
     { /* UNPARSE */    docmd_unparse,     "UNPARSE",             0x00, 0x00, 0xa7, 0xfd,  7, ARG_NONE,   1, 0x40 },
-    { /* EVAL */       docmd_eval,        "EVAL",                0x00, 0x00, 0xa7, 0xfe,  4, ARG_NONE,   1, 0x40 },
+    { /* EVAL */       docmd_eval,        "EVAL",                0x00, 0x43, 0xf2, 0x36,  4, ARG_EQN,    0, NA_T },
     { /* EQN_T */      docmd_eqn_t,       "EQN?",                0x00, 0x00, 0xa7, 0xff,  4, ARG_NONE,   1, ALLT },
     { /* STD */        docmd_std,         "STD",                 0x00, 0x00, 0xa7, 0xa5,  3, ARG_NONE,   0, NA_T },
     { /* COMP */       docmd_comp,        "COMP",                0x00, 0x00, 0xa7, 0xa6,  4, ARG_NONE,   0, NA_T },

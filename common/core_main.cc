@@ -1000,23 +1000,10 @@ static void export_hp42s(int index) {
                     for (i = 0; i < arg.length; i++)
                         cmdbuf[cmdlen++] = arg.val.text[i];
                 } else if (cmd >= CMD_ASGN01 && cmd <= CMD_ASGN18) {
-                    if (arg.type == ARGTYPE_STR) {
-                        cmdbuf[cmdlen++] = 0xF2 + arg.length;
-                        cmdbuf[cmdlen++] = (char) 0xC0;
-                        for (i = 0; i < arg.length; i++)
-                            cmdbuf[cmdlen++] = arg.val.text[i];
-                    } else {
-                        /* arg.type == ARGTYPE_COMMAND; we don't use that
-                         * any more, but just to be safe (in case anyone ever
-                         * actually used this in a program), we handle it
-                         * anyway.
-                         */
-                        const command_spec *cs = &cmd_array[arg.val.cmd];
-                        cmdbuf[cmdlen++] = 0xF2 + cs->name_length;
-                        cmdbuf[cmdlen++] = (char) 0xC0;
-                        for (i = 0; i < cs->name_length; i++)
-                            cmdbuf[cmdlen++] = cs->name[i];
-                    }
+                    cmdbuf[cmdlen++] = 0xF2 + arg.length;
+                    cmdbuf[cmdlen++] = (char) 0xC0;
+                    for (i = 0; i < arg.length; i++)
+                        cmdbuf[cmdlen++] = arg.val.text[i];
                     cmdbuf[cmdlen++] = cmd - CMD_ASGN01;
                 } else if ((cmd >= CMD_KEY1G && cmd <= CMD_KEY9G) 
                             || (cmd >= CMD_KEY1X && cmd <= CMD_KEY9X)) {
@@ -1149,8 +1136,7 @@ static void export_hp42s(int index) {
                              * which is converted to ARGTYPE_NUM by
                              * get_next_command(); ARGTYPE_DOUBLE, which only
                              * occurs with CMD_NUMBER, which is handled in the
-                             * special-case section, above; ARGTYPE_COMMAND,
-                             * which is handled in the special-case section;
+                             * special-case section, above;
                              * and ARGTYPE_LBLINDEX, which is converted to
                              * ARGTYPE_STR before being stored in a program.
                              */
@@ -1257,15 +1243,7 @@ int4 core_program_size(int prgm_index) {
                 } else if (cmd == CMD_STRING) {
                     size += arg.length + 1;
                 } else if (cmd >= CMD_ASGN01 && cmd <= CMD_ASGN18) {
-                    if (arg.type == ARGTYPE_STR)
-                        size += arg.length + 3;
-                    else
-                        /* arg.type == ARGTYPE_COMMAND; we don't use that
-                         * any more, but just to be safe (in case anyone ever
-                         * actually used this in a program), we handle it
-                         * anyway.
-                         */
-                        size += cmd_array[arg.val.cmd].name_length + 3;
+                    size += arg.length + 3;
                 } else if ((cmd >= CMD_KEY1G && cmd <= CMD_KEY9G) 
                             || (cmd >= CMD_KEY1X && cmd <= CMD_KEY9X)) {
                     if (arg.type == ARGTYPE_STR || arg.type == ARGTYPE_IND_STR)
@@ -1723,7 +1701,7 @@ static int hp42ext[] = {
     CMD_NULL    | 0x3000, /* XEQL */
     CMD_GSTO    | 0x0000,
     CMD_GRCL    | 0x0000,
-    CMD_NULL    | 0x4000,
+    CMD_EVAL    | 0x2000,
     CMD_NULL    | 0x4000,
     CMD_NULL    | 0x4000,
     CMD_NULL    | 0x4000,
@@ -1738,7 +1716,7 @@ static int hp42ext[] = {
     CMD_PRMVAR  | 0x0000,
     CMD_XSTR    | 0x0000,
     CMD_VARMNU1 | 0x0000,
-    CMD_NULL    | 0x4000,
+    CMD_EVAL    | 0x0000,
     CMD_NULL    | 0x4000,
     CMD_NULL    | 0x4000,
     CMD_NULL    | 0x4000,
@@ -1746,7 +1724,7 @@ static int hp42ext[] = {
     CMD_PRMVAR  | 0x1000,
     CMD_XSTR    | 0x1000,
     CMD_VARMNU1 | 0x1000,
-    CMD_NULL    | 0x4000,
+    CMD_EVAL    | 0x1000,
     CMD_NULL    | 0x4000,
     CMD_NULL    | 0x4000,
     CMD_NULL    | 0x4000,
@@ -2150,6 +2128,18 @@ void core_import_programs(int num_progs, const char *raw_file_name) {
                     /* Unparameterized RTNERR: translate to RTNERR IND ST X */
                     cmd = CMD_RTNERR;
                     arg.type = ARGTYPE_IND_STK;
+                    arg.val.stk = 'X';
+                    goto store;
+                } else if (code == 0x0A7FE) {
+                    /* Unparameterized EVAL: translate to EVAL ST X */
+                    /* Note that EVAL ST X is not actually a clean replacement
+                     * for EVAL: the equation is not saved to LASTx and
+                     * replaced by the result, but rather, the result is
+                     * pushed onto the stack, i.e. it's not a unary
+                     * operator but a recall operation.
+                     */
+                    cmd = CMD_EVAL;
+                    arg.type = ARGTYPE_STK;
                     arg.val.stk = 'X';
                     goto store;
                 } else if (code >= 0x0a679 && code <= 0x0a67e) {
@@ -3824,7 +3814,7 @@ static void paste_programs(const char *buf) {
                                 goto line_done;
                         }
                         num_or_string:
-                        if ((argtype == ARG_VAR || argtype == ARG_REAL || ind)
+                        if ((argtype == ARG_VAR || argtype == ARG_REAL || argtype == ARG_EQN || ind)
                                 && string_equals(hpbuf + tok_start, tok_end - tok_start, "ST", 2)) {
                             if (!ind && (!stk_allowed || string_required))
                                 goto line_done;
@@ -3840,7 +3830,7 @@ static void paste_programs(const char *buf) {
                             arg.val.stk = c;
                             goto store;
                         }
-                        if ((argtype == ARG_VAR || argtype == ARG_REAL || ind)
+                        if ((argtype == ARG_VAR || argtype == ARG_REAL || argtype == ARG_EQN || ind)
                                 && tok_end - tok_start == 1) {
                             // Accept RCL Z etc., instead of RCL ST Z, for
                             // HP-41 compatibilitry.
@@ -3875,7 +3865,7 @@ static void paste_programs(const char *buf) {
                         }
                         if (tok_end - tok_start == 2 && isdigit(hpbuf[tok_start])
                                                      && isdigit(hpbuf[tok_start + 1])) {
-                            if (!ind && string_required)
+                            if (!ind && (string_required || argtype == ARG_EQN))
                                 goto line_done;
                             arg.type = ind ? ARGTYPE_IND_NUM : ARGTYPE_NUM;
                             sscanf(hpbuf + tok_start, "%02d", &arg.val.num);
@@ -3883,7 +3873,7 @@ static void paste_programs(const char *buf) {
                                 goto line_done;
                             goto store;
                         }
-                        if ((argtype == ARG_VAR || argtype == ARG_REAL || ind)
+                        if ((argtype == ARG_VAR || argtype == ARG_REAL || argtype == ARG_EQN || ind)
                                 && hpbuf[tok_start] == '"') {
                             arg.type = ind ? ARGTYPE_IND_STR : ARGTYPE_STR;
                             handle_string_arg:
@@ -3919,6 +3909,11 @@ static void paste_programs(const char *buf) {
                         string_required = true;
                         stk_allowed = false;
                         argtype = ARG_VAR;
+                        goto string_only;
+                    }
+                    case ARG_EQN: {
+                        string_required = false;
+                        stk_allowed = true;
                         goto string_only;
                     }
                     case ARG_LBL: {
@@ -4997,7 +4992,7 @@ void start_incomplete_command(int cmd_id) {
     incomplete_ind = false;
     if (argtype == ARG_NAMED || argtype == ARG_PRGM
             || argtype == ARG_RVAR || argtype == ARG_MAT
-            || argtype == ARG_XSTR)
+            || argtype == ARG_EQN || argtype == ARG_XSTR)
         incomplete_alpha = true;
     else
         incomplete_alpha = false;
@@ -5055,6 +5050,9 @@ void start_incomplete_command(int cmd_id) {
             mode_command_entry = false;
             display_error(ERR_NO_MATRIX_VARIABLES, false);
         }
+    } else if (argtype == ARG_EQN) {
+        if (flags.f.prgm_mode || vars_exist(CATSECT_EQN))
+            set_catalog_menu(CATSECT_EQN_ONLY);
     } else if (argtype == ARG_LBL || argtype == ARG_PRGM)
         set_catalog_menu(CATSECT_PGM_ONLY);
     else if (cmd_id == CMD_LBL || cmd_id == CMD_XSTR)

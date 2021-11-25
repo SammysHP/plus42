@@ -313,7 +313,7 @@ int generic_rcl(arg_struct *arg, vartype **dst) {
                 *dst = dup_vartype(lastx);
             } else {
                 if (idx > sp)
-                    return ERR_NONEXISTENT;
+                    return ERR_STACK_DEPTH_ERROR;
                 *dst = dup_vartype(stack[sp - idx]);
             }
             if (*dst == NULL)
@@ -593,7 +593,7 @@ int generic_sto(arg_struct *arg, char operation) {
                     case 'L': idx = -1; break;
                 }
                 if (idx > sp)
-                    return ERR_NONEXISTENT;
+                    return ERR_STACK_DEPTH_ERROR;
                 vartype *oldval = idx == -1 ? lastx : stack[sp - idx];
                 temp_arg = *arg;
                 return apply_sto_operation(operation, oldval, trace_stk);

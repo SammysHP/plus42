@@ -1119,7 +1119,7 @@ int docmd_dropn(arg_struct *arg) {
     if (err != ERR_NONE)
         return err;
     if (n > sp + 1)
-        return ERR_SIZE_ERROR;
+        return ERR_STACK_DEPTH_ERROR;
     for (int i = sp - n + 1; i <= sp; i++)
         free_vartype(stack[i]);
     if (flags.f.big_stack) {
@@ -1154,7 +1154,7 @@ int docmd_dupn(arg_struct *arg) {
         return err;
     if (flags.f.big_stack) {
         if (n > sp + 1)
-            return ERR_SIZE_ERROR;
+            return ERR_STACK_DEPTH_ERROR;
         if (!ensure_stack_capacity(n))
             return ERR_INSUFFICIENT_MEMORY;
         for (int i = 1; i <= n; i++) {
@@ -1204,7 +1204,7 @@ int docmd_pick(arg_struct *arg) {
         return ERR_NONEXISTENT;
     n--;
     if (n > sp)
-        return ERR_SIZE_ERROR;
+        return ERR_STACK_DEPTH_ERROR;
     vartype *v = dup_vartype(stack[sp - n]);
     if (v == NULL)
         return ERR_INSUFFICIENT_MEMORY;
@@ -1220,7 +1220,7 @@ int docmd_unpick(arg_struct *arg) {
         return ERR_NONEXISTENT;
     n--;
     if (n > (flags.f.big_stack ? sp - 1 : sp))
-        return ERR_SIZE_ERROR;
+        return ERR_STACK_DEPTH_ERROR;
     // Note: UNPICK consumes X, i.e. drops it from the stack. This is unlike
     // any other STO-like function in Free42, but it is needed in order to make
     // PICK and UNPICK work as a pair like they do in the RPL calculators.
@@ -1246,7 +1246,7 @@ int docmd_rdnn(arg_struct *arg) {
     if (err != ERR_NONE)
         return err;
     if (n > sp + 1)
-        return ERR_SIZE_ERROR;
+        return ERR_STACK_DEPTH_ERROR;
     if (n > 1) {
         vartype *v = stack[sp];
         memmove(stack + sp - n + 2, stack + sp - n + 1, (n - 1) * sizeof(vartype *));
@@ -1262,7 +1262,7 @@ int docmd_rupn(arg_struct *arg) {
     if (err != ERR_NONE)
         return err;
     if (n > sp + 1)
-        return ERR_SIZE_ERROR;
+        return ERR_STACK_DEPTH_ERROR;
     if (n > 1) {
         vartype *v = stack[sp - n + 1];
         memmove(stack + sp - n + 1, stack + sp - n + 2, (n - 1) * sizeof(vartype *));
@@ -1778,7 +1778,7 @@ int docmd_head(arg_struct *arg) {
                 s = lastx;
             } else {
                 if (idx > sp)
-                    return ERR_NONEXISTENT;
+                    return ERR_STACK_DEPTH_ERROR;
                 s = stack[sp - idx];
             }
             doit:
@@ -2006,7 +2006,36 @@ int docmd_unparse(arg_struct *arg) {
 }
 
 int docmd_eval(arg_struct *arg) {
-    vartype_equation *eq = (vartype_equation *) stack[sp];
+    if (arg->type == ARGTYPE_IND_NUM
+            || arg->type == ARGTYPE_IND_STK
+            || arg->type == ARGTYPE_IND_STR) {
+        int err = resolve_ind_arg(arg);
+        if (err != ERR_NONE)
+            return err;
+    }
+    vartype *v;
+    if (arg->type == ARGTYPE_STR) {
+        v = recall_var(arg->val.text, arg->length);
+        if (v == NULL)
+            return ERR_NONEXISTENT;
+    } else if (arg->type == ARGTYPE_STK) {
+        int idx;
+        switch (arg->val.stk) {
+            case 'X': idx = 0; break;
+            case 'Y': idx = 1; break;
+            case 'Z': idx = 2; break;
+            case 'T': idx = 3; break;
+            case 'L': v = lastx; goto have_var;
+            default: return ERR_INTERNAL_ERROR;
+        }
+        if (idx > sp)
+            return ERR_STACK_DEPTH_ERROR;
+        v = stack[sp - idx];
+    }
+    have_var:
+    if (v->type != TYPE_EQUATION)
+        return ERR_INVALID_TYPE;
+    vartype_equation *eq = (vartype_equation *) v;
     if (program_running()) {
         int err = push_rtn_addr(current_prgm, pc);
         if (err != ERR_NONE)

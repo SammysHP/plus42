@@ -38,8 +38,8 @@ class GeneratorContext {
     GeneratorContext() {
         lines = new std::vector<Line *>;
         lbl = 0;
-        // FUNC 11: 1 input, 1 output; the input being the equation itself
-        addLine(CMD_FUNC, 11);
+        // FUNC 01: 0 inputs, 1 output
+        addLine(CMD_FUNC, 1);
         addLine(CMD_LNSTK);
     }
 
@@ -160,6 +160,9 @@ class GeneratorContext {
                     goto do_string;
                 arg.type = ARGTYPE_IND_STK;
                 arg.val.stk = 'X';
+            } else if (line->cmd == CMD_EVAL) {
+                arg.type = ARGTYPE_STK;
+                arg.val.stk = 'L';
             } else if (line->cmd == CMD_XSTR) {
                 arg.type = ARGTYPE_XSTR;
                 int len = (int) line->s->length();
@@ -869,8 +872,7 @@ class Call : public Evaluator {
         ctx->addLine(CMD_XSTR, name);
         ctx->addLine(CMD_GETEQN);
         ctx->addLine(CMD_TO_PAR);
-        ctx->addLine(CMD_LASTX);
-        ctx->addLine(CMD_EVAL);
+        ctx->addLine(CMD_EVAL); // EVAL ST L; eqn left in LASTx by ->PAR
         ctx->popSubroutine();
     }
 

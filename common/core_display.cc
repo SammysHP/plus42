@@ -1845,17 +1845,21 @@ static void draw_catalog() {
         int show_real = 1;
         int show_cpx = 1;
         int show_mat = 1;
+        int show_eqn = 1;
         int show_other = 1;
 
         switch (catsect) {
             case CATSECT_REAL:
             case CATSECT_REAL_ONLY:
-                show_cpx = show_mat = show_other = 0; break;
+                show_cpx = show_mat = show_eqn = show_other = 0; break;
             case CATSECT_CPX:
-                show_real = show_mat = show_other = 0; break;
+                show_real = show_mat = show_eqn = show_other = 0; break;
             case CATSECT_MAT:
             case CATSECT_MAT_ONLY:
-                show_real = show_cpx = show_other = 0; break;
+                show_real = show_cpx = show_eqn = show_other = 0; break;
+            case CATSECT_EQN:
+            case CATSECT_EQN_ONLY:
+                show_real = show_cpx = show_mat = show_other = 0; break;
         }
 
         for (i = 0; i < vars_count; i++) {
@@ -1874,8 +1878,10 @@ static void draw_catalog() {
                 case TYPE_COMPLEXMATRIX:
                     if (show_mat) vcount++;
                     break;
-                case TYPE_LIST:
                 case TYPE_EQUATION:
+                    if (show_eqn) vcount++;
+                    break;
+                case TYPE_LIST:
                     if (show_other) vcount++;
                     break;
             }
@@ -1914,8 +1920,9 @@ static void draw_catalog() {
                 case TYPE_REALMATRIX:
                 case TYPE_COMPLEXMATRIX:
                     if (show_mat) break; else continue;
-                case TYPE_LIST:
                 case TYPE_EQUATION:
+                    if (show_eqn) break; else continue;
+                case TYPE_LIST:
                     if (show_other) break; else continue;
                 default:
                     continue;
@@ -2713,11 +2720,6 @@ int command2buf(char *buf, int len, int cmd, const arg_struct *arg) {
             string2buf(buf, len, &bufptr, eqd->text,
                                             eqd->length);
             char2buf(buf, len, &bufptr, d);
-        } else /* ARGTYPE_COMMAND; for backward compatibility only */ {
-            const command_spec *cs = &cmd_array[arg->val.cmd];
-            char2buf(buf, len, &bufptr, '"');
-            string2buf(buf, len, &bufptr, cs->name, cs->name_length);
-            char2buf(buf, len, &bufptr, '"');
         }
     }
     if (cmd >= CMD_ASGN01 && cmd <= CMD_ASGN18) {
@@ -2911,6 +2913,11 @@ void set_catalog_menu(int section) {
             if (!vars_exist(CATSECT_MAT))
                 mode_commandmenu = MENU_NONE;
             return;
+        case CATSECT_EQN:
+        case CATSECT_EQN_ONLY:
+            if (!vars_exist(CATSECT_EQN))
+                mode_commandmenu = MENU_NONE;
+            return;
         case CATSECT_VARS_ONLY:
             if (!vars_exist(-1))
                 mode_commandmenu = MENU_NONE;
@@ -3038,6 +3045,10 @@ void update_catalog() {
             if (!vars_exist(CATSECT_MAT))
                 set_cat_section(CATSECT_TOP);
             break;
+        case CATSECT_EQN:
+            if (!vars_exist(CATSECT_EQN))
+                set_cat_section(CATSECT_TOP);
+            break;
         case CATSECT_REAL_ONLY:
             if (!vars_exist(CATSECT_REAL)) {
                 *the_menu = MENU_NONE;
@@ -3047,6 +3058,13 @@ void update_catalog() {
             break;
         case CATSECT_MAT_ONLY:
             if (!vars_exist(CATSECT_MAT)) {
+                *the_menu = MENU_NONE;
+                redisplay();
+                return;
+            }
+            break;
+        case CATSECT_EQN_ONLY:
+            if (!vars_exist(CATSECT_EQN)) {
                 *the_menu = MENU_NONE;
                 redisplay();
                 return;

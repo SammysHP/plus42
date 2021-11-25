@@ -56,6 +56,7 @@ const error_spec errors[] = {
     { /* DIMENSION_ERROR */        "Dimension Error",         15 },
     { /* TOO_FEW_ARGUMENTS */      "Too Few Arguments",       17 },
     { /* SIZE_ERROR */             "Size Error",              10 },
+    { /* STACK_DEPTH_ERROR */      "Stack Depth Error",       17 },
     { /* RESTRICTED_OPERATION */   "Restricted Operation",    20 },
     { /* YES */                    "Yes",                      3 },
     { /* NO */                     "No",                       2 },
@@ -64,6 +65,7 @@ const error_spec errors[] = {
     { /* NO_REAL_VARIABLES */      "No Real Variables",       17 },
     { /* NO_COMPLEX_VARIABLES */   "No Complex Variables",    20 },
     { /* NO_MATRIX_VARIABLES */    "No Matrix Variables",     19 },
+    { /* NO_EQUATION_VARIABLES */  "No Equation Variables",   21 },
     { /* NO_MENU_VARIABLES */      "No Menu Variables",       17 },
     { /* STAT_MATH_ERROR */        "Stat Math Error",         15 },
     { /* INVALID_FORECAST_MODEL */ "Invalid Forecast Model",  22 },
@@ -1875,7 +1877,6 @@ int get_command_length(pgm_index idx, int4 pc) {
         }
         case ARGTYPE_STK:
         case ARGTYPE_IND_STK:
-        case ARGTYPE_COMMAND:
         case ARGTYPE_LCLBL:
             pc2++;
             break;
@@ -1951,9 +1952,6 @@ void get_next_command(int4 *pc, int *command, arg_struct *arg, int find_target, 
         case ARGTYPE_STK:
         case ARGTYPE_IND_STK:
             arg->val.stk = prgm->text[(*pc)++];
-            break;
-        case ARGTYPE_COMMAND:
-            arg->val.cmd = prgm->text[(*pc)++];
             break;
         case ARGTYPE_LCLBL:
             arg->val.lclbl = prgm->text[(*pc)++];
@@ -3674,8 +3672,6 @@ bool read_arg(arg_struct *arg, bool old) {
                 return false;
             arg->length = c & 255;
             return fread(arg->val.text, 1, arg->length, gfile) == arg->length;
-        case ARGTYPE_COMMAND:
-            return read_int(&arg->val.cmd);
         case ARGTYPE_LCLBL:
             return read_char(&arg->val.lclbl);
         case ARGTYPE_DOUBLE:
@@ -3712,8 +3708,6 @@ bool write_arg(const arg_struct *arg) {
         case ARGTYPE_IND_STR:
             return write_char((char) arg->length)
                 && fwrite(arg->val.text, 1, arg->length, gfile) == arg->length;
-        case ARGTYPE_COMMAND:
-            return write_int(arg->val.cmd);
         case ARGTYPE_LCLBL:
             return write_char(arg->val.lclbl);
         case ARGTYPE_DOUBLE:

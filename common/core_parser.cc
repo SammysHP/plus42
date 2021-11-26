@@ -32,12 +32,14 @@ class GeneratorContext {
     std::vector<std::vector<Line *> *> stack;
     std::vector<std::vector<Line *> *> queue;
     int lbl;
+    int assertTwoRealsLbl;
 
     public:
 
     GeneratorContext() {
         lines = new std::vector<Line *>;
         lbl = 0;
+        assertTwoRealsLbl = -1;
         // FUNC 01: 0 inputs, 1 output
         addLine(CMD_FUNC, 1);
         addLine(CMD_LNSTK);
@@ -89,6 +91,29 @@ class GeneratorContext {
         queue.push_back(lines);
         lines = stack.back();
         stack.pop_back();
+    }
+
+    void addAssertTwoReals() {
+        if (assertTwoRealsLbl == -1) {
+            assertTwoRealsLbl = nextLabel();
+            int lbl1 = nextLabel();
+            int lbl2 = nextLabel();
+            pushSubroutine();
+            addLine(CMD_LBL, assertTwoRealsLbl);
+            addLine(CMD_REAL_T);
+            addLine(CMD_GTOL, lbl1);
+            addLine(CMD_RTNERR, 4);
+            addLine(CMD_LBL, lbl1);
+            addLine(CMD_SWAP);
+            addLine(CMD_REAL_T);
+            addLine(CMD_GTOL, lbl2);
+            addLine(CMD_SWAP);
+            addLine(CMD_RTNERR, 4);
+            addLine(CMD_LBL, lbl2);
+            addLine(CMD_SWAP);
+            popSubroutine();
+        }
+        addLine(CMD_XEQL, assertTwoRealsLbl);
     }
 
     void store(prgm_struct *prgm) {
@@ -2582,6 +2607,7 @@ class Pcomplx : public BinaryEvaluator {
     void generateCode(GeneratorContext *ctx) {
         left->generateCode(ctx);
         right->generateCode(ctx);
+        ctx->addAssertTwoReals();
         ctx->addLine(CMD_PCOMPLX);
     }
 };
@@ -2816,6 +2842,7 @@ class Rcomplx : public BinaryEvaluator {
     void generateCode(GeneratorContext *ctx) {
         left->generateCode(ctx);
         right->generateCode(ctx);
+        ctx->addAssertTwoReals();
         ctx->addLine(CMD_RCOMPLX);
     }
 };
@@ -3520,7 +3547,7 @@ class Xeq : public Evaluator {
     void generateCode(GeneratorContext *ctx) {
         // Wrapping the subroutine call in another subroutine,
         // so ->PAR can create locals for the parameters without
-        // stepping on any alread-existing locals with the
+        // stepping on any already-existing locals with the
         // same name.
         int lbl = ctx->nextLabel();
         for (int i = 0; i < evs->size(); i++)

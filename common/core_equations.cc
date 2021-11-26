@@ -77,6 +77,10 @@ static int rep_key = -1;
 #define EQMN_TOP_FCN2 1013
 #define EQMN_TOP_FCN3 1014
 #define EQMN_STACK    1015
+#define EQMN_STAT1    1016
+#define EQMN_STAT2    1017
+#define EQMN_STAT3    1018
+#define EQMN_STAT4    1019
 
 #define EQCMD_XCOORD   1000
 #define EQCMD_YCOORD   1001
@@ -99,6 +103,23 @@ static int rep_key = -1;
 #define EQCMD_REGZ     1018
 #define EQCMD_REGT     1019
 #define EQCMD_STACK    1020
+#define EQCMD_SX       1021
+#define EQCMD_SX2      1022
+#define EQCMD_SY       1023
+#define EQCMD_SY2      1024
+#define EQCMD_SXY      1025
+#define EQCMD_SN       1026
+#define EQCMD_SLNX     1027
+#define EQCMD_SLNX2    1028
+#define EQCMD_SLNY     1029
+#define EQCMD_SLNY2    1030
+#define EQCMD_SLNXLNY  1031
+#define EQCMD_SXLNY    1032
+#define EQCMD_SYLNX    1033
+#define EQCMD_MEANX    1034
+#define EQCMD_MEANY    1035
+#define EQCMD_SDEVX    1036
+#define EQCMD_SDEVY    1037
 
 struct eqn_cmd_spec {
     const char *name;
@@ -126,7 +147,24 @@ const eqn_cmd_spec eqn_cmds[] = {
     { /* REGY */     "REGY",     4 },
     { /* REGZ */     "REGZ",     4 },
     { /* REGT */     "REGT",     4 },
-    { /* STACK */    "STACK",    5 }
+    { /* STACK */    "STACK",    5 },
+    { /* SX */       "\5X",      2 },
+    { /* SX2 */      "\5X2",     3 },
+    { /* SY */       "\5Y",      2 },
+    { /* SY2 */      "\5Y2",     3 },
+    { /* SXY */      "\5XY",     3 },
+    { /* SN */       "\5N",      2 },
+    { /* SLNX */     "\5LNX",    4 },
+    { /* SLNX2 */    "\5LNX2",   5 },
+    { /* SLNY */     "\5LNY",    4 },
+    { /* SLNY2 */    "\5LNY2",   5 },
+    { /* SLNXLNY */  "\5LNXLNY", 7 },
+    { /* SXLNY */    "\5XLNY",   5 },
+    { /* SYLNX */    "\5YLNX",   5 },
+    { /* MEANX */    "MEANX",    5 },
+    { /* MEANY */    "MEANY",    5 },
+    { /* SDEVX */    "SDEVX",    5 },
+    { /* SDEVY */    "SDEVY",    5 }
 };
 
 const menu_spec eqn_menus[] = {
@@ -242,6 +280,34 @@ const menu_spec eqn_menus[] = {
                         { 0x1000 + EQCMD_REGT,  0, ""    },
                         { 0x0000 + EQCMD_STACK, 3, "STK" },
                         { 0x1000 + CMD_NULL,    0, ""    } } },
+    { /* EQMN_STAT1 */ MENU_NONE, EQMN_STAT2, EQMN_STAT4,
+                      { { 0x0000 + EQCMD_MEANX,   3, "MNX" },
+                        { 0x0000 + EQCMD_MEANY,   3, "MNY" },
+                        { 0x0000 + EQCMD_SDEVX,   0, "" },
+                        { 0x0000 + EQCMD_SDEVY,   0, "" },
+                        { 0x1000 + CMD_WMEAN,     0, "" },
+                        { 0x1000 + CMD_CORR,      0, "" } } },
+    { /* EQMN_STAT2 */ MENU_NONE, EQMN_STAT3, EQMN_STAT1,
+                      { { 0x1000 + CMD_FCSTX,     0, "" },
+                        { 0x1000 + CMD_FCSTY,     0, "" },
+                        { 0x1000 + CMD_SLOPE,     0, "" },
+                        { 0x1000 + CMD_YINT,      0, "" },
+                        { 0x1000 + CMD_NULL,      0, "" },
+                        { 0x1000 + EQCMD_SN,      0, "" } } },
+    { /* EQMN_STAT3 */ MENU_NONE, EQMN_STAT4, EQMN_STAT2,
+                      { { 0x1000 + EQCMD_SX,      0, "" },
+                        { 0x1000 + EQCMD_SX2,     0, "" },
+                        { 0x1000 + EQCMD_SY,      0, "" },
+                        { 0x1000 + EQCMD_SY2,     0, "" },
+                        { 0x1000 + EQCMD_SXY,     0, "" },
+                        { 0x0000 + EQCMD_SLNX,    3, "\5LX" } } },
+    { /* EQMN_STAT4 */ MENU_NONE, EQMN_STAT1, EQMN_STAT3,
+                      { { 0x0000 + EQCMD_SLNX2,   4, "\5LX2" },
+                        { 0x0000 + EQCMD_SLNY,    3, "\5LY" },
+                        { 0x0000 + EQCMD_SLNY2,   4, "\5LY2" },
+                        { 0x0000 + EQCMD_SLNXLNY, 5, "\5LXLY" },
+                        { 0x0000 + EQCMD_SXLNY,   4, "\5XLY" },
+                        { 0x0000 + EQCMD_SYLNX,   4, "\5YLX" } } }
 };
 
 static const menu_spec *getmenu(int id) {
@@ -254,23 +320,27 @@ static const menu_spec *getmenu(int id) {
 static short catalog[] = {
     CMD_ABS,     CMD_ACOS,     CMD_ACOSH,    CMD_AND,       EQCMD_ANGLE,    CMD_ASIN,
     CMD_ASINH,   CMD_ATAN,     CMD_ATANH,    CMD_BASEADD,   CMD_BASESUB,    CMD_BASEMUL,
-    CMD_BASEDIV, CMD_BASECHS,  EQCMD_BREAK,  CMD_COMB,      EQCMD_CONTINUE, CMD_COS,
-    CMD_COSH,    CMD_CPX_T,    CMD_CROSS,    CMD_DATE,      CMD_DATE_PLUS,  CMD_DDAYS,
-    CMD_DET,     CMD_DOT,      CMD_E_POW_X,  CMD_E_POW_X_1, CMD_FNRM,       EQCMD_FOR,
-    CMD_FP,      CMD_GAMMA,    CMD_HMSADD,   CMD_HMSSUB,    EQCMD_IDIV,     CMD_IF_T,
-    EQCMD_INT,   CMD_INVRT,    CMD_IP,       CMD_LN,        CMD_LN_1_X,     CMD_LOG,
-    CMD_LIST_T,  CMD_MAT_T,    EQCMD_MAX,    EQCMD_MIN,     CMD_MOD,        EQCMD_MCOLS,
-    EQCMD_MROWS, CMD_FACT,     CMD_NEWLIST,  CMD_NEWMAT,    CMD_NOT,        CMD_OR,
-    CMD_PERM,    CMD_PCOMPLX,  EQCMD_RADIUS, CMD_RAN,       CMD_RCOMPLX,    CMD_REAL_T,
-    EQCMD_REGX,  EQCMD_REGY,   EQCMD_REGZ,   EQCMD_REGT,    CMD_RND,        CMD_RNRM,
-    CMD_RSUM,    CMD_SEED,     EQCMD_SEQ,    CMD_SIGN,      CMD_SIN,        CMD_SINH,
-    EQCMD_SIZES, CMD_SQRT,     EQCMD_STACK,  CMD_TAN,       CMD_TANH,       CMD_TIME,
-    CMD_TRANS,   EQCMD_TRN,    CMD_UVEC,     EQCMD_XCOORD,  CMD_XEQ,        CMD_XOR,
-    CMD_SQUARE,  EQCMD_YCOORD, CMD_Y_POW_X,  CMD_INV,       CMD_10_POW_X,   CMD_TO_DEC,
-    CMD_TO_DEG,  CMD_TO_HMS,   CMD_TO_HR,    CMD_TO_OCT,    CMD_TO_RAD,     CMD_NULL
+    CMD_BASEDIV, CMD_BASECHS,  EQCMD_BREAK,  CMD_COMB,      EQCMD_CONTINUE, CMD_CORR,
+    CMD_COS,     CMD_COSH,     CMD_CPX_T,    CMD_CROSS,     CMD_DATE,       CMD_DATE_PLUS,
+    CMD_DDAYS,   CMD_DET,      CMD_DOT,      CMD_E_POW_X,   CMD_E_POW_X_1,  CMD_FCSTX,
+    CMD_FCSTY,   CMD_FNRM,     EQCMD_FOR,    CMD_FP,        CMD_GAMMA,      CMD_HMSADD,
+    CMD_HMSSUB,  EQCMD_IDIV,   CMD_IF_T,     EQCMD_INT,     CMD_INVRT,      CMD_IP,
+    CMD_LN,      CMD_LN_1_X,   CMD_LOG,      CMD_LIST_T,    CMD_MAT_T,      EQCMD_MAX,
+    EQCMD_MEANX, EQCMD_MEANY,  EQCMD_MIN,    CMD_MOD,       EQCMD_MCOLS,    EQCMD_MROWS,
+    CMD_FACT,    CMD_NEWLIST,  CMD_NEWMAT,   CMD_NOT,       CMD_OR,         CMD_PERM,
+    CMD_PCOMPLX, EQCMD_RADIUS, CMD_RAN,      CMD_RCOMPLX,   CMD_REAL_T,     EQCMD_REGX,
+    EQCMD_REGY,  EQCMD_REGZ,   EQCMD_REGT,   CMD_RND,       CMD_RNRM,       CMD_RSUM,
+    EQCMD_SDEVX, EQCMD_SDEVY,  CMD_SEED,     EQCMD_SEQ,     CMD_SIGN,       CMD_SIN,
+    CMD_SINH,    EQCMD_SIZES,  CMD_SLOPE,    CMD_SQRT,      EQCMD_STACK,    CMD_TAN,
+    CMD_TANH,    CMD_TIME,     CMD_TRANS,    EQCMD_TRN,     CMD_UVEC,       CMD_WMEAN,
+    EQCMD_XCOORD,CMD_XEQ,      CMD_XOR,      CMD_SQUARE,    EQCMD_YCOORD,   CMD_YINT,
+    CMD_Y_POW_X, CMD_INV,      CMD_10_POW_X, EQCMD_SX,      EQCMD_SX2,      EQCMD_SY,
+    EQCMD_SY2,   EQCMD_SXY,    EQCMD_SN,     EQCMD_SLNX,    EQCMD_SLNX2,    EQCMD_SLNY,
+    EQCMD_SLNY2, EQCMD_SLNXLNY,EQCMD_SXLNY,  EQCMD_SYLNX,   CMD_TO_DEC,     CMD_TO_DEG,
+    CMD_TO_HMS,  CMD_TO_HR,    CMD_TO_OCT,   CMD_TO_RAD,    CMD_NULL,       CMD_NULL
 };
 
-static int catalog_rows = 16;
+static int catalog_rows = 20;
 
 
 static void restart_cursor();
@@ -466,6 +536,27 @@ static eqn_name_entry eqn_name[] = {
     { EQCMD_REGZ,    4, "REGZ"     },
     { EQCMD_REGT,    4, "REGT"     },
     { EQCMD_STACK,   6, "STACK["   },
+    { EQCMD_SX,      2, "\5X"      },
+    { EQCMD_SX2,     3, "\5X2"     },
+    { EQCMD_SY,      2, "\5Y"      },
+    { EQCMD_SY2,     3, "\5Y2"     },
+    { EQCMD_SXY,     3, "\5XY"     },
+    { EQCMD_SN,      2, "\5N"      },
+    { EQCMD_SLNX,    4, "\5LNX"    },
+    { EQCMD_SLNX2,   5, "\5LNX2"   },
+    { EQCMD_SLNY,    4, "\5LNY"    },
+    { EQCMD_SLNY2,   5, "\5LNY2"   },
+    { EQCMD_SLNXLNY, 7, "\5LNXLNY" },
+    { EQCMD_SXLNY,   5, "\5XLNY"   },
+    { EQCMD_SYLNX,   5, "\5YLNX"   },
+    { EQCMD_MEANX,   5, "MEANX"    },
+    { EQCMD_MEANY,   5, "MEANY"    },
+    { EQCMD_SDEVX,   5, "SDEVX"    },
+    { EQCMD_SDEVY,   5, "SDEVY"    },
+    { CMD_CORR,      4, "CORR"     },
+    { CMD_WMEAN,     5, "WMEAN"    },
+    { CMD_SLOPE,     5, "SLOPE"    },
+    { CMD_YINT,      4, "YINT"     },
     { CMD_NULL,      0, NULL       }
 };
 
@@ -2251,7 +2342,7 @@ static int keydown_edit_2(int key, bool shift, int *repeat) {
             }
             case KEY_DIV: {
                 if (shift)
-                    insert_text(":", 1);
+                    select_function_menu(EQMN_STAT1);
                 else
                     insert_function(CMD_DIV);
                 break;

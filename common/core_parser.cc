@@ -185,6 +185,10 @@ class GeneratorContext {
                     goto do_string;
                 arg.type = ARGTYPE_IND_STK;
                 arg.val.stk = 'X';
+            } else if (line->cmd == CMD_SUM) {
+                line->cmd = CMD_RCL;
+                arg.type = ARGTYPE_IND_STK;
+                arg.val.stk = 'X';
             } else if (line->cmd == CMD_EVALN) {
                 arg.type = ARGTYPE_STK;
                 arg.val.stk = 'L';
@@ -209,7 +213,8 @@ class GeneratorContext {
                     || line->cmd == CMD_XEQL
                     || line->cmd == CMD_FUNC
                     || line->cmd == CMD_RDNN
-                    || line->cmd == CMD_DROPN) {
+                    || line->cmd == CMD_DROPN
+                    || line->cmd == CMD_SF) {
                 arg.type = ARGTYPE_NUM;
                 arg.val.num = line->n;
             } else if (line->cmd == CMD_RCL_ADD
@@ -305,26 +310,6 @@ class BinaryEvaluator : public Evaluator {
     }
 };
 
-
-/////////////////
-/////  Abs  /////
-/////////////////
-
-class Abs : public UnaryEvaluator {
-
-    public:
-
-    Abs(int pos, Evaluator *ev) : UnaryEvaluator(pos, ev, false) {}
-
-    Evaluator *clone(For *f) {
-        return new Abs(tpos, ev->clone(f));
-    }
-
-    void generateCode(GeneratorContext *ctx) {
-        ev->generateCode(ctx);
-        ctx->addLine(CMD_ABS);
-    }
-};
 
 //////////////////
 /////  Acos  /////
@@ -931,33 +916,6 @@ class Call : public Evaluator {
     }
 };
 
-///////////////////
-/////  Cdate  /////
-///////////////////
-
-class Cdate : public Evaluator {
-
-    public:
-
-    Cdate(int pos) : Evaluator(pos) {}
-
-    Evaluator *clone(For *f) {
-        return new Cdate(tpos);
-    }
-
-    void generateCode(GeneratorContext *ctx) {
-        ctx->addLine(CMD_DATE);
-    }
-
-    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
-        // nope
-    }
-
-    int howMany(const std::string *name) {
-        return 0;
-    }
-};
-
 //////////////////
 /////  Comb  /////
 //////////////////
@@ -1211,33 +1169,6 @@ class Cross : public BinaryEvaluator {
     }
 };
 
-///////////////////
-/////  Ctime  /////
-///////////////////
-
-class Ctime : public Evaluator {
-
-    public:
-
-    Ctime(int pos) : Evaluator(pos) {}
-
-    Evaluator *clone(For *f) {
-        return new Ctime(tpos);
-    }
-
-    void generateCode(GeneratorContext *ctx) {
-        ctx->addLine(CMD_TIME);
-    }
-
-    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
-        // nope
-    }
-
-    int howMany(const std::string *name) {
-        return 0;
-    }
-};
-
 //////////////////
 /////  Date  /////
 //////////////////
@@ -1354,26 +1285,6 @@ class Deg : public UnaryEvaluator {
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
         ctx->addLine(CMD_TO_DEG);
-    }
-};
-
-/////////////////
-/////  Det  /////
-/////////////////
-
-class Det : public UnaryEvaluator {
-
-    public:
-
-    Det(int pos, Evaluator *ev) : UnaryEvaluator(pos, ev, false) {}
-
-    Evaluator *clone(For *f) {
-        return new Det(tpos, ev->clone(f));
-    }
-
-    void generateCode(GeneratorContext *ctx) {
-        ev->generateCode(ctx);
-        ctx->addLine(CMD_DET);
     }
 };
 
@@ -1593,46 +1504,6 @@ class Expm1 : public UnaryEvaluator {
     }
 };
 
-//////////////////
-/////  Fact  /////
-//////////////////
-
-class Fact : public UnaryEvaluator {
-
-    public:
-
-    Fact(int pos, Evaluator *ev) : UnaryEvaluator(pos, ev, false) {}
-
-    Evaluator *clone(For *f) {
-        return new Fact(tpos, ev->clone(f));
-    }
-
-    void generateCode(GeneratorContext *ctx) {
-        ev->generateCode(ctx);
-        ctx->addLine(CMD_FACT);
-    }
-};
-
-//////////////////
-/////  Fnrm  /////
-//////////////////
-
-class Fnrm : public UnaryEvaluator {
-
-    public:
-
-    Fnrm(int pos, Evaluator *ev) : UnaryEvaluator(pos, ev, false) {}
-
-    Evaluator *clone(For *f) {
-        return new Fnrm(tpos, ev->clone(f));
-    }
-
-    void generateCode(GeneratorContext *ctx) {
-        ev->generateCode(ctx);
-        ctx->addLine(CMD_FNRM);
-    }
-};
-
 /////////////////
 /////  For  /////
 /////////////////
@@ -1724,46 +1595,6 @@ class For : public Evaluator {
             if ((*evs)[i]->howMany(name) != 0)
                 return -1;
         return 0;
-    }
-};
-
-////////////////
-/////  Fp  /////
-////////////////
-
-class Fp : public UnaryEvaluator {
-
-    public:
-
-    Fp(int pos, Evaluator *ev) : UnaryEvaluator(pos, ev, false) {}
-
-    Evaluator *clone(For *f) {
-        return new Fp(tpos, ev->clone(f));
-    }
-
-    void generateCode(GeneratorContext *ctx) {
-        ev->generateCode(ctx);
-        ctx->addLine(CMD_FP);
-    }
-};
-
-///////////////////
-/////  Gamma  /////
-///////////////////
-
-class Gamma : public UnaryEvaluator {
-
-    public:
-
-    Gamma(int pos, Evaluator *ev) : UnaryEvaluator(pos, ev, false) {}
-
-    Evaluator *clone(For *f) {
-        return new Gamma(tpos, ev->clone(f));
-    }
-
-    void generateCode(GeneratorContext *ctx) {
-        ev->generateCode(ctx);
-        ctx->addLine(CMD_GAMMA);
     }
 };
 
@@ -2057,26 +1888,6 @@ class Integ : public Evaluator {
     }
 };
 
-////////////////
-/////  Ip  /////
-////////////////
-
-class Ip : public UnaryEvaluator {
-
-    public:
-
-    Ip(int pos, Evaluator *ev) : UnaryEvaluator(pos, ev, false) {}
-
-    Evaluator *clone(For *f) {
-        return new Ip(tpos, ev->clone(f));
-    }
-
-    void generateCode(GeneratorContext *ctx) {
-        ev->generateCode(ctx);
-        ctx->addLine(CMD_IP);
-    }
-};
-
 /////////////////
 /////  Inv  /////
 /////////////////
@@ -2096,26 +1907,6 @@ class Inv : public UnaryEvaluator {
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
         ctx->addLine(CMD_INV);
-    }
-};
-
-///////////////////
-/////  Invrt  /////
-///////////////////
-
-class Invrt : public UnaryEvaluator {
-
-    public:
-
-    Invrt(int pos, Evaluator *ev) : UnaryEvaluator(pos, ev, false) {}
-
-    Evaluator *clone(For *f) {
-        return new Invrt(tpos, ev->clone(f));
-    }
-
-    void generateCode(GeneratorContext *ctx) {
-        ev->generateCode(ctx);
-        ctx->addLine(CMD_INVRT);
     }
 };
 
@@ -2475,33 +2266,6 @@ class Negative : public UnaryEvaluator {
     }
 };
 
-/////////////////////
-/////  Newlist  /////
-/////////////////////
-
-class Newlist : public Evaluator {
-
-    public:
-
-    Newlist(int pos) : Evaluator(pos) {}
-
-    Evaluator *clone(For *f) {
-        return new Newlist(tpos);
-    }
-
-    void generateCode(GeneratorContext *ctx) {
-        ctx->addLine(CMD_NEWLIST);
-    }
-
-    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
-        // nope
-    }
-
-    int howMany(const std::string *name) {
-        return 0;
-    }
-};
-
 ////////////////////
 /////  Newmat  /////
 ////////////////////
@@ -2520,28 +2284,6 @@ class Newmat : public BinaryEvaluator {
         left->generateCode(ctx);
         right->generateCode(ctx);
         ctx->addLine(CMD_NEWMAT);
-    }
-};
-
-/////////////////
-/////  Not  /////
-/////////////////
-
-class Not : public UnaryEvaluator {
-
-    public:
-
-    Not(int pos, Evaluator *ev) : UnaryEvaluator(pos, ev, false) {}
-
-    Evaluator *clone(For *f) {
-        return new Not(tpos, ev->clone(f));
-    }
-
-    bool isBool() { return true; }
-
-    void generateCode(GeneratorContext *ctx) {
-        ev->generateCode(ctx);
-        ctx->addLine(CMD_GEN_NOT);
     }
 };
 
@@ -2630,33 +2372,6 @@ class Perm : public BinaryEvaluator {
         left->generateCode(ctx);
         right->generateCode(ctx);
         ctx->addLine(CMD_PERM);
-    }
-};
-
-////////////////
-/////  Pi  /////
-////////////////
-
-class Pi : public Evaluator {
-
-    public:
-
-    Pi(int pos) : Evaluator(pos) {}
-
-    Evaluator *clone(For *f) {
-        return new Pi(tpos);
-    }
-
-    void generateCode(GeneratorContext *ctx) {
-        ctx->addLine(CMD_PI);
-    }
-
-    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
-        // nope
-    }
-
-    int howMany(const std::string *name) {
-        return 0;
     }
 };
 
@@ -2798,33 +2513,6 @@ class Radius : public BinaryEvaluator {
     }
 };
 
-////////////////////
-/////  Random  /////
-////////////////////
-
-class Random : public Evaluator {
-
-    public:
-
-    Random(int pos) : Evaluator(pos) {}
-
-    Evaluator *clone(For *f) {
-        return new Random(tpos);
-    }
-
-    void generateCode(GeneratorContext *ctx) {
-        ctx->addLine(CMD_RAN);
-    }
-
-    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
-        // nope
-    }
-
-    int howMany(const std::string *name) {
-        return 0;
-    }
-};
-
 /////////////////////
 /////  Rcomplx  /////
 /////////////////////
@@ -2844,6 +2532,72 @@ class Rcomplx : public BinaryEvaluator {
         right->generateCode(ctx);
         ctx->addAssertTwoReals();
         ctx->addLine(CMD_RCOMPLX);
+    }
+};
+
+////////////////////////////
+/////  RecallFunction  /////
+////////////////////////////
+
+class RecallFunction : public Evaluator {
+
+    private:
+
+    int cmd;
+
+    public:
+
+    RecallFunction(int pos, int cmd) : Evaluator(pos), cmd(cmd) {}
+
+    Evaluator *clone(For *) {
+        return new RecallFunction(tpos, cmd);
+    }
+
+    void generateCode(GeneratorContext *ctx) {
+        ctx->addLine(cmd);
+    }
+
+    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
+        // nope
+    }
+
+    int howMany(const std::string *name) {
+        return 0;
+    }
+};
+
+////////////////////////////////////
+/////  RecallOneOfTwoFunction  /////
+////////////////////////////////////
+
+class RecallOneOfTwoFunction : public Evaluator {
+
+    private:
+
+    int cmd;
+    bool pick_x;
+
+    public:
+
+    RecallOneOfTwoFunction(int pos, int cmd, bool pick_x) : Evaluator(pos), cmd(cmd), pick_x(pick_x) {}
+
+    Evaluator *clone(For *) {
+        return new RecallOneOfTwoFunction(tpos, cmd, pick_x);
+    }
+
+    void generateCode(GeneratorContext *ctx) {
+        ctx->addLine(cmd);
+        if (pick_x)
+            ctx->addLine(CMD_SWAP);
+        ctx->addLine(CMD_DROP);
+    }
+
+    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
+        // nope
+    }
+
+    int howMany(const std::string *name) {
+        return 0;
     }
 };
 
@@ -2940,46 +2694,6 @@ class Rnd : public BinaryEvaluator {
         ctx->addLine(CMD_NUMBER, (phloat) 36.41);
         ctx->addLine(CMD_STOFLAG);
         ctx->addLine(CMD_DROPN, 2);
-    }
-};
-
-//////////////////
-/////  Rnrm  /////
-//////////////////
-
-class Rnrm : public UnaryEvaluator {
-
-    public:
-
-    Rnrm(int pos, Evaluator *ev) : UnaryEvaluator(pos, ev, false) {}
-
-    Evaluator *clone(For *f) {
-        return new Rnrm(tpos, ev->clone(f));
-    }
-
-    void generateCode(GeneratorContext *ctx) {
-        ev->generateCode(ctx);
-        ctx->addLine(CMD_RNRM);
-    }
-};
-
-//////////////////
-/////  Rsum  /////
-//////////////////
-
-class Rsum : public UnaryEvaluator {
-
-    public:
-
-    Rsum(int pos, Evaluator *ev) : UnaryEvaluator(pos, ev, false) {}
-
-    Evaluator *clone(For *f) {
-        return new Rsum(tpos, ev->clone(f));
-    }
-
-    void generateCode(GeneratorContext *ctx) {
-        ev->generateCode(ctx);
-        ctx->addLine(CMD_RSUM);
     }
 };
 
@@ -3262,6 +2976,41 @@ class Sqrt : public UnaryEvaluator {
     }
 };
 
+/////////////////////
+/////  StatSum  /////
+/////////////////////
+
+class StatSum : public Evaluator {
+
+    private:
+
+    int idx;
+
+    public:
+
+    StatSum(int pos, int idx) : Evaluator(pos), idx(idx) {}
+
+    Evaluator *clone(For *) {
+        return new StatSum(tpos, idx);
+    }
+
+    void generateCode(GeneratorContext *ctx) {
+        ctx->addLine(CMD_SIGMAREG_T);
+        ctx->addLine(CMD_NUMBER, (phloat) idx);
+        ctx->addLine(CMD_ADD);
+        ctx->addLine(CMD_SF, 30);
+        ctx->addLine(CMD_SUM); // actually, RCL IND ST X
+    }
+
+    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
+        // nope
+    }
+
+    int howMany(const std::string *name) {
+        return 0;
+    }
+};
+
 ///////////////////////////
 /////  Subexpression  /////
 ///////////////////////////
@@ -3369,26 +3118,6 @@ class Tanh : public UnaryEvaluator {
     }
 };
 
-///////////////////
-/////  Trans  /////
-///////////////////
-
-class Trans : public UnaryEvaluator {
-
-    public:
-
-    Trans(int pos, Evaluator *ev) : UnaryEvaluator(pos, ev, false) {}
-
-    Evaluator *clone(For *f) {
-        return new Trans(tpos, ev->clone(f));
-    }
-
-    void generateCode(GeneratorContext *ctx) {
-        ev->generateCode(ctx);
-        ctx->addLine(CMD_TRANS);
-    }
-};
-
 //////////////////////
 /////  TypeTest  /////
 //////////////////////
@@ -3425,23 +3154,27 @@ class TypeTest : public UnaryEvaluator {
     }
 };
 
-//////////////////
-/////  Uvec  /////
-//////////////////
+///////////////////////////
+/////  UnaryFunction  /////
+///////////////////////////
 
-class Uvec : public UnaryEvaluator {
+class UnaryFunction : public UnaryEvaluator {
+
+    private:
+
+    int cmd;
 
     public:
 
-    Uvec(int pos, Evaluator *ev) : UnaryEvaluator(pos, ev, false) {}
+    UnaryFunction(int pos, Evaluator *ev, int cmd) : UnaryEvaluator(pos, ev, false), cmd(cmd) {}
 
     Evaluator *clone(For *f) {
-        return new Uvec(tpos, ev->clone(f));
+        return new UnaryFunction(tpos, ev->clone(f), cmd);
     }
 
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
-        ctx->addLine(CMD_UVEC);
+        ctx->addLine(cmd);
     }
 };
 
@@ -4368,7 +4101,7 @@ Evaluator *Parser::parseNot() {
             delete ev;
             return NULL;
         } else {
-            return new Not(tpos, ev);
+            return new UnaryFunction(tpos, ev, CMD_GEN_NOT);
         }
     } else {
         pushback(t, tpos);
@@ -4753,7 +4486,8 @@ Evaluator *Parser::parseThing() {
                     || t == "INVRT" || t == "DET" || t == "TRANS"
                     || t == "UVEC" || t == "FNRM" || t == "RNRM"
                     || t == "RSUM" || t == "REAL?" || t == "CPX?"
-                    || t == "MAT?" || t == "LIST?") {
+                    || t == "MAT?" || t == "LIST?"
+                    || t == "FCSTX" || t == "FCSTY") {
                 min_args = max_args = 1;
                 mode = EXPR_LIST_EXPR;
             } else if (t == "COMB" || t == "PERM"
@@ -4857,7 +4591,8 @@ Evaluator *Parser::parseThing() {
                     || t == "INVRT" || t == "DET" || t == "TRANS"
                     || t == "UVEC" || t == "FNRM" || t == "RNRM"
                     || t == "RSUM" || t == "REAL?" || t == "CPX?"
-                    || t == "MAT?" || t == "LIST?") {
+                    || t == "MAT?" || t == "LIST?"
+                    || t == "FCSTX" || t == "FCSTY") {
                 Evaluator *ev = (*evs)[0];
                 delete evs;
                 if (t == "SIN")
@@ -4907,17 +4642,17 @@ Evaluator *Parser::parseThing() {
                 else if (t == "INV")
                     return new Inv(tpos, ev);
                 else if (t == "ABS")
-                    return new Abs(tpos, ev);
+                    return new UnaryFunction(tpos, ev, CMD_ABS);
                 else if (t == "FACT")
-                    return new Fact(tpos, ev);
+                    return new UnaryFunction(tpos, ev, CMD_FACT);
                 else if (t == "GAMMA")
-                    return new Gamma(tpos, ev);
+                    return new UnaryFunction(tpos, ev, CMD_GAMMA);
                 else if (t == "INT")
                     return new Int(tpos, ev);
                 else if (t == "IP")
-                    return new Ip(tpos, ev);
+                    return new UnaryFunction(tpos, ev, CMD_IP);
                 else if (t == "FP")
-                    return new Fp(tpos, ev);
+                    return new UnaryFunction(tpos, ev, CMD_FP);
                 else if (t == "HMS")
                     return new Hms(tpos, ev);
                 else if (t == "HRS")
@@ -4939,19 +4674,19 @@ Evaluator *Parser::parseThing() {
                 else if (t == "BNEG")
                     return new Bneg(tpos, ev);
                 else if (t == "INVRT")
-                    return new Invrt(tpos, ev);
+                    return new UnaryFunction(tpos, ev, CMD_INVRT);
                 else if (t == "DET")
-                    return new Det(tpos, ev);
+                    return new UnaryFunction(tpos, ev, CMD_DET);
                 else if (t == "TRANS")
-                    return new Trans(tpos, ev);
+                    return new UnaryFunction(tpos, ev, CMD_TRANS);
                 else if (t == "UVEC")
-                    return new Uvec(tpos, ev);
+                    return new UnaryFunction(tpos, ev, CMD_UVEC);
                 else if (t == "FNRM")
-                    return new Fnrm(tpos, ev);
+                    return new UnaryFunction(tpos, ev, CMD_FNRM);
                 else if (t == "RNRM")
-                    return new Rnrm(tpos, ev);
+                    return new UnaryFunction(tpos, ev, CMD_RNRM);
                 else if (t == "RSUM")
-                    return new Rsum(tpos, ev);
+                    return new UnaryFunction(tpos, ev, CMD_RSUM);
                 else if (t == "REAL?")
                     return new TypeTest(tpos, ev, CMD_REAL_T);
                 else if (t == "CPX?")
@@ -4960,6 +4695,10 @@ Evaluator *Parser::parseThing() {
                     return new TypeTest(tpos, ev, CMD_MAT_T);
                 else if (t == "LIST?")
                     return new TypeTest(tpos, ev, CMD_LIST_T);
+                else if (t == "FCSTX")
+                    return new UnaryFunction(tpos, ev, CMD_FCSTX);
+                else if (t == "FCSTY")
+                    return new UnaryFunction(tpos, ev, CMD_FCSTY);
                 else
                     // Shouldn't get here
                     return NULL;
@@ -5152,15 +4891,15 @@ Evaluator *Parser::parseThing() {
         } else {
             pushback(t2, t2pos);
             if (t == "PI" || lex->compatMode && t == "\7")
-                return new Pi(tpos);
+                return new RecallFunction(tpos, CMD_PI);
             else if (t == "RAN#")
-                return new Random(tpos);
+                return new RecallFunction(tpos, CMD_RAN);
             else if (t == "CDATE")
-                return new Cdate(tpos);
+                return new RecallFunction(tpos, CMD_DATE);
             else if (t == "CTIME")
-                return new Ctime(tpos);
+                return new RecallFunction(tpos, CMD_TIME);
             else if (t == "NEWLIST")
-                return new Newlist(tpos);
+                return new RecallFunction(tpos, CMD_NEWLIST);
             else if (t == "REGX")
                 return new Register(tpos, 1);
             else if (t == "REGY")
@@ -5169,6 +4908,48 @@ Evaluator *Parser::parseThing() {
                 return new Register(tpos, 3);
             else if (t == "REGT")
                 return new Register(tpos, 4);
+            else if (t == "\5X")
+                return new StatSum(tpos, 0);
+            else if (t == "\5X2")
+                return new StatSum(tpos, 1);
+            else if (t == "\5Y")
+                return new StatSum(tpos, 2);
+            else if (t == "\5Y2")
+                return new StatSum(tpos, 3);
+            else if (t == "\5XY")
+                return new StatSum(tpos, 4);
+            else if (t == "\5N")
+                return new StatSum(tpos, 5);
+            else if (t == "\5LNX")
+                return new StatSum(tpos, 6);
+            else if (t == "\5LNX2")
+                return new StatSum(tpos, 7);
+            else if (t == "\5LNY")
+                return new StatSum(tpos, 8);
+            else if (t == "\5LNY2")
+                return new StatSum(tpos, 9);
+            else if (t == "\5LNXLNY")
+                return new StatSum(tpos, 10);
+            else if (t == "\5XLNY")
+                return new StatSum(tpos, 11);
+            else if (t == "\5YLNX")
+                return new StatSum(tpos, 12);
+            else if (t == "WMEAN")
+                return new RecallFunction(tpos, CMD_WMEAN);
+            else if (t == "CORR")
+                return new RecallFunction(tpos, CMD_CORR);
+            else if (t == "SLOPE")
+                return new RecallFunction(tpos, CMD_SLOPE);
+            else if (t == "YINT")
+                return new RecallFunction(tpos, CMD_YINT);
+            else if (t == "MEANX")
+                return new RecallOneOfTwoFunction(tpos, CMD_MEAN, true);
+            else if (t == "MEANY")
+                return new RecallOneOfTwoFunction(tpos, CMD_MEAN, false);
+            else if (t == "SDEVX")
+                return new RecallOneOfTwoFunction(tpos, CMD_SDEV, true);
+            else if (t == "SDEVY")
+                return new RecallOneOfTwoFunction(tpos, CMD_SDEV, false);
             else if (t == "BREAK" || t == "CONTINUE") {
                 if (forStack.size() == 0)
                     return NULL;

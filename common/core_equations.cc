@@ -243,12 +243,12 @@ static short catalog[] = {
     EQCMD_INT,    CMD_INVRT,    CMD_IP,       CMD_LN,        CMD_LN_1_X,     CMD_LOG,
     CMD_LIST_T,   CMD_MAT_T,    EQCMD_MAX,    EQCMD_MIN,     CMD_MOD,        EQCMD_MCOLS,
     EQCMD_MROWS,  CMD_FACT,     CMD_NEWLIST,  CMD_NEWMAT,    CMD_NOT,        CMD_OR,
-    CMD_PERM,     EQCMD_RADIUS, CMD_RAN,      CMD_REAL_T,    CMD_RND,        CMD_RNRM,
-    CMD_RSUM,     CMD_SEED,     EQCMD_SEQ,    CMD_SIGN,      CMD_SIN,        CMD_SINH,
-    EQCMD_SIZES,  CMD_SQRT,     CMD_TAN,      CMD_TANH,      CMD_TIME,       CMD_TRANS,
-    EQCMD_TRN,    CMD_UVEC,     EQCMD_XCOORD, CMD_XEQ,       CMD_XOR,        CMD_SQUARE,
-    EQCMD_YCOORD, CMD_Y_POW_X,  CMD_INV,      CMD_10_POW_X,  CMD_TO_DEC,     CMD_TO_DEG,
-    CMD_TO_HMS,   CMD_TO_HR,    CMD_TO_OCT,   CMD_TO_RAD,    CMD_NULL,       CMD_NULL
+    CMD_PERM,     CMD_PCOMPLX,  EQCMD_RADIUS, CMD_RAN,       CMD_RCOMPLX,    CMD_REAL_T,
+    CMD_RND,      CMD_RNRM,     CMD_RSUM,     CMD_SEED,      EQCMD_SEQ,      CMD_SIGN,
+    CMD_SIN,      CMD_SINH,     EQCMD_SIZES,  CMD_SQRT,      CMD_TAN,        CMD_TANH,
+    CMD_TIME,     CMD_TRANS,    EQCMD_TRN,    CMD_UVEC,      EQCMD_XCOORD,   CMD_XEQ,
+    CMD_XOR,      CMD_SQUARE,   EQCMD_YCOORD, CMD_Y_POW_X,   CMD_INV,        CMD_10_POW_X,
+    CMD_TO_DEC,   CMD_TO_DEG,   CMD_TO_HMS,   CMD_TO_HR,     CMD_TO_OCT,     CMD_TO_RAD
 };
 
 static int catalog_rows = 15;

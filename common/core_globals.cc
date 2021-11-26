@@ -33,6 +33,7 @@
 #include "core_tables.h"
 #include "core_variables.h"
 #include "shell.h"
+#include "shell_spool.h"
 
 #ifndef BCD_MATH
 // We need these locally for BID128->double conversion
@@ -3924,8 +3925,17 @@ bool load_state(int4 ver_p, bool *clear, bool *too_new) {
             else if (prgms[idx].eq_data == NULL)
                 fprintf(f, "unused index\n");
             else {
+                
                 eqd = prgms[idx].eq_data;
-                fprintf(f, "[%d] \"%s\"\n", eqd->refcount, std::string(eqd->text, eqd->length).c_str());
+                if (eqd->length == 0) {
+                    fprintf(f, "[%d] (direct solver)\n", eqd->refcount);
+                } else {
+                    char *hpbuf = (char *) malloc(eqd->length * 5 + 1);
+                    int4 hplen = hp2ascii(hpbuf, eqd->text, eqd->length, false);
+                    hpbuf[hplen] = 0;
+                    fprintf(f, "[%d] \"%s\"\n", eqd->refcount, hpbuf);
+                    free(hpbuf);
+                }
                 if (eqd->eqn_index != i)
                     fprintf(f, "    mismatched equation index: %d\n", eqd->eqn_index);
             }

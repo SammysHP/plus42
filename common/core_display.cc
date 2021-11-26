@@ -2479,13 +2479,13 @@ static prp_data_struct *prp_data;
 static int print_program_worker(bool interrupted);
 
 int print_program(pgm_index prgm, int4 pc, int4 lines, bool normal) {
-    prp_data_struct *dat = (prp_data_struct *) malloc(sizeof(prp_data_struct));
+    prp_data_struct *dat = new prp_data_struct;
     if (dat == NULL)
         return ERR_INSUFFICIENT_MEMORY;
 
     shell_annunciators(-1, -1, 1, -1, -1, -1);
     dat->len = 0;
-    dat->saved_prgm.init_copy(current_prgm);
+    dat->saved_prgm = current_prgm;
     dat->cmd = CMD_NONE;
     dat->line = pc2line(pc);
     dat->pc = pc;
@@ -2631,7 +2631,7 @@ static int print_program_worker(bool interrupted) {
 
     done:
     current_prgm = dat->saved_prgm;
-    free(dat);
+    delete dat;
     shell_annunciators(-1, -1, 0, -1, -1, -1);
     return ERR_STOP;
 }

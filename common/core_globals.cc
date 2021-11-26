@@ -3904,7 +3904,12 @@ bool load_state(int4 ver_p, bool *clear, bool *too_new) {
     FILE *f = fopen(fn, "r+");
     if (f != NULL) {
         fseek(f, 0, SEEK_END);
-        fprintf(f, "===================================\n");
+        fprintf(f, "=========================================\n");
+        uint4 t, d;
+        shell_get_time_date(&t, &d, NULL);
+        fprintf(f, "equation usage report %04d-%02d-%02d %02d:%02d:%02d\n",
+                d / 10000, d / 100 % 100, d % 100,
+                t / 1000000, t / 10000 % 100, t / 100 % 100);
         int max = prgms_and_eqns_count - prgms_count;
         if (max < var_refs->size())
             max = var_refs->size();

@@ -76,6 +76,7 @@ static int rep_key = -1;
 #define EQMN_TOP_FCN1 1012
 #define EQMN_TOP_FCN2 1013
 #define EQMN_TOP_FCN3 1014
+#define EQMN_STACK    1015
 
 #define EQCMD_XCOORD   1000
 #define EQCMD_YCOORD   1001
@@ -93,6 +94,11 @@ static int rep_key = -1;
 #define EQCMD_SEQ      1013
 #define EQCMD_MAX      1014
 #define EQCMD_MIN      1015
+#define EQCMD_REGX     1016
+#define EQCMD_REGY     1017
+#define EQCMD_REGZ     1018
+#define EQCMD_REGT     1019
+#define EQCMD_STACK    1020
 
 struct eqn_cmd_spec {
     const char *name;
@@ -115,7 +121,12 @@ const eqn_cmd_spec eqn_cmds[] = {
     { /* IDIV */     "IDIV",     4 },
     { /* SEQ */      "SEQ",      3 },
     { /* MAX */      "MAX",      3 },
-    { /* MIN */      "MIN",      3 }
+    { /* MIN */      "MIN",      3 },
+    { /* REGX */     "REGX",     4 },
+    { /* REGY */     "REGY",     4 },
+    { /* REGZ */     "REGZ",     4 },
+    { /* REGT */     "REGT",     4 },
+    { /* STACK */    "STACK",    5 }
 };
 
 const menu_spec eqn_menus[] = {
@@ -224,6 +235,13 @@ const menu_spec eqn_menus[] = {
                         { 0x1000 + CMD_DDAYS,     0, "" },
                         { 0x1000 + CMD_NULL,      0, "" },
                         { 0x1000 + CMD_NULL,      0, "" } } },
+    { /* EQMN_STACK */ MENU_NONE, MENU_NONE, MENU_NONE,
+                      { { 0x1000 + EQCMD_REGX,  0, ""    },
+                        { 0x1000 + EQCMD_REGY,  0, ""    },
+                        { 0x1000 + EQCMD_REGZ,  0, ""    },
+                        { 0x1000 + EQCMD_REGT,  0, ""    },
+                        { 0x0000 + EQCMD_STACK, 3, "STK" },
+                        { 0x1000 + CMD_NULL,    0, ""    } } },
 };
 
 static const menu_spec *getmenu(int id) {
@@ -234,24 +252,25 @@ static const menu_spec *getmenu(int id) {
 }
 
 static short catalog[] = {
-    CMD_ABS,      CMD_ACOS,     CMD_ACOSH,    CMD_AND,       EQCMD_ANGLE,    CMD_ASIN,
-    CMD_ASINH,    CMD_ATAN,     CMD_ATANH,    CMD_BASEADD,   CMD_BASESUB,    CMD_BASEMUL,
-    CMD_BASEDIV,  CMD_BASECHS,  EQCMD_BREAK,  CMD_COMB,      EQCMD_CONTINUE, CMD_COS,
-    CMD_COSH,     CMD_CPX_T,    CMD_CROSS,    CMD_DATE,      CMD_DATE_PLUS,  CMD_DDAYS,
-    CMD_DET,      CMD_DOT,      CMD_E_POW_X,  CMD_E_POW_X_1, CMD_FNRM,       EQCMD_FOR,
-    CMD_FP,       CMD_GAMMA,    CMD_HMSADD,   CMD_HMSSUB,    EQCMD_IDIV,     CMD_IF_T,
-    EQCMD_INT,    CMD_INVRT,    CMD_IP,       CMD_LN,        CMD_LN_1_X,     CMD_LOG,
-    CMD_LIST_T,   CMD_MAT_T,    EQCMD_MAX,    EQCMD_MIN,     CMD_MOD,        EQCMD_MCOLS,
-    EQCMD_MROWS,  CMD_FACT,     CMD_NEWLIST,  CMD_NEWMAT,    CMD_NOT,        CMD_OR,
-    CMD_PERM,     CMD_PCOMPLX,  EQCMD_RADIUS, CMD_RAN,       CMD_RCOMPLX,    CMD_REAL_T,
-    CMD_RND,      CMD_RNRM,     CMD_RSUM,     CMD_SEED,      EQCMD_SEQ,      CMD_SIGN,
-    CMD_SIN,      CMD_SINH,     EQCMD_SIZES,  CMD_SQRT,      CMD_TAN,        CMD_TANH,
-    CMD_TIME,     CMD_TRANS,    EQCMD_TRN,    CMD_UVEC,      EQCMD_XCOORD,   CMD_XEQ,
-    CMD_XOR,      CMD_SQUARE,   EQCMD_YCOORD, CMD_Y_POW_X,   CMD_INV,        CMD_10_POW_X,
-    CMD_TO_DEC,   CMD_TO_DEG,   CMD_TO_HMS,   CMD_TO_HR,     CMD_TO_OCT,     CMD_TO_RAD
+    CMD_ABS,     CMD_ACOS,     CMD_ACOSH,    CMD_AND,       EQCMD_ANGLE,    CMD_ASIN,
+    CMD_ASINH,   CMD_ATAN,     CMD_ATANH,    CMD_BASEADD,   CMD_BASESUB,    CMD_BASEMUL,
+    CMD_BASEDIV, CMD_BASECHS,  EQCMD_BREAK,  CMD_COMB,      EQCMD_CONTINUE, CMD_COS,
+    CMD_COSH,    CMD_CPX_T,    CMD_CROSS,    CMD_DATE,      CMD_DATE_PLUS,  CMD_DDAYS,
+    CMD_DET,     CMD_DOT,      CMD_E_POW_X,  CMD_E_POW_X_1, CMD_FNRM,       EQCMD_FOR,
+    CMD_FP,      CMD_GAMMA,    CMD_HMSADD,   CMD_HMSSUB,    EQCMD_IDIV,     CMD_IF_T,
+    EQCMD_INT,   CMD_INVRT,    CMD_IP,       CMD_LN,        CMD_LN_1_X,     CMD_LOG,
+    CMD_LIST_T,  CMD_MAT_T,    EQCMD_MAX,    EQCMD_MIN,     CMD_MOD,        EQCMD_MCOLS,
+    EQCMD_MROWS, CMD_FACT,     CMD_NEWLIST,  CMD_NEWMAT,    CMD_NOT,        CMD_OR,
+    CMD_PERM,    CMD_PCOMPLX,  EQCMD_RADIUS, CMD_RAN,       CMD_RCOMPLX,    CMD_REAL_T,
+    EQCMD_REGX,  EQCMD_REGY,   EQCMD_REGZ,   EQCMD_REGT,    CMD_RND,        CMD_RNRM,
+    CMD_RSUM,    CMD_SEED,     EQCMD_SEQ,    CMD_SIGN,      CMD_SIN,        CMD_SINH,
+    EQCMD_SIZES, CMD_SQRT,     EQCMD_STACK,  CMD_TAN,       CMD_TANH,       CMD_TIME,
+    CMD_TRANS,   EQCMD_TRN,    CMD_UVEC,     EQCMD_XCOORD,  CMD_XEQ,        CMD_XOR,
+    CMD_SQUARE,  EQCMD_YCOORD, CMD_Y_POW_X,  CMD_INV,       CMD_10_POW_X,   CMD_TO_DEC,
+    CMD_TO_DEG,  CMD_TO_HMS,   CMD_TO_HR,    CMD_TO_OCT,    CMD_TO_RAD,     CMD_NULL
 };
 
-static int catalog_rows = 15;
+static int catalog_rows = 16;
 
 
 static void restart_cursor();
@@ -442,6 +461,11 @@ static eqn_name_entry eqn_name[] = {
     { CMD_GETITEM,   5, "ITEM("    },
     { EQCMD_BREAK,   5, "BREAK"    },
     { EQCMD_CONTINUE,8, "CONTINUE" },
+    { EQCMD_REGX,    4, "REGX"     },
+    { EQCMD_REGY,    4, "REGY"     },
+    { EQCMD_REGZ,    4, "REGZ"     },
+    { EQCMD_REGT,    4, "REGT"     },
+    { EQCMD_STACK,   6, "STACK["   },
     { CMD_NULL,      0, NULL       }
 };
 
@@ -2065,7 +2089,7 @@ static int keydown_edit_2(int key, bool shift, int *repeat) {
                 if (shift)
                     insert_text("PI", 2);
                 else
-                    squeak();
+                    select_function_menu(EQMN_STACK);
                 break;
             }
             case KEY_SIN: {

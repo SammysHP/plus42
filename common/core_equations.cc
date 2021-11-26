@@ -283,8 +283,8 @@ const menu_spec eqn_menus[] = {
     { /* EQMN_STAT1 */ MENU_NONE, EQMN_STAT2, EQMN_STAT4,
                       { { 0x0000 + EQCMD_MEANX,   3, "MNX" },
                         { 0x0000 + EQCMD_MEANY,   3, "MNY" },
-                        { 0x0000 + EQCMD_SDEVX,   0, "" },
-                        { 0x0000 + EQCMD_SDEVY,   0, "" },
+                        { 0x1000 + EQCMD_SDEVX,   0, "" },
+                        { 0x1000 + EQCMD_SDEVY,   0, "" },
                         { 0x1000 + CMD_WMEAN,     0, "" },
                         { 0x1000 + CMD_CORR,      0, "" } } },
     { /* EQMN_STAT2 */ MENU_NONE, EQMN_STAT3, EQMN_STAT1,
@@ -445,7 +445,7 @@ static void restart_cursor() {
 static int t_rep_key;
 static int t_rep_count;
 
-static bool insert_text(const char *text, int len) {
+static bool insert_text(const char *text, int len, bool clear_mask_bit = false) {
     if (len == 1) {
         t_rep_count++;
         if (t_rep_count == 1)
@@ -463,7 +463,11 @@ static bool insert_text(const char *text, int len) {
         edit_capacity = newcap;
     }
     memmove(edit_buf + edit_pos + len, edit_buf + edit_pos, edit_len - edit_pos);
-    memcpy(edit_buf + edit_pos, text, len);
+    if (clear_mask_bit)
+        for (int i = 0; i < len; i++)
+            edit_buf[edit_pos + i] = text[i] & 0x7f;
+    else
+        memcpy(edit_buf + edit_pos, text, len);
     edit_len += len;
     edit_pos += len;
     while (edit_pos - display_pos > 21)
@@ -582,7 +586,7 @@ static bool insert_function(int cmd) {
                     && insert_text("(", 1);
             } else {
                 const command_spec *cs = cmd_array + cmd;
-                return insert_text(cs->name, cs->name_length)
+                return insert_text(cs->name, cs->name_length, true)
                     && insert_text("(", 1);
             }
         }

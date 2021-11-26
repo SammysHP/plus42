@@ -214,7 +214,8 @@ class GeneratorContext {
                     || line->cmd == CMD_FUNC
                     || line->cmd == CMD_RDNN
                     || line->cmd == CMD_DROPN
-                    || line->cmd == CMD_SF) {
+                    || line->cmd == CMD_SF
+                    || line->cmd == CMD_RTNERR) {
                 arg.type = ARGTYPE_NUM;
                 arg.val.num = line->n;
             } else if (line->cmd == CMD_RCL_ADD

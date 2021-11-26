@@ -2073,7 +2073,7 @@ static int keydown_edit_2(int key, bool shift, int *repeat) {
         switch (key) {
             case KEY_STO: {
                 if (shift)
-                    squeak();
+                    insert_function(flags.f.polar ? CMD_PCOMPLX : CMD_RCOMPLX);
                 else
                     insert_function(CMD_GSTO);
                 break;
@@ -2223,7 +2223,7 @@ static int keydown_edit_2(int key, bool shift, int *repeat) {
             }
             case KEY_8: {
                 if (shift)
-                    squeak();
+                    insert_function(CMD_SIGMASUB);
                 else
                     insert_text("8", 1);
                 break;
@@ -2237,14 +2237,14 @@ static int keydown_edit_2(int key, bool shift, int *repeat) {
             }
             case KEY_DOT: {
                 if (shift)
-                    squeak();
+                    insert_text(flags.f.decimal_point ? "," : ".", 1);
                 else
-                    insert_text(".", 1);
+                    insert_text(flags.f.decimal_point ? "." : ",", 1);
                 break;
             }
             case KEY_RUN: {
                 if (shift)
-                    squeak();
+                    insert_text(":", 1);
                 else
                     insert_text("=", 1);
                 break;

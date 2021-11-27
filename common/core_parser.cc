@@ -258,6 +258,7 @@ class GeneratorContext {
         arg.type = ARGTYPE_NONE;
         store_command(0, CMD_END, &arg, NULL);
         // Then, the rest...
+        int4 pc = -1;
         lineno = 0;
         for (int i = 0; i < lines->size(); i++) {
             Line *line = (*lines)[i];

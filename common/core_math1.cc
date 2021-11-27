@@ -677,6 +677,9 @@ int return_to_solve(int failure, bool stop) {
             view_helper(&arg, print);
         }
 
+        current_prgm = solve.prev_prgm;
+        pc = solve.prev_pc;
+
         // TODO: The numerical solver puts stuff on the stack,
         // we should do something here as well
 

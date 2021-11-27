@@ -5277,7 +5277,6 @@ static int handle_error(int error) {
             handle_it:
             pc = oldpc;
             display_error(error, true);
-            set_running(false);
             if (current_prgm.is_eqn()) {
                 equation_data *eqd = prgms[current_prgm.index()].eq_data;
                 if (eqd->map != NULL) {
@@ -5298,11 +5297,12 @@ static int handle_error(int error) {
                         }
                         clear_row(1);
                         draw_string(0, 1, line, 22);
-                        flush_display();
                         flags.f.two_line_message = 1;
                     }
                 }
             }
+            flush_display();
+            set_running(false);
             return 0;
         }
         return 1;

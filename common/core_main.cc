@@ -5278,6 +5278,30 @@ static int handle_error(int error) {
             pc = oldpc;
             display_error(error, true);
             set_running(false);
+            if (current_prgm.is_eqn()) {
+                equation_data *eqd = prgms[current_prgm.index()].eq_data;
+                if (eqd->map != NULL) {
+                    int4 pos = eqd->map->lookup(pc);
+                    if (pos != -1) {
+                        // Put arrow at 8, text before pos to the left
+                        // of it, rest to the right...
+                        char line[22];
+                        int apos = 8;
+                        for (int i = 0; i < apos; i++) {
+                            int n = i + pos - 8;
+                            line[i] = n < 0 ? ' ' : eqd->text[n];
+                        }
+                        line[apos] = 6;
+                        for (int i = apos + 1; i < 22; i++) {
+                            int n = i + pos - 9;
+                            line[i] = n >= eqd->length ? ' ' : eqd->text[n];
+                        }
+                        draw_string(0, 1, line, 22);
+                        flush_display();
+                        flags.f.two_line_message = 1;
+                    }
+                }
+            }
             return 0;
         }
         return 1;

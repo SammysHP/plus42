@@ -5280,7 +5280,7 @@ static int handle_error(int error) {
             if (current_prgm.is_eqn()) {
                 equation_data *eqd = prgms[current_prgm.index()].eq_data;
                 if (eqd->map != NULL) {
-                    int4 pos = eqd->map->lookup(pc);
+                    int4 pos = eqd->map->lookup(pc2line(pc));
                     if (pos != -1) {
                         // Put arrow at 8, text before pos to the left
                         // of it, rest to the right...

@@ -103,26 +103,26 @@ int4 CodeMap::read(int *index) {
     return u;
 }
 
-void CodeMap::add(int pos, int4 pc) {
+void CodeMap::add(int pos, int4 line) {
     if (pos != current_pos) {
-        if (pc > current_pc) {
+        if (line > current_line) {
             write(current_pos);
-            write(pc - current_pc);
+            write(line - current_line);
         }
         current_pos = pos;
-        current_pc = pc;
+        current_line = line;
     }
 }
 
-int4 CodeMap::lookup(int4 pc) {
+int4 CodeMap::lookup(int4 line) {
     int index = 0;
-    int4 cpc = 0;
+    int4 cline = 0;
     while (true) {
         int4 pos = read(&index);
         if (pos == -2)
             return -1;
-        cpc += read(&index);
-        if (pc < cpc)
+        cline += read(&index);
+        if (line < cline)
             // TODO: Handle pos = -1 by going up the RTN stack?
             return pos;
     }
@@ -258,17 +258,18 @@ class GeneratorContext {
         arg.type = ARGTYPE_NONE;
         store_command(0, CMD_END, &arg, NULL);
         // Then, the rest...
-        int4 pc = -1;
+        lineno = 0;
         for (int i = 0; i < lines->size(); i++) {
             Line *line = (*lines)[i];
             if (line->cmd == CMD_LBL)
                 continue;
+            lineno++;
             store_command_after(&pc, line->cmd, &line->arg, NULL);
             if (map != NULL)
-                map->add(line->pos, pc);
+                map->add(line->pos, lineno);
         }
         if (map != NULL)
-            map->add(-2, pc);
+            map->add(-2, lineno);
         current_prgm = saved_prgm;
         flags.f.prgm_mode = saved_prgm_mode;
         flags.f.printer_exists = prev_printer_exists;

@@ -73,18 +73,18 @@ class CodeMap {
     int size;
     int capacity;
     int4 current_pos;
-    int4 current_pc;
+    int4 current_line;
     
     void addByte(int b);
     void write(int4 n);
     int4 read(int *index);
     
     public:
-    CodeMap() : data(NULL), size(0), capacity(0), current_pos(-1), current_pc(0) {}
+    CodeMap() : data(NULL), size(0), capacity(0), current_pos(-1), current_line(0) {}
     CodeMap(char *data, int size) : data(data), size(size) {}
     ~CodeMap() { delete data; }
-    void add(int4 pos, int4 pc);
-    int4 lookup(int4 pc);
+    void add(int4 pos, int4 line);
+    int4 lookup(int4 line);
     char *getData() { return data; }
     int getSize() { return size; }
 };

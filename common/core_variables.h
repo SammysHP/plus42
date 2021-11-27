@@ -26,15 +26,17 @@
 /***********************/
 
 class Evaluator;
+class CodeMap;
 
 class equation_data {
     public:
     int refcount;
-    equation_data() : refcount(0), length(0), text(NULL), ev(NULL) {}
+    equation_data() : refcount(0), length(0), text(NULL), ev(NULL), map(NULL) {}
     ~equation_data();
     int4 length;
     char *text;
     Evaluator *ev;
+    CodeMap *map;
     bool compatMode;
     int eqn_index;
 };

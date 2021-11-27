@@ -10,34 +10,31 @@
 #include "core_tables.h"
 #include "core_variables.h"
 
-////////////////////////////////
-/////  class declarations  /////
-////////////////////////////////
-
 //////////////////////////////
 /////  GeneratorContext  /////
 //////////////////////////////
 
 struct Line {
+    int pos;
     int cmd;
     arg_struct arg;
     char *buf;
-    Line(int cmd) : cmd(cmd), buf(NULL) {
+    Line(int pos, int cmd) : pos(pos), cmd(cmd), buf(NULL) {
         arg.type = ARGTYPE_NONE;
     }
-    Line(phloat d) : cmd(CMD_NUMBER), buf(NULL) {
+    Line(int pos, phloat d) : pos(pos), cmd(CMD_NUMBER), buf(NULL) {
         arg.type = ARGTYPE_DOUBLE;
         arg.val_d = d;
     }
-    Line(int cmd, char s, bool ind) : cmd(cmd), buf(NULL) {
+    Line(int pos, int cmd, char s, bool ind) : pos(pos), cmd(cmd), buf(NULL) {
         arg.type = ind ? ARGTYPE_IND_STK : ARGTYPE_STK;
         arg.val.stk = s;
     }
-    Line(int cmd, int n, bool ind) : cmd(cmd), buf(NULL) {
+    Line(int pos, int cmd, int n, bool ind) : pos(pos), cmd(cmd), buf(NULL) {
         arg.type = ind ? ARGTYPE_IND_NUM : ARGTYPE_NUM;
         arg.val.num = n;
     }
-    Line(int cmd, std::string s, bool ind) : cmd(cmd), buf(NULL) {
+    Line(int pos, int cmd, std::string s, bool ind) : pos(pos), cmd(cmd), buf(NULL) {
         if (cmd == CMD_XSTR) {
             int len = s.length();
             if (len > 65535)
@@ -61,6 +58,75 @@ struct Line {
     }
 };
 
+void CodeMap::addByte(int b) {
+    if (size == -1)
+        return;
+    if (size + 1 > capacity) {
+        int newcapacity = capacity + 64;
+        char *newdata = (char *) realloc(data, newcapacity);
+        if (newdata == NULL) {
+            free(data);
+            data = NULL;
+            size = -1;
+            return;
+        }
+        data = newdata;
+        capacity = newcapacity;
+    }
+    data[size++] = b;
+}
+
+void CodeMap::write(int4 n) {
+    uint4 u = n;
+    while (true) {
+        if (u <= 127) {
+            addByte(u);
+            return;
+        }
+        addByte((u & 127) | 128);
+        u >>= 7;
+    }
+}
+
+int4 CodeMap::read(int *index) {
+    if (*index >= size)
+        return -2;
+    uint4 u;
+    int offset = 0;
+    int b;
+    do {
+        b = data[(*index)++];
+        u = (b & 127) << offset;
+        offset += 7;
+    } while ((b & 128) != 0);
+    return u;
+}
+
+void CodeMap::add(int pos, int4 pc) {
+    if (pos != current_pos) {
+        if (pc > current_pc) {
+            write(current_pos);
+            write(pc - current_pc);
+        }
+        current_pos = pos;
+        current_pc = pc;
+    }
+}
+
+int4 CodeMap::lookup(int4 pc) {
+    int index = 0;
+    int4 cpc = 0;
+    while (true) {
+        int4 pos = read(&index);
+        if (pos == -2)
+            return -1;
+        cpc += read(&index);
+        if (pc < cpc)
+            // TODO: Handle pos = -1 by going up the RTN stack?
+            return pos;
+    }
+}
+
 class GeneratorContext {
     private:
 
@@ -77,8 +143,8 @@ class GeneratorContext {
         lbl = 0;
         assertTwoRealsLbl = -1;
         // FUNC 01: 0 inputs, 1 output
-        addLine(CMD_FUNC, 1);
-        addLine(CMD_LNSTK);
+        addLine(0, CMD_FUNC, 1);
+        addLine(0, CMD_LNSTK);
     }
 
     ~GeneratorContext() {
@@ -87,24 +153,24 @@ class GeneratorContext {
         delete lines;
     }
 
-    void addLine(int cmd) {
-        lines->push_back(new Line(cmd));
+    void addLine(int pos, int cmd) {
+        lines->push_back(new Line(pos, cmd));
     }
 
-    void addLine(phloat d) {
-        lines->push_back(new Line(d));
+    void addLine(int pos, phloat d) {
+        lines->push_back(new Line(pos, d));
     }
 
-    void addLine(int cmd, char s, bool ind = false) {
-        lines->push_back(new Line(cmd, s, ind));
+    void addLine(int pos, int cmd, char s, bool ind = false) {
+        lines->push_back(new Line(pos, cmd, s, ind));
     }
 
-    void addLine(int cmd, int n, bool ind = false) {
-        lines->push_back(new Line(cmd, n, ind));
+    void addLine(int pos, int cmd, int n, bool ind = false) {
+        lines->push_back(new Line(pos, cmd, n, ind));
     }
 
-    void addLine(int cmd, std::string s, bool ind = false) {
-        lines->push_back(new Line(cmd, s, ind));
+    void addLine(int pos, int cmd, std::string s, bool ind = false) {
+        lines->push_back(new Line(pos, cmd, s, ind));
     }
 
     int nextLabel() {
@@ -122,34 +188,34 @@ class GeneratorContext {
         stack.pop_back();
     }
 
-    void addAssertTwoReals() {
+    void addAssertTwoReals(int pos) {
         if (assertTwoRealsLbl == -1) {
             assertTwoRealsLbl = nextLabel();
             int lbl1 = nextLabel();
             int lbl2 = nextLabel();
             pushSubroutine();
-            addLine(CMD_LBL, assertTwoRealsLbl);
-            addLine(CMD_REAL_T);
-            addLine(CMD_GTOL, lbl1);
-            addLine(CMD_RTNERR, 4);
-            addLine(CMD_LBL, lbl1);
-            addLine(CMD_SWAP);
-            addLine(CMD_REAL_T);
-            addLine(CMD_GTOL, lbl2);
-            addLine(CMD_SWAP);
-            addLine(CMD_RTNERR, 4);
-            addLine(CMD_LBL, lbl2);
-            addLine(CMD_SWAP);
+            addLine(-1, CMD_LBL, assertTwoRealsLbl);
+            addLine(-1, CMD_REAL_T);
+            addLine(-1, CMD_GTOL, lbl1);
+            addLine(-1, CMD_RTNERR, 4);
+            addLine(-1, CMD_LBL, lbl1);
+            addLine(-1, CMD_SWAP);
+            addLine(-1, CMD_REAL_T);
+            addLine(-1, CMD_GTOL, lbl2);
+            addLine(-1, CMD_SWAP);
+            addLine(-1, CMD_RTNERR, 4);
+            addLine(-1, CMD_LBL, lbl2);
+            addLine(-1, CMD_SWAP);
             popSubroutine();
         }
-        addLine(CMD_XEQL, assertTwoRealsLbl);
+        addLine(pos, CMD_XEQL, assertTwoRealsLbl);
     }
 
-    void store(prgm_struct *prgm) {
+    void store(prgm_struct *prgm, CodeMap *map) {
         prgm->lclbl_invalid = 0;
         // Tack all the subroutines onto the main code
         for (int i = 0; i < queue.size(); i++) {
-            addLine(CMD_RTN);
+            addLine(-1, CMD_RTN);
             std::vector<Line *> *l = queue[i];
             lines->insert(lines->end(), l->begin(), l->end());
             delete l;
@@ -197,7 +263,11 @@ class GeneratorContext {
             if (line->cmd == CMD_LBL)
                 continue;
             store_command_after(&pc, line->cmd, &line->arg, NULL);
+            if (map != NULL)
+                map->add(line->pos, pc);
         }
+        if (map != NULL)
+            map->add(-2, pc);
         current_prgm = saved_prgm;
         flags.f.prgm_mode = saved_prgm_mode;
         flags.f.printer_exists = prev_printer_exists;
@@ -299,7 +369,7 @@ class Acos : public UnaryEvaluator {
 
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
-        ctx->addLine(CMD_ACOS);
+        ctx->addLine(tpos, CMD_ACOS);
     }
 };
 
@@ -321,7 +391,7 @@ class Acosh : public UnaryEvaluator {
 
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
-        ctx->addLine(CMD_ACOSH);
+        ctx->addLine(tpos, CMD_ACOSH);
     }
 };
 
@@ -343,7 +413,7 @@ class Alog : public UnaryEvaluator {
 
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
-        ctx->addLine(CMD_10_POW_X);
+        ctx->addLine(tpos, CMD_10_POW_X);
     }
 };
 
@@ -366,7 +436,7 @@ class And : public BinaryEvaluator {
     void generateCode(GeneratorContext *ctx) {
         left->generateCode(ctx);
         right->generateCode(ctx);
-        ctx->addLine(CMD_GEN_AND);
+        ctx->addLine(tpos, CMD_GEN_AND);
     }
 };
 
@@ -389,23 +459,23 @@ class Angle : public BinaryEvaluator {
         if (right == NULL) {
             int lbl1 = ctx->nextLabel();
             int lbl2 = ctx->nextLabel();
-            ctx->addLine(CMD_CPX_T);
-            ctx->addLine(CMD_GTOL, lbl1);
-            ctx->addLine((phloat) 0);
-            ctx->addLine(CMD_SWAP);
-            ctx->addLine(CMD_TO_POL);
-            ctx->addLine(CMD_DROP);
-            ctx->addLine(CMD_GTOL, lbl2);
-            ctx->addLine(CMD_LBL, lbl1);
-            ctx->addLine(CMD_PCOMPLX);
-            ctx->addLine(CMD_SWAP);
-            ctx->addLine(CMD_DROP);
-            ctx->addLine(CMD_LBL, lbl2);
+            ctx->addLine(tpos, CMD_CPX_T);
+            ctx->addLine(tpos, CMD_GTOL, lbl1);
+            ctx->addLine(tpos, (phloat) 0);
+            ctx->addLine(tpos, CMD_SWAP);
+            ctx->addLine(tpos, CMD_TO_POL);
+            ctx->addLine(tpos, CMD_DROP);
+            ctx->addLine(tpos, CMD_GTOL, lbl2);
+            ctx->addLine(tpos, CMD_LBL, lbl1);
+            ctx->addLine(tpos, CMD_PCOMPLX);
+            ctx->addLine(tpos, CMD_SWAP);
+            ctx->addLine(tpos, CMD_DROP);
+            ctx->addLine(tpos, CMD_LBL, lbl2);
         } else {
             right->generateCode(ctx);
-            ctx->addLine(CMD_SWAP);
-            ctx->addLine(CMD_TO_POL);
-            ctx->addLine(CMD_DROP);
+            ctx->addLine(tpos, CMD_SWAP);
+            ctx->addLine(tpos, CMD_TO_POL);
+            ctx->addLine(tpos, CMD_DROP);
         }
     }
 };
@@ -428,7 +498,7 @@ class Asin : public UnaryEvaluator {
 
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
-        ctx->addLine(CMD_ASIN);
+        ctx->addLine(tpos, CMD_ASIN);
     }
 };
 
@@ -450,7 +520,7 @@ class Asinh : public UnaryEvaluator {
 
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
-        ctx->addLine(CMD_ASINH);
+        ctx->addLine(tpos, CMD_ASINH);
     }
 };
 
@@ -496,39 +566,39 @@ public:
                 cols = c;
         }
         int lbl = ctx->nextLabel();
-        ctx->addLine(CMD_XEQL, lbl);
+        ctx->addLine(tpos, CMD_XEQL, lbl);
         ctx->pushSubroutine();
-        ctx->addLine(CMD_LBL, lbl);
-        ctx->addLine((phloat) rows);
-        ctx->addLine((phloat) cols);
-        ctx->addLine(CMD_NEWMAT);
-        ctx->addLine(CMD_LSTO, std::string("_TMPMAT"));
-        ctx->addLine(CMD_DROP);
-        ctx->addLine(CMD_INDEX, std::string("_TMPMAT"));
+        ctx->addLine(tpos, CMD_LBL, lbl);
+        ctx->addLine(tpos, (phloat) rows);
+        ctx->addLine(tpos, (phloat) cols);
+        ctx->addLine(tpos, CMD_NEWMAT);
+        ctx->addLine(tpos, CMD_LSTO, std::string("_TMPMAT"));
+        ctx->addLine(tpos, CMD_DROP);
+        ctx->addLine(tpos, CMD_INDEX, std::string("_TMPMAT"));
         for (int i = 0; i < rows; i++) {
             int c = data[i].size();
             for (int j = 0; j < c; j++) {
                 data[i][j]->generateCode(ctx);
-                ctx->addLine(CMD_STOEL);
-                ctx->addLine(CMD_DROP);
+                ctx->addLine(tpos, CMD_STOEL);
+                ctx->addLine(tpos, CMD_DROP);
                 if (j < c - 1)
-                    ctx->addLine(CMD_J_ADD);
+                    ctx->addLine(tpos, CMD_J_ADD);
             }
             int gap = cols - c + 1;
             if (i < rows - 1)
                 if (gap > 2) {
-                    ctx->addLine((phloat) (i + 2));
-                    ctx->addLine((phloat) 1);
-                    ctx->addLine(CMD_STOIJ);
-                    ctx->addLine(CMD_DROPN, 2);
+                    ctx->addLine(tpos, (phloat) (i + 2));
+                    ctx->addLine(tpos, (phloat) 1);
+                    ctx->addLine(tpos, CMD_STOIJ);
+                    ctx->addLine(tpos, CMD_DROPN, 2);
                 } else {
                     while (gap-- > 0)
-                        ctx->addLine(CMD_J_ADD);
+                        ctx->addLine(tpos, CMD_J_ADD);
                 }
         }
-        ctx->addLine(CMD_RCL, std::string("_TMPMAT"));
+        ctx->addLine(tpos, CMD_RCL, std::string("_TMPMAT"));
         if (trans)
-            ctx->addLine(CMD_TRANS);
+            ctx->addLine(tpos, CMD_TRANS);
         ctx->popSubroutine();
     }
     
@@ -565,7 +635,7 @@ class Atan : public UnaryEvaluator {
 
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
-        ctx->addLine(CMD_ATAN);
+        ctx->addLine(tpos, CMD_ATAN);
     }
 };
 
@@ -587,7 +657,7 @@ class Atanh : public UnaryEvaluator {
 
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
-        ctx->addLine(CMD_ATANH);
+        ctx->addLine(tpos, CMD_ATANH);
     }
 };
 
@@ -610,7 +680,7 @@ class Badd : public BinaryEvaluator {
     void generateCode(GeneratorContext *ctx) {
         left->generateCode(ctx);
         right->generateCode(ctx);
-        ctx->addLine(CMD_BASEADD);
+        ctx->addLine(tpos, CMD_BASEADD);
     }
 };
 
@@ -631,7 +701,7 @@ class Band : public BinaryEvaluator {
     void generateCode(GeneratorContext *ctx) {
         left->generateCode(ctx);
         right->generateCode(ctx);
-        ctx->addLine(CMD_AND);
+        ctx->addLine(tpos, CMD_AND);
     }
 };
 
@@ -656,8 +726,8 @@ class Bdiv : public BinaryEvaluator {
         left->generateCode(ctx);
         right->generateCode(ctx);
         if (swapArgs)
-            ctx->addLine(CMD_SWAP);
-        ctx->addLine(CMD_BASEDIV);
+            ctx->addLine(tpos, CMD_SWAP);
+        ctx->addLine(tpos, CMD_BASEDIV);
     }
 };
 
@@ -680,7 +750,7 @@ class Bmul : public BinaryEvaluator {
     void generateCode(GeneratorContext *ctx) {
         left->generateCode(ctx);
         right->generateCode(ctx);
-        ctx->addLine(CMD_BASEMUL);
+        ctx->addLine(tpos, CMD_BASEMUL);
     }
 };
 
@@ -702,7 +772,7 @@ class Bneg : public UnaryEvaluator {
 
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
-        ctx->addLine(CMD_BASECHS);
+        ctx->addLine(tpos, CMD_BASECHS);
     }
 };
 
@@ -724,7 +794,7 @@ class Bnot : public UnaryEvaluator {
 
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
-        ctx->addLine(CMD_NOT);
+        ctx->addLine(tpos, CMD_NOT);
     }
 };
 
@@ -745,7 +815,7 @@ class Bor : public BinaryEvaluator {
     void generateCode(GeneratorContext *ctx) {
         left->generateCode(ctx);
         right->generateCode(ctx);
-        ctx->addLine(CMD_OR);
+        ctx->addLine(tpos, CMD_OR);
     }
 };
 
@@ -799,8 +869,8 @@ class Bsub : public BinaryEvaluator {
         left->generateCode(ctx);
         right->generateCode(ctx);
         if (swapArgs)
-            ctx->addLine(CMD_SWAP);
-        ctx->addLine(CMD_BASESUB);
+            ctx->addLine(tpos, CMD_SWAP);
+        ctx->addLine(tpos, CMD_BASESUB);
     }
 };
 
@@ -823,7 +893,7 @@ class Bxor : public BinaryEvaluator {
     void generateCode(GeneratorContext *ctx) {
         left->generateCode(ctx);
         right->generateCode(ctx);
-        ctx->addLine(CMD_XOR);
+        ctx->addLine(tpos, CMD_XOR);
     }
 };
 
@@ -863,13 +933,13 @@ class Call : public Evaluator {
         int lbl = ctx->nextLabel();
         for (int i = 0; i < evs->size(); i++)
             (*evs)[i]->generateCode(ctx);
-        ctx->addLine(CMD_XEQL, lbl);
+        ctx->addLine(tpos, CMD_XEQL, lbl);
         ctx->pushSubroutine();
-        ctx->addLine(CMD_LBL, lbl);
-        ctx->addLine(CMD_XSTR, name);
-        ctx->addLine(CMD_GETEQN);
-        ctx->addLine(CMD_TO_PAR);
-        ctx->addLine(CMD_EVALN, 'L');
+        ctx->addLine(tpos, CMD_LBL, lbl);
+        ctx->addLine(tpos, CMD_XSTR, name);
+        ctx->addLine(tpos, CMD_GETEQN);
+        ctx->addLine(tpos, CMD_TO_PAR);
+        ctx->addLine(tpos, CMD_EVALN, 'L');
         ctx->popSubroutine();
     }
 
@@ -903,7 +973,7 @@ class Comb : public BinaryEvaluator {
     void generateCode(GeneratorContext *ctx) {
         left->generateCode(ctx);
         right->generateCode(ctx);
-        ctx->addLine(CMD_COMB);
+        ctx->addLine(tpos, CMD_COMB);
     }
 };
 
@@ -926,7 +996,7 @@ class CompareEQ : public BinaryEvaluator {
     void generateCode(GeneratorContext *ctx) {
         left->generateCode(ctx);
         right->generateCode(ctx);
-        ctx->addLine(CMD_GEN_EQ);
+        ctx->addLine(tpos, CMD_GEN_EQ);
     }
 };
 
@@ -949,7 +1019,7 @@ class CompareNE : public BinaryEvaluator {
     void generateCode(GeneratorContext *ctx) {
         left->generateCode(ctx);
         right->generateCode(ctx);
-        ctx->addLine(CMD_GEN_NE);
+        ctx->addLine(tpos, CMD_GEN_NE);
     }
 };
 
@@ -972,7 +1042,7 @@ class CompareLT : public BinaryEvaluator {
     void generateCode(GeneratorContext *ctx) {
         left->generateCode(ctx);
         right->generateCode(ctx);
-        ctx->addLine(CMD_GEN_LT);
+        ctx->addLine(tpos, CMD_GEN_LT);
     }
 };
 
@@ -995,7 +1065,7 @@ class CompareLE : public BinaryEvaluator {
     void generateCode(GeneratorContext *ctx) {
         left->generateCode(ctx);
         right->generateCode(ctx);
-        ctx->addLine(CMD_GEN_LE);
+        ctx->addLine(tpos, CMD_GEN_LE);
     }
 };
 
@@ -1018,7 +1088,7 @@ class CompareGT : public BinaryEvaluator {
     void generateCode(GeneratorContext *ctx) {
         left->generateCode(ctx);
         right->generateCode(ctx);
-        ctx->addLine(CMD_GEN_GT);
+        ctx->addLine(tpos, CMD_GEN_GT);
     }
 };
 
@@ -1041,7 +1111,7 @@ class CompareGE : public BinaryEvaluator {
     void generateCode(GeneratorContext *ctx) {
         left->generateCode(ctx);
         right->generateCode(ctx);
-        ctx->addLine(CMD_GEN_GE);
+        ctx->addLine(tpos, CMD_GEN_GE);
     }
 };
 
@@ -1092,7 +1162,7 @@ class Cos : public UnaryEvaluator {
 
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
-        ctx->addLine(CMD_COS);
+        ctx->addLine(tpos, CMD_COS);
     }
 };
 
@@ -1114,7 +1184,7 @@ class Cosh : public UnaryEvaluator {
 
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
-        ctx->addLine(CMD_COSH);
+        ctx->addLine(tpos, CMD_COSH);
     }
 };
 
@@ -1135,7 +1205,7 @@ class Cross : public BinaryEvaluator {
     void generateCode(GeneratorContext *ctx) {
         left->generateCode(ctx);
         right->generateCode(ctx);
-        ctx->addLine(CMD_CROSS);
+        ctx->addLine(tpos, CMD_CROSS);
     }
 };
 
@@ -1160,8 +1230,8 @@ class Date : public BinaryEvaluator {
         left->generateCode(ctx);
         right->generateCode(ctx);
         if (swapArgs)
-            ctx->addLine(CMD_SWAP);
-        ctx->addLine(CMD_DATE_PLUS);
+            ctx->addLine(tpos, CMD_SWAP);
+        ctx->addLine(tpos, CMD_DATE_PLUS);
     }
 };
 
@@ -1195,7 +1265,7 @@ class Ddays : public Evaluator {
         date1->generateCode(ctx);
         date2->generateCode(ctx);
         cal->generateCode(ctx);
-        ctx->addLine(CMD_DDAYSC);
+        ctx->addLine(tpos, CMD_DDAYSC);
     }
 
     void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
@@ -1232,7 +1302,7 @@ class Dec : public UnaryEvaluator {
 
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
-        ctx->addLine(CMD_TO_DEC);
+        ctx->addLine(tpos, CMD_TO_DEC);
     }
 };
 
@@ -1254,7 +1324,7 @@ class Deg : public UnaryEvaluator {
 
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
-        ctx->addLine(CMD_TO_DEG);
+        ctx->addLine(tpos, CMD_TO_DEG);
     }
 };
 
@@ -1279,8 +1349,8 @@ class Difference : public BinaryEvaluator {
         left->generateCode(ctx);
         right->generateCode(ctx);
         if (swapArgs)
-            ctx->addLine(CMD_SWAP);
-        ctx->addLine(CMD_SUB);
+            ctx->addLine(tpos, CMD_SWAP);
+        ctx->addLine(tpos, CMD_SUB);
     }
 };
 
@@ -1301,7 +1371,7 @@ class Dot : public BinaryEvaluator {
     void generateCode(GeneratorContext *ctx) {
         left->generateCode(ctx);
         right->generateCode(ctx);
-        ctx->addLine(CMD_DOT);
+        ctx->addLine(tpos, CMD_DOT);
     }
 };
 
@@ -1337,7 +1407,7 @@ class Ell : public Evaluator {
     void generateCode(GeneratorContext *ctx) {
         if (name != "") {
             right->generateCode(ctx);
-            ctx->addLine(compatMode ? CMD_GSTO : CMD_STO, name);
+            ctx->addLine(tpos, compatMode ? CMD_GSTO : CMD_STO, name);
         } else {
             left->generateCode(ctx);
             right->generateCode(ctx);
@@ -1392,7 +1462,7 @@ class Equation : public BinaryEvaluator {
     void generateCode(GeneratorContext *ctx) {
         left->generateCode(ctx);
         right->generateCode(ctx);
-        ctx->addLine(CMD_SUB);
+        ctx->addLine(tpos, CMD_SUB);
     }
 };
 
@@ -1417,8 +1487,8 @@ class Ess : public Evaluator {
     bool isBool() { return true; }
     
     void generateCode(GeneratorContext *ctx) {
-        ctx->addLine(CMD_XSTR, name);
-        ctx->addLine(CMD_SVAR);
+        ctx->addLine(tpos, CMD_XSTR, name);
+        ctx->addLine(tpos, CMD_SVAR);
     }
 
     void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
@@ -1448,7 +1518,7 @@ class Exp : public UnaryEvaluator {
 
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
-        ctx->addLine(CMD_E_POW_X);
+        ctx->addLine(tpos, CMD_E_POW_X);
     }
 };
 
@@ -1470,7 +1540,7 @@ class Expm1 : public UnaryEvaluator {
 
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
-        ctx->addLine(CMD_E_POW_X_1);
+        ctx->addLine(tpos, CMD_E_POW_X_1);
     }
 };
 
@@ -1531,21 +1601,21 @@ class For : public Evaluator {
         int top = ctx->nextLabel();
         int test = ctx->nextLabel();
         init->generateCode(ctx);
-        ctx->addLine(CMD_GTOL, test);
-        ctx->addLine(CMD_LBL, top);
+        ctx->addLine(tpos, CMD_GTOL, test);
+        ctx->addLine(tpos, CMD_LBL, top);
         for (int i = 0; i < evs->size(); i++) {
             (*evs)[i]->generateCode(ctx);
-            ctx->addLine(CMD_SWAP);
-            ctx->addLine(CMD_DROP);
+            ctx->addLine(tpos, CMD_SWAP);
+            ctx->addLine(tpos, CMD_DROP);
         }
-        ctx->addLine(CMD_LBL, continueLbl);
+        ctx->addLine(tpos, CMD_LBL, continueLbl);
         next->generateCode(ctx);
-        ctx->addLine(CMD_DROP);
-        ctx->addLine(CMD_LBL, test);
+        ctx->addLine(tpos, CMD_DROP);
+        ctx->addLine(tpos, CMD_LBL, test);
         cond->generateCode(ctx);
-        ctx->addLine(CMD_IF_T);
-        ctx->addLine(CMD_GTOL, top);
-        ctx->addLine(CMD_LBL, breakLbl);
+        ctx->addLine(tpos, CMD_IF_T);
+        ctx->addLine(tpos, CMD_GTOL, top);
+        ctx->addLine(tpos, CMD_LBL, breakLbl);
     }
 
     void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
@@ -1588,7 +1658,7 @@ class Gee : public Evaluator {
     }
 
     void generateCode(GeneratorContext *ctx) {
-        ctx->addLine(compatMode ? CMD_GRCL : CMD_RCL, name);
+        ctx->addLine(tpos, compatMode ? CMD_GRCL : CMD_RCL, name);
     }
 
     void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
@@ -1618,7 +1688,7 @@ class Hms : public UnaryEvaluator {
 
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
-        ctx->addLine(CMD_TO_HMS);
+        ctx->addLine(tpos, CMD_TO_HMS);
     }
 };
 
@@ -1641,7 +1711,7 @@ class Hmsadd : public BinaryEvaluator {
     void generateCode(GeneratorContext *ctx) {
         left->generateCode(ctx);
         right->generateCode(ctx);
-        ctx->addLine(CMD_HMSADD);
+        ctx->addLine(tpos, CMD_HMSADD);
     }
 };
 
@@ -1666,8 +1736,8 @@ class Hmssub : public BinaryEvaluator {
         left->generateCode(ctx);
         right->generateCode(ctx);
         if (swapArgs)
-            ctx->addLine(CMD_SWAP);
-        ctx->addLine(CMD_HMSSUB);
+            ctx->addLine(tpos, CMD_SWAP);
+        ctx->addLine(tpos, CMD_HMSSUB);
     }
 };
 
@@ -1689,7 +1759,7 @@ class Hrs : public UnaryEvaluator {
 
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
-        ctx->addLine(CMD_TO_HR);
+        ctx->addLine(tpos, CMD_TO_HR);
     }
 };
 
@@ -1710,8 +1780,8 @@ class Idiv : public BinaryEvaluator {
     void generateCode(GeneratorContext *ctx) {
         left->generateCode(ctx);
         right->generateCode(ctx);
-        ctx->addLine(CMD_DIV);
-        ctx->addLine(CMD_IP);
+        ctx->addLine(tpos, CMD_DIV);
+        ctx->addLine(tpos, CMD_IP);
     }
 };
 
@@ -1744,13 +1814,13 @@ class If : public Evaluator {
         condition->generateCode(ctx);
         int lbl1 = ctx->nextLabel();
         int lbl2 = ctx->nextLabel();
-        ctx->addLine(CMD_IF_T);
-        ctx->addLine(CMD_GTOL, lbl1);
+        ctx->addLine(tpos, CMD_IF_T);
+        ctx->addLine(tpos, CMD_GTOL, lbl1);
         falseEv->generateCode(ctx);
-        ctx->addLine(CMD_GTOL, lbl2);
-        ctx->addLine(CMD_LBL, lbl1);
+        ctx->addLine(tpos, CMD_GTOL, lbl2);
+        ctx->addLine(tpos, CMD_LBL, lbl1);
         trueEv->generateCode(ctx);
-        ctx->addLine(CMD_LBL, lbl2);
+        ctx->addLine(tpos, CMD_LBL, lbl2);
     }
 
     void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
@@ -1785,15 +1855,15 @@ class Int : public UnaryEvaluator {
 
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
-        ctx->addLine(CMD_IP);
-        ctx->addLine(CMD_X_EQ_NN, 'L');
+        ctx->addLine(tpos, CMD_IP);
+        ctx->addLine(tpos, CMD_X_EQ_NN, 'L');
         int lbl = ctx->nextLabel();
-        ctx->addLine(CMD_GTOL, lbl);
-        ctx->addLine(CMD_0_LT_NN, 'L');
-        ctx->addLine(CMD_GTOL, lbl);
-        ctx->addLine((phloat) 1);
-        ctx->addLine(CMD_SUB);
-        ctx->addLine(CMD_LBL, lbl);
+        ctx->addLine(tpos, CMD_GTOL, lbl);
+        ctx->addLine(tpos, CMD_0_LT_NN, 'L');
+        ctx->addLine(tpos, CMD_GTOL, lbl);
+        ctx->addLine(tpos, (phloat) 1);
+        ctx->addLine(tpos, CMD_SUB);
+        ctx->addLine(tpos, CMD_LBL, lbl);
     }
 };
 
@@ -1826,17 +1896,17 @@ class Integ : public Evaluator {
     }
 
     void generateCode(GeneratorContext *ctx) {
-        ctx->addLine(CMD_XSTR, expr->getText());
-        ctx->addLine(CMD_PARSE);
-        ctx->addLine(CMD_PGMINT, 'X', true);
+        ctx->addLine(tpos, CMD_XSTR, expr->getText());
+        ctx->addLine(tpos, CMD_PARSE);
+        ctx->addLine(tpos, CMD_PGMINT, 'X', true);
         llim->generateCode(ctx);
-        ctx->addLine(CMD_LSTO, std::string("LLIM"));
+        ctx->addLine(tpos, CMD_LSTO, std::string("LLIM"));
         ulim->generateCode(ctx);
-        ctx->addLine(CMD_LSTO, std::string("ULIM"));
-        ctx->addLine(CMD_DROPN, 3);
-        ctx->addLine(CMD_INTEG, integ_var);
-        ctx->addLine(CMD_SWAP);
-        ctx->addLine(CMD_DROP);
+        ctx->addLine(tpos, CMD_LSTO, std::string("ULIM"));
+        ctx->addLine(tpos, CMD_DROPN, 3);
+        ctx->addLine(tpos, CMD_INTEG, integ_var);
+        ctx->addLine(tpos, CMD_SWAP);
+        ctx->addLine(tpos, CMD_DROP);
     }
     
     void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
@@ -1876,7 +1946,7 @@ class Inv : public UnaryEvaluator {
 
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
-        ctx->addLine(CMD_INV);
+        ctx->addLine(tpos, CMD_INV);
     }
 };
 
@@ -1914,16 +1984,16 @@ class Item : public Evaluator {
     }
 
     void generateCode(GeneratorContext *ctx) {
-        ctx->addLine(CMD_XSTR, name);
+        ctx->addLine(tpos, CMD_XSTR, name);
         ev1->generateCode(ctx);
         if (ev2 != NULL)
             ev2->generateCode(ctx);
         if (!lvalue)
-            ctx->addLine(CMD_GETITEM);
+            ctx->addLine(tpos, CMD_GETITEM);
     }
     
     void generateAssignmentCode(GeneratorContext *ctx) {
-        ctx->addLine(CMD_PUTITEM);
+        ctx->addLine(tpos, CMD_PUTITEM);
     }
     
     void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
@@ -1959,7 +2029,7 @@ class Literal : public Evaluator {
     }
 
     void generateCode(GeneratorContext *ctx) {
-        ctx->addLine(value);
+        ctx->addLine(tpos, value);
     }
 
     void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
@@ -1989,7 +2059,7 @@ class Ln : public UnaryEvaluator {
 
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
-        ctx->addLine(CMD_LN);
+        ctx->addLine(tpos, CMD_LN);
     }
 };
 
@@ -2011,7 +2081,7 @@ class Ln1p : public UnaryEvaluator {
 
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
-        ctx->addLine(CMD_LN_1_X);
+        ctx->addLine(tpos, CMD_LN_1_X);
     }
 };
 
@@ -2033,7 +2103,7 @@ class Log : public UnaryEvaluator {
 
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
-        ctx->addLine(CMD_LOG);
+        ctx->addLine(tpos, CMD_LOG);
     }
 };
 
@@ -2066,14 +2136,14 @@ class Max : public Evaluator {
 
     void generateCode(GeneratorContext *ctx) {
         if (evs->size() == 0) {
-            ctx->addLine(NEG_HUGE_PHLOAT);
+            ctx->addLine(tpos, NEG_HUGE_PHLOAT);
         } else {
             (*evs)[0]->generateCode(ctx);
             for (int i = 1; i < evs->size(); i++) {
                 (*evs)[i]->generateCode(ctx);
-                ctx->addLine(CMD_X_GT_Y);
-                ctx->addLine(CMD_SWAP);
-                ctx->addLine(CMD_DROP);
+                ctx->addLine(tpos, CMD_X_GT_Y);
+                ctx->addLine(tpos, CMD_SWAP);
+                ctx->addLine(tpos, CMD_DROP);
             }
         }
     }
@@ -2120,14 +2190,14 @@ class Min : public Evaluator {
 
     void generateCode(GeneratorContext *ctx) {
         if (evs->size() == 0) {
-            ctx->addLine(POS_HUGE_PHLOAT);
+            ctx->addLine(tpos, POS_HUGE_PHLOAT);
         } else {
             (*evs)[0]->generateCode(ctx);
             for (int i = 1; i < evs->size(); i++) {
                 (*evs)[i]->generateCode(ctx);
-                ctx->addLine(CMD_X_LT_Y);
-                ctx->addLine(CMD_SWAP);
-                ctx->addLine(CMD_DROP);
+                ctx->addLine(tpos, CMD_X_LT_Y);
+                ctx->addLine(tpos, CMD_SWAP);
+                ctx->addLine(tpos, CMD_DROP);
             }
         }
     }
@@ -2162,7 +2232,7 @@ class Mod : public BinaryEvaluator {
     void generateCode(GeneratorContext *ctx) {
         left->generateCode(ctx);
         right->generateCode(ctx);
-        ctx->addLine(CMD_MOD);
+        ctx->addLine(tpos, CMD_MOD);
     }
 };
 
@@ -2228,7 +2298,7 @@ class Negative : public UnaryEvaluator {
 
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
-        ctx->addLine(CMD_CHS);
+        ctx->addLine(tpos, CMD_CHS);
     }
 };
 
@@ -2249,7 +2319,7 @@ class Newmat : public BinaryEvaluator {
     void generateCode(GeneratorContext *ctx) {
         left->generateCode(ctx);
         right->generateCode(ctx);
-        ctx->addLine(CMD_NEWMAT);
+        ctx->addLine(tpos, CMD_NEWMAT);
     }
 };
 
@@ -2271,7 +2341,7 @@ class Oct : public UnaryEvaluator {
 
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
-        ctx->addLine(CMD_TO_OCT);
+        ctx->addLine(tpos, CMD_TO_OCT);
     }
 };
 
@@ -2294,7 +2364,7 @@ class Or : public BinaryEvaluator {
     void generateCode(GeneratorContext *ctx) {
         left->generateCode(ctx);
         right->generateCode(ctx);
-        ctx->addLine(CMD_GEN_OR);
+        ctx->addLine(tpos, CMD_GEN_OR);
     }
 };
 
@@ -2315,8 +2385,8 @@ class Pcomplx : public BinaryEvaluator {
     void generateCode(GeneratorContext *ctx) {
         left->generateCode(ctx);
         right->generateCode(ctx);
-        ctx->addAssertTwoReals();
-        ctx->addLine(CMD_PCOMPLX);
+        ctx->addAssertTwoReals(tpos);
+        ctx->addLine(tpos, CMD_PCOMPLX);
     }
 };
 
@@ -2337,7 +2407,7 @@ class Perm : public BinaryEvaluator {
     void generateCode(GeneratorContext *ctx) {
         left->generateCode(ctx);
         right->generateCode(ctx);
-        ctx->addLine(CMD_PERM);
+        ctx->addLine(tpos, CMD_PERM);
     }
 };
 
@@ -2362,8 +2432,8 @@ class Power : public BinaryEvaluator {
         left->generateCode(ctx);
         right->generateCode(ctx);
         if (swapArgs)
-            ctx->addLine(CMD_SWAP);
-        ctx->addLine(CMD_Y_POW_X);
+            ctx->addLine(tpos, CMD_SWAP);
+        ctx->addLine(tpos, CMD_Y_POW_X);
     }
 };
 
@@ -2386,7 +2456,7 @@ class Product : public BinaryEvaluator {
     void generateCode(GeneratorContext *ctx) {
         left->generateCode(ctx);
         right->generateCode(ctx);
-        ctx->addLine(CMD_MUL);
+        ctx->addLine(tpos, CMD_MUL);
     }
 };
 
@@ -2411,8 +2481,8 @@ class Quotient : public BinaryEvaluator {
         left->generateCode(ctx);
         right->generateCode(ctx);
         if (swapArgs)
-            ctx->addLine(CMD_SWAP);
-        ctx->addLine(CMD_DIV);
+            ctx->addLine(tpos, CMD_SWAP);
+        ctx->addLine(tpos, CMD_DIV);
     }
 };
 
@@ -2434,7 +2504,7 @@ class Rad : public UnaryEvaluator {
 
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
-        ctx->addLine(CMD_TO_RAD);
+        ctx->addLine(tpos, CMD_TO_RAD);
     }
 };
 
@@ -2457,24 +2527,24 @@ class Radius : public BinaryEvaluator {
         if (right == NULL) {
             int lbl1 = ctx->nextLabel();
             int lbl2 = ctx->nextLabel();
-            ctx->addLine(CMD_CPX_T);
-            ctx->addLine(CMD_GTOL, lbl1);
-            ctx->addLine((phloat) 0);
-            ctx->addLine(CMD_SWAP);
-            ctx->addLine(CMD_TO_POL);
-            ctx->addLine(CMD_SWAP);
-            ctx->addLine(CMD_DROP);
-            ctx->addLine(CMD_GTOL, lbl2);
-            ctx->addLine(CMD_LBL, lbl1);
-            ctx->addLine(CMD_PCOMPLX);
-            ctx->addLine(CMD_DROP);
-            ctx->addLine(CMD_LBL, lbl2);
+            ctx->addLine(tpos, CMD_CPX_T);
+            ctx->addLine(tpos, CMD_GTOL, lbl1);
+            ctx->addLine(tpos, (phloat) 0);
+            ctx->addLine(tpos, CMD_SWAP);
+            ctx->addLine(tpos, CMD_TO_POL);
+            ctx->addLine(tpos, CMD_SWAP);
+            ctx->addLine(tpos, CMD_DROP);
+            ctx->addLine(tpos, CMD_GTOL, lbl2);
+            ctx->addLine(tpos, CMD_LBL, lbl1);
+            ctx->addLine(tpos, CMD_PCOMPLX);
+            ctx->addLine(tpos, CMD_DROP);
+            ctx->addLine(tpos, CMD_LBL, lbl2);
         } else {
             right->generateCode(ctx);
-            ctx->addLine(CMD_SWAP);
-            ctx->addLine(CMD_TO_POL);
-            ctx->addLine(CMD_SWAP);
-            ctx->addLine(CMD_DROP);
+            ctx->addLine(tpos, CMD_SWAP);
+            ctx->addLine(tpos, CMD_TO_POL);
+            ctx->addLine(tpos, CMD_SWAP);
+            ctx->addLine(tpos, CMD_DROP);
         }
     }
 };
@@ -2496,8 +2566,8 @@ class Rcomplx : public BinaryEvaluator {
     void generateCode(GeneratorContext *ctx) {
         left->generateCode(ctx);
         right->generateCode(ctx);
-        ctx->addAssertTwoReals();
-        ctx->addLine(CMD_RCOMPLX);
+        ctx->addAssertTwoReals(tpos);
+        ctx->addLine(tpos, CMD_RCOMPLX);
     }
 };
 
@@ -2520,7 +2590,7 @@ class RecallFunction : public Evaluator {
     }
 
     void generateCode(GeneratorContext *ctx) {
-        ctx->addLine(cmd);
+        ctx->addLine(tpos, cmd);
     }
 
     void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
@@ -2552,10 +2622,10 @@ class RecallOneOfTwoFunction : public Evaluator {
     }
 
     void generateCode(GeneratorContext *ctx) {
-        ctx->addLine(cmd);
+        ctx->addLine(tpos, cmd);
         if (pick_x)
-            ctx->addLine(CMD_SWAP);
-        ctx->addLine(CMD_DROP);
+            ctx->addLine(tpos, CMD_SWAP);
+        ctx->addLine(tpos, CMD_DROP);
     }
 
     void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
@@ -2596,15 +2666,15 @@ class Register : public Evaluator {
     
     void generateCode(GeneratorContext *ctx) {
         if (ev == NULL)
-            ctx->addLine((phloat) index);
+            ctx->addLine(tpos, (phloat) index);
         else
             ev->generateCode(ctx);
         // TODO: Range check?
-        ctx->addLine(CMD_FDEPTH);
-        ctx->addLine(CMD_ADD);
-        ctx->addLine(CMD_PICK, 'X', true);
-        ctx->addLine(CMD_SWAP);
-        ctx->addLine(CMD_DROP);
+        ctx->addLine(tpos, CMD_FDEPTH);
+        ctx->addLine(tpos, CMD_ADD);
+        ctx->addLine(tpos, CMD_PICK, 'X', true);
+        ctx->addLine(tpos, CMD_SWAP);
+        ctx->addLine(tpos, CMD_DROP);
     }
 
     void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
@@ -2639,27 +2709,27 @@ class Rnd : public BinaryEvaluator {
     }
 
     void generateCode(GeneratorContext *ctx) {
-        ctx->addLine(CMD_RCLFLAG);
+        ctx->addLine(tpos, CMD_RCLFLAG);
         left->generateCode(ctx);
         right->generateCode(ctx);
-        ctx->addLine(CMD_X_LT_0);
+        ctx->addLine(tpos, CMD_X_LT_0);
         int lbl1 = ctx->nextLabel();
         int lbl2 = ctx->nextLabel();
-        ctx->addLine(CMD_GTOL, lbl1);
-        ctx->addLine(CMD_FIX, 'X', true);
-        ctx->addLine(CMD_GTOL, lbl2);
-        ctx->addLine(CMD_LBL, lbl1);
-        ctx->addLine((phloat) -1);
-        ctx->addLine(CMD_SWAP);
-        ctx->addLine(CMD_SUB);
-        ctx->addLine(CMD_SCI, 'X', true);
-        ctx->addLine(CMD_LBL, lbl2);
-        ctx->addLine(CMD_DROP);
-        ctx->addLine(trunc ? CMD_TRUNC : CMD_RND);
-        ctx->addLine(CMD_SWAP);
-        ctx->addLine((phloat) 36.41);
-        ctx->addLine(CMD_STOFLAG);
-        ctx->addLine(CMD_DROPN, 2);
+        ctx->addLine(tpos, CMD_GTOL, lbl1);
+        ctx->addLine(tpos, CMD_FIX, 'X', true);
+        ctx->addLine(tpos, CMD_GTOL, lbl2);
+        ctx->addLine(tpos, CMD_LBL, lbl1);
+        ctx->addLine(tpos, (phloat) -1);
+        ctx->addLine(tpos, CMD_SWAP);
+        ctx->addLine(tpos, CMD_SUB);
+        ctx->addLine(tpos, CMD_SCI, 'X', true);
+        ctx->addLine(tpos, CMD_LBL, lbl2);
+        ctx->addLine(tpos, CMD_DROP);
+        ctx->addLine(tpos, trunc ? CMD_TRUNC : CMD_RND);
+        ctx->addLine(tpos, CMD_SWAP);
+        ctx->addLine(tpos, (phloat) 36.41);
+        ctx->addLine(tpos, CMD_STOFLAG);
+        ctx->addLine(tpos, CMD_DROPN, 2);
     }
 };
 
@@ -2693,7 +2763,7 @@ class Seq : public Evaluator {
     void generateCode(GeneratorContext *ctx) {
         for (int i = 0; i < evs->size() - 1; i++) {
             (*evs)[i]->generateCode(ctx);
-            ctx->addLine(CMD_DROP);
+            ctx->addLine(tpos, CMD_DROP);
         }
         evs->back()->generateCode(ctx);
     }
@@ -2726,9 +2796,9 @@ class Sgn : public UnaryEvaluator {
     }
 
     void generateCode(GeneratorContext *ctx) {
-        ctx->addLine(CMD_REAL_T);
-        ctx->addLine(CMD_X_NE_0);
-        ctx->addLine(CMD_SIGN);
+        ctx->addLine(tpos, CMD_REAL_T);
+        ctx->addLine(tpos, CMD_X_NE_0);
+        ctx->addLine(tpos, CMD_SIGN);
     }
 };
 
@@ -2769,26 +2839,26 @@ class Sigma : public Evaluator {
         int lbl1 = ctx->nextLabel();
         int lbl2 = ctx->nextLabel();
         int lbl3 = ctx->nextLabel();
-        ctx->addLine(CMD_XEQL, lbl1);
+        ctx->addLine(tpos, CMD_XEQL, lbl1);
         ctx->pushSubroutine();
-        ctx->addLine(CMD_LBL, lbl1);
-        ctx->addLine(CMD_LSTO, name);
-        ctx->addLine(CMD_DROP);
-        ctx->addLine((phloat) 0);
-        ctx->addLine(CMD_LBL, lbl2);
+        ctx->addLine(tpos, CMD_LBL, lbl1);
+        ctx->addLine(tpos, CMD_LSTO, name);
+        ctx->addLine(tpos, CMD_DROP);
+        ctx->addLine(tpos, (phloat) 0);
+        ctx->addLine(tpos, CMD_LBL, lbl2);
         ev->generateCode(ctx);
-        ctx->addLine(CMD_ADD);
-        ctx->addLine(CMD_RCL, name);
-        ctx->addLine(CMD_RCL_ADD, 'Z');
-        ctx->addLine(CMD_STO, name);
-        ctx->addLine(CMD_X_GT_NN, 'T');
-        ctx->addLine(CMD_GTOL, lbl3);
-        ctx->addLine(CMD_DROP);
-        ctx->addLine(CMD_GTOL, lbl2);
-        ctx->addLine(CMD_LBL, lbl3);
-        ctx->addLine(CMD_RDNN, 4);
-        ctx->addLine(CMD_RDNN, 4);
-        ctx->addLine(CMD_DROPN, 3);
+        ctx->addLine(tpos, CMD_ADD);
+        ctx->addLine(tpos, CMD_RCL, name);
+        ctx->addLine(tpos, CMD_RCL_ADD, 'Z');
+        ctx->addLine(tpos, CMD_STO, name);
+        ctx->addLine(tpos, CMD_X_GT_NN, 'T');
+        ctx->addLine(tpos, CMD_GTOL, lbl3);
+        ctx->addLine(tpos, CMD_DROP);
+        ctx->addLine(tpos, CMD_GTOL, lbl2);
+        ctx->addLine(tpos, CMD_LBL, lbl3);
+        ctx->addLine(tpos, CMD_RDNN, 4);
+        ctx->addLine(tpos, CMD_RDNN, 4);
+        ctx->addLine(tpos, CMD_DROPN, 3);
         ctx->popSubroutine();
     }
 
@@ -2832,7 +2902,7 @@ class Sin : public UnaryEvaluator {
 
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
-        ctx->addLine(CMD_SIN);
+        ctx->addLine(tpos, CMD_SIN);
     }
 };
 
@@ -2854,7 +2924,7 @@ class Sinh : public UnaryEvaluator {
 
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
-        ctx->addLine(CMD_SINH);
+        ctx->addLine(tpos, CMD_SINH);
     }
 };
 
@@ -2881,19 +2951,19 @@ class Size : public UnaryEvaluator {
         if (mode == 'S') {
             int lbl1 = ctx->nextLabel();
             int lbl2 = ctx->nextLabel();
-            ctx->addLine(CMD_LIST_T);
-            ctx->addLine(CMD_GTOL, lbl1);
-            ctx->addLine(CMD_DIM_T);
-            ctx->addLine(CMD_MUL);
-            ctx->addLine(CMD_GTOL, lbl2);
-            ctx->addLine(CMD_LBL, lbl1);
-            ctx->addLine(CMD_LENGTH);
-            ctx->addLine(CMD_LBL, lbl2);
+            ctx->addLine(tpos, CMD_LIST_T);
+            ctx->addLine(tpos, CMD_GTOL, lbl1);
+            ctx->addLine(tpos, CMD_DIM_T);
+            ctx->addLine(tpos, CMD_MUL);
+            ctx->addLine(tpos, CMD_GTOL, lbl2);
+            ctx->addLine(tpos, CMD_LBL, lbl1);
+            ctx->addLine(tpos, CMD_LENGTH);
+            ctx->addLine(tpos, CMD_LBL, lbl2);
         } else {
-            ctx->addLine(CMD_DIM_T);
+            ctx->addLine(tpos, CMD_DIM_T);
             if (mode == 'C')
-                ctx->addLine(CMD_SWAP);
-            ctx->addLine(CMD_DROP);
+                ctx->addLine(tpos, CMD_SWAP);
+            ctx->addLine(tpos, CMD_DROP);
         }
     }
 };
@@ -2916,7 +2986,7 @@ class Sq : public UnaryEvaluator {
 
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
-        ctx->addLine(CMD_SQUARE);
+        ctx->addLine(tpos, CMD_SQUARE);
     }
 };
 
@@ -2938,7 +3008,7 @@ class Sqrt : public UnaryEvaluator {
 
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
-        ctx->addLine(CMD_SQRT);
+        ctx->addLine(tpos, CMD_SQRT);
     }
 };
 
@@ -2961,11 +3031,11 @@ class StatSum : public Evaluator {
     }
 
     void generateCode(GeneratorContext *ctx) {
-        ctx->addLine(CMD_SIGMAREG_T);
-        ctx->addLine((phloat) idx);
-        ctx->addLine(CMD_ADD);
-        ctx->addLine(CMD_SF, 30);
-        ctx->addLine(CMD_RCL, 'X', true);
+        ctx->addLine(tpos, CMD_SIGMAREG_T);
+        ctx->addLine(tpos, (phloat) idx);
+        ctx->addLine(tpos, CMD_ADD);
+        ctx->addLine(tpos, CMD_SF, 30);
+        ctx->addLine(tpos, CMD_RCL, 'X', true);
     }
 
     void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
@@ -3036,7 +3106,7 @@ class Sum : public BinaryEvaluator {
     void generateCode(GeneratorContext *ctx) {
         left->generateCode(ctx);
         right->generateCode(ctx);
-        ctx->addLine(CMD_ADD);
+        ctx->addLine(tpos, CMD_ADD);
     }
 };
 
@@ -3058,7 +3128,7 @@ class Tan : public UnaryEvaluator {
 
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
-        ctx->addLine(CMD_TAN);
+        ctx->addLine(tpos, CMD_TAN);
     }
 };
 
@@ -3080,7 +3150,7 @@ class Tanh : public UnaryEvaluator {
 
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
-        ctx->addLine(CMD_TANH);
+        ctx->addLine(tpos, CMD_TANH);
     }
 };
 
@@ -3108,15 +3178,15 @@ class TypeTest : public UnaryEvaluator {
         ev->generateCode(ctx);
         int lbl1 = ctx->nextLabel();
         int lbl2 = ctx->nextLabel();
-        ctx->addLine(cmd);
-        ctx->addLine(CMD_GTOL, lbl1);
-        ctx->addLine(CMD_DROP);
-        ctx->addLine((phloat) 0);
-        ctx->addLine(CMD_GTOL, lbl2);
-        ctx->addLine(CMD_LBL, lbl1);
-        ctx->addLine(CMD_DROP);
-        ctx->addLine((phloat) 1);
-        ctx->addLine(CMD_LBL, lbl2);
+        ctx->addLine(tpos, cmd);
+        ctx->addLine(tpos, CMD_GTOL, lbl1);
+        ctx->addLine(tpos, CMD_DROP);
+        ctx->addLine(tpos, (phloat) 0);
+        ctx->addLine(tpos, CMD_GTOL, lbl2);
+        ctx->addLine(tpos, CMD_LBL, lbl1);
+        ctx->addLine(tpos, CMD_DROP);
+        ctx->addLine(tpos, (phloat) 1);
+        ctx->addLine(tpos, CMD_LBL, lbl2);
     }
 };
 
@@ -3140,7 +3210,7 @@ class UnaryFunction : public UnaryEvaluator {
 
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
-        ctx->addLine(cmd);
+        ctx->addLine(tpos, cmd);
     }
 };
 
@@ -3167,7 +3237,7 @@ class Variable : public Evaluator {
     bool is(const std::string *name) { return *name == nam; }
     
     void generateCode(GeneratorContext *ctx) {
-        ctx->addLine(CMD_RCL, nam);
+        ctx->addLine(tpos, CMD_RCL, nam);
     }
 
     void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
@@ -3198,19 +3268,19 @@ class Xcoord : public BinaryEvaluator {
         if (right == NULL) {
             int lbl1 = ctx->nextLabel();
             int lbl2 = ctx->nextLabel();
-            ctx->addLine(CMD_CPX_T);
-            ctx->addLine(CMD_GTOL, lbl1);
-            ctx->addLine(CMD_GTOL, lbl2);
-            ctx->addLine(CMD_LBL, lbl1);
-            ctx->addLine(CMD_RCOMPLX);
-            ctx->addLine(CMD_DROP);
-            ctx->addLine(CMD_LBL, lbl2);
+            ctx->addLine(tpos, CMD_CPX_T);
+            ctx->addLine(tpos, CMD_GTOL, lbl1);
+            ctx->addLine(tpos, CMD_GTOL, lbl2);
+            ctx->addLine(tpos, CMD_LBL, lbl1);
+            ctx->addLine(tpos, CMD_RCOMPLX);
+            ctx->addLine(tpos, CMD_DROP);
+            ctx->addLine(tpos, CMD_LBL, lbl2);
         } else {
             right->generateCode(ctx);
-            ctx->addLine(CMD_SWAP);
-            ctx->addLine(CMD_TO_REC);
-            ctx->addLine(CMD_SWAP);
-            ctx->addLine(CMD_DROP);
+            ctx->addLine(tpos, CMD_SWAP);
+            ctx->addLine(tpos, CMD_TO_REC);
+            ctx->addLine(tpos, CMD_SWAP);
+            ctx->addLine(tpos, CMD_DROP);
         }
     }
 };
@@ -3251,12 +3321,12 @@ class Xeq : public Evaluator {
         int lbl = ctx->nextLabel();
         for (int i = 0; i < evs->size(); i++)
             (*evs)[i]->generateCode(ctx);
-        ctx->addLine(CMD_XEQL, lbl);
+        ctx->addLine(tpos, CMD_XEQL, lbl);
         ctx->pushSubroutine();
-        ctx->addLine(CMD_LBL, lbl);
-        ctx->addLine(CMD_XSTR, name);
-        ctx->addLine(CMD_TO_PAR);
-        ctx->addLine(CMD_XEQ, name);
+        ctx->addLine(tpos, CMD_LBL, lbl);
+        ctx->addLine(tpos, CMD_XSTR, name);
+        ctx->addLine(tpos, CMD_TO_PAR);
+        ctx->addLine(tpos, CMD_XEQ, name);
         ctx->popSubroutine();
     }
 
@@ -3292,7 +3362,7 @@ class Xor : public BinaryEvaluator {
     void generateCode(GeneratorContext *ctx) {
         left->generateCode(ctx);
         right->generateCode(ctx);
-        ctx->addLine(CMD_GEN_XOR);
+        ctx->addLine(tpos, CMD_GEN_XOR);
     }
 };
 
@@ -3315,21 +3385,21 @@ class Ycoord : public BinaryEvaluator {
         if (right == NULL) {
             int lbl1 = ctx->nextLabel();
             int lbl2 = ctx->nextLabel();
-            ctx->addLine(CMD_CPX_T);
-            ctx->addLine(CMD_GTOL, lbl1);
-            ctx->addLine(CMD_DROP);
-            ctx->addLine((phloat) 0);
-            ctx->addLine(CMD_GTOL, lbl2);
-            ctx->addLine(CMD_LBL, lbl1);
-            ctx->addLine(CMD_RCOMPLX);
-            ctx->addLine(CMD_SWAP);
-            ctx->addLine(CMD_DROP);
-            ctx->addLine(CMD_LBL, lbl2);
+            ctx->addLine(tpos, CMD_CPX_T);
+            ctx->addLine(tpos, CMD_GTOL, lbl1);
+            ctx->addLine(tpos, CMD_DROP);
+            ctx->addLine(tpos, (phloat) 0);
+            ctx->addLine(tpos, CMD_GTOL, lbl2);
+            ctx->addLine(tpos, CMD_LBL, lbl1);
+            ctx->addLine(tpos, CMD_RCOMPLX);
+            ctx->addLine(tpos, CMD_SWAP);
+            ctx->addLine(tpos, CMD_DROP);
+            ctx->addLine(tpos, CMD_LBL, lbl2);
         } else {
             right->generateCode(ctx);
-            ctx->addLine(CMD_SWAP);
-            ctx->addLine(CMD_TO_REC);
-            ctx->addLine(CMD_DROP);
+            ctx->addLine(tpos, CMD_SWAP);
+            ctx->addLine(tpos, CMD_TO_REC);
+            ctx->addLine(tpos, CMD_DROP);
         }
     }
 };
@@ -3672,16 +3742,16 @@ bool Tanh::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
 
 void Break::generateCode(GeneratorContext *ctx) {
     if (f == NULL)
-        ctx->addLine(CMD_XSTR, std::string("BREAK"));
+        ctx->addLine(tpos, CMD_XSTR, std::string("BREAK"));
     else
-        ctx->addLine(CMD_GTOL, f->getBreak());
+        ctx->addLine(tpos, CMD_GTOL, f->getBreak());
 }
 
 void Continue::generateCode(GeneratorContext *ctx) {
     if (f == NULL)
-        ctx->addLine(CMD_XSTR, std::string("CONTINUE"));
+        ctx->addLine(tpos, CMD_XSTR, std::string("CONTINUE"));
     else
-        ctx->addLine(CMD_GTOL, f->getContinue());
+        ctx->addLine(tpos, CMD_GTOL, f->getContinue());
 }
 
 void Evaluator::getSides(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
@@ -3967,10 +4037,10 @@ class Lexer {
     }
 }
 
-/* static */ void Parser::generateCode(Evaluator *ev, prgm_struct *prgm) {
+/* static */ void Parser::generateCode(Evaluator *ev, prgm_struct *prgm, CodeMap *map) {
     GeneratorContext ctx;
     ev->generateCode(&ctx);
-    ctx.store(prgm);
+    ctx.store(prgm, map);
 }
 
 Parser::Parser(Lexer *lex) : lex(lex), pbpos(-1) {}
@@ -5021,7 +5091,7 @@ int isolate(vartype *eqn, const char *name, int length) {
     // object would be deleted. Of course I could also return a pgm_index object,
     // that would be cleaner...
     neqd->refcount++;
-    ctx.store(prgms + neq + prgms_count);
+    ctx.store(prgms + neq + prgms_count, NULL);
     neqd->refcount--;
     return neq;
 }

@@ -28,6 +28,7 @@
 equation_data::~equation_data() {
     free(text);
     delete ev;
+    delete map;
 }
 
 void pgm_index::inc_refcount() {
@@ -249,7 +250,12 @@ vartype *new_equation(const char *text, int4 len, bool compat_mode, int *errpos,
     }
     eq->type = TYPE_EQUATION;
     eq->data.init_eqn(eqn_index, eqd);
-    Parser::generateCode(eqd->ev, prgms + eq->data.index());
+    CodeMap *map = new CodeMap;
+    Parser::generateCode(eqd->ev, prgms + eq->data.index(), map);
+    if (map->getSize() == -1)
+        delete map;
+    else
+        eqd->map = map;
     // TODO: Error handling. Have generateCode() signal failure by setting 'text' to NULL or something.
     return (vartype *) eq;
 }

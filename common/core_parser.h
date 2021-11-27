@@ -67,6 +67,28 @@ class Evaluator {
     void addIfNew(std::string name, std::vector<std::string> *vars, std::vector<std::string> *locals);
 };
 
+class CodeMap {
+    private:
+    char *data;
+    int size;
+    int capacity;
+    int4 current_pos;
+    int4 current_pc;
+    
+    void addByte(int b);
+    void write(int4 n);
+    int4 read(int *index);
+    
+    public:
+    CodeMap() : data(NULL), size(0), capacity(0), current_pos(-1), current_pc(0) {}
+    CodeMap(char *data, int size) : data(data), size(size) {}
+    ~CodeMap() { delete data; }
+    void add(int4 pos, int4 pc);
+    int4 lookup(int4 pc);
+    char *getData() { return data; }
+    int getSize() { return size; }
+};
+
 class Lexer;
 struct prgm_struct;
 
@@ -84,7 +106,7 @@ class Parser {
     public:
 
     static Evaluator *parse(std::string expr, bool compatMode, int *errpos);
-    static void generateCode(Evaluator *ev, prgm_struct *prgm);
+    static void generateCode(Evaluator *ev, prgm_struct *prgm, CodeMap *map);
 
     private:
 

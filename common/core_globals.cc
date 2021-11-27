@@ -1265,6 +1265,16 @@ static bool persist_globals() {
                 goto done;
             if (!write_bool(eqd->compatMode))
                 goto done;
+            if (eqd->map == NULL) {
+                if (!write_int(0))
+                    goto done;
+            } else {
+                int size = eqd->map->getSize();
+                if (!write_int(size))
+                    goto done;
+                if (fwrite(eqd->map->getData(), 1, size, gfile) != size)
+                    goto done;
+            }
         }
     }
     if (!write_int(sp))
@@ -1440,6 +1450,21 @@ static bool unpersist_globals() {
             goto eqd_fail;
         int errpos;
         eqd->ev = Parser::parse(std::string(eqd->text, eqd->length), eqd->compatMode, &errpos);
+        if (ver >= 2) {
+            int mapsize;
+            if (!read_int(&mapsize))
+                goto eqd_fail;
+            if (mapsize > 0) {
+                char *d = (char *) malloc(mapsize);
+                if (d == NULL)
+                    goto eqd_fail;
+                if (fread(d, 1, mapsize, gfile) != mapsize) {
+                    free(d);
+                    goto eqd_fail;
+                }
+                eqd->map = new CodeMap(d, mapsize);
+            }
+        }
         prgms[prgms_count + eqd->eqn_index] = prgms[total_prgms];
         prgms[total_prgms].eq_data = NULL;
         prgms[prgms_count + eqd->eqn_index].eq_data = eqd;

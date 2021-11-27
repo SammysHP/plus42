@@ -5296,6 +5296,7 @@ static int handle_error(int error) {
                             int n = i + pos - 9;
                             line[i] = n >= eqd->length ? ' ' : eqd->text[n];
                         }
+                        clear_row(1);
                         draw_string(0, 1, line, 22);
                         flush_display();
                         flags.f.two_line_message = 1;

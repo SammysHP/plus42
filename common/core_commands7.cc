@@ -2016,6 +2016,7 @@ int docmd_eval(arg_struct *arg) {
         return ERR_NONE;
     } else {
         clear_all_rtns();
+        return_here_after_last_rtn();
         current_prgm = eq->data;
         pc = 0;
         return ERR_RUN;
@@ -2062,6 +2063,7 @@ int docmd_evaln(arg_struct *arg) {
         return ERR_NONE;
     } else {
         clear_all_rtns();
+        return_here_after_last_rtn();
         current_prgm = eq->data;
         pc = 0;
         return ERR_RUN;

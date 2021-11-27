@@ -720,10 +720,11 @@ bool no_keystrokes_yet;
 /* Version number for the state file.
  * State file versions correspond to application releases as follows:
  * 
- * Version  0: 1.0    first release
- * Version  1: 1.0    cursor left, cursor right, del key handling
+ * Version  0: 1.0    First release
+ * Version  1: 1.0    Cursor left, cursor right, del key handling
+ * Version  2: 1.0    Return to user code after interactive EVAL
  */
-#define PLUS42_VERSION 1
+#define PLUS42_VERSION 2
 
 
 /*******************/
@@ -791,6 +792,8 @@ static rtn_stack_entry *rtn_stack = NULL;
 static int rtn_level = 0;
 static bool rtn_level_0_has_matrix_entry;
 static bool rtn_level_0_has_func_state;
+static int4 rtn_after_last_rtn_prgm = -1;
+static int4 rtn_after_last_rtn_pc = -1;
 static int rtn_stop_level = -1;
 static bool rtn_solve_active = false;
 static bool rtn_integ_active = false;
@@ -1311,6 +1314,10 @@ static bool persist_globals() {
         goto done;
     if (!write_bool(rtn_level_0_has_func_state))
         goto done;
+    if (!write_int4(rtn_after_last_rtn_prgm))
+        goto done;
+    if (!write_int4(rtn_after_last_rtn_pc))
+        goto done;
     saved_prgm = current_prgm;
     for (i = rtn_sp - 1; i >= 0; i--) {
         bool matrix_entry_follows = i == 1 && rtn_level_0_has_matrix_entry;
@@ -1555,6 +1562,15 @@ static bool unpersist_globals() {
         goto done;
     if (!read_bool(&rtn_level_0_has_func_state))
         goto done;
+    if (ver >= 2) {
+        if (!read_int4(&rtn_after_last_rtn_prgm))
+            goto done;
+        if (!read_int4(&rtn_after_last_rtn_pc))
+            goto done;
+    } else {
+        rtn_after_last_rtn_prgm = -1;
+        rtn_after_last_rtn_pc = -1;
+    }
     rtn_stack_capacity = 16;
     while (rtn_sp > rtn_stack_capacity)
         rtn_stack_capacity <<= 1;
@@ -3147,6 +3163,16 @@ void step_over() {
         rtn_stop_level = rtn_level;
 }
 
+void return_here_after_last_rtn() {
+    if (current_prgm.is_prgm()) {
+        rtn_after_last_rtn_prgm = current_prgm.prgm();
+        rtn_after_last_rtn_pc = pc;
+    } else {
+        rtn_after_last_rtn_prgm = -1;
+        rtn_after_last_rtn_pc = -1;
+    }
+}
+
 bool should_i_stop_at_this_level() {
     bool stop = rtn_stop_level >= rtn_level;
     if (stop)
@@ -3286,8 +3312,16 @@ static void validate_matedit() {
 void pop_rtn_addr(pgm_index *prgm, int4 *pc, bool *stop) {
     remove_locals();
     if (rtn_level == 0) {
-        prgm->clear();
-        *pc = -1;
+        if (rtn_after_last_rtn_prgm != -1) {
+            prgm->set_prgm(rtn_after_last_rtn_prgm);
+            *pc = rtn_after_last_rtn_pc;
+            rtn_after_last_rtn_prgm = -1;
+            rtn_after_last_rtn_pc = -1;
+            *stop = true;
+        } else {
+            prgm->clear();
+            *pc = -1;
+        }
         rtn_stop_level = -1;
         rtn_level_0_has_func_state = false;
         if (rtn_level_0_has_matrix_entry) {

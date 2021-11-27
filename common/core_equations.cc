@@ -1210,10 +1210,23 @@ static int keydown_print1(int key, bool shift, int *repeat) {
         case KEY_SQRT: {
             /* VARS */
             if (flags.f.printer_exists) {
-                arg.type = ARGTYPE_STR;
-                arg.length = 0;
-                docmd_prmvar(&arg);
-                goto exit_menu;
+                if (selected_row == -1 || selected_row == num_eqns) {
+                    squeak();
+                    return 1;
+                } else {
+                    vartype *v = eqns->array->data[selected_row];
+                    if (v->type != TYPE_EQUATION) {
+                        squeak();
+                        return 1;
+                    }
+                    vartype *saved_lastx = lastx;
+                    lastx = v;
+                    arg.type = ARGTYPE_IND_STK;
+                    arg.val.stk = 'L';
+                    docmd_prmvar(&arg);
+                    lastx = saved_lastx;
+                    goto exit_menu;
+                }
             } else {
                 show_error(ERR_PRINTING_IS_DISABLED);
                 return 1;

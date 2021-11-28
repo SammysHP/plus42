@@ -583,7 +583,18 @@ static int finish_solve(int message) {
 
     clean_stack(solve.prev_sp);
     v = recall_var(solve.var_name, solve.var_length);
-    ((vartype_real *) v)->x = b;
+    if (v == NULL || v->type != TYPE_REAL) {
+        v = new_real(b);
+        if (v == NULL)
+            return ERR_INSUFFICIENT_MEMORY;
+        int err = store_var(solve.var_name, solve.var_length, v);
+        if (err != ERR_NONE) {
+            free_vartype(v);
+            return err;
+        }
+    } else {
+        ((vartype_real *) v)->x = b;
+    }
     if (flags.f.big_stack && !ensure_stack_capacity(4))
         return ERR_INSUFFICIENT_MEMORY;
     new_x = dup_vartype(v);

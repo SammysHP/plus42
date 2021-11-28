@@ -2220,8 +2220,7 @@ static int item_helper(arg_struct *arg, bool get) {
     int4 n = to_int4(d);
     if (n < 0)
         n = -n;
-    if (two_d)
-        n--;
+    n--;
     if (n < 0)
         return ERR_DIMENSION_ERROR;
 

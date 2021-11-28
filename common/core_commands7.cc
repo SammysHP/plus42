@@ -2189,6 +2189,9 @@ static int item_helper(arg_struct *arg, bool get) {
     }
 
     vartype *v = recall_var(name->txt(), name->length);
+    if (v == NULL)
+        return ERR_NONEXISTENT;
+    
     if (get) {
         if (v->type != TYPE_REALMATRIX
                 && v->type != TYPE_COMPLEXMATRIX

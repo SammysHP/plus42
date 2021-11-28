@@ -3198,6 +3198,16 @@ void return_here_after_last_rtn() {
     }
 }
 
+void unwind_after_eqn_error() {
+    int4 saved_prgm = rtn_after_last_rtn_prgm;
+    int4 saved_pc = rtn_after_last_rtn_pc;
+    clear_all_rtns();
+    if (saved_prgm != -1) {
+        current_prgm.set_prgm(saved_prgm);
+        pc = saved_pc;
+    }
+}
+
 bool should_i_stop_at_this_level() {
     bool stop = rtn_stop_level >= rtn_level;
     if (stop)

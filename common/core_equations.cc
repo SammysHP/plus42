@@ -1636,6 +1636,10 @@ static int keydown_sto_overwrite(int key, bool shift, int *repeat) {
                     break;
                 }
                 case DIALOG_STO_OVERWRITE_PRGM: {
+                    if (current_prgm.is_eqn()) {
+                        show_error(ERR_RESTRICTED_OPERATION);
+                        return 1;
+                    }
                     arg_struct arg;
                     arg.type = ARGTYPE_XSTR;
                     arg.length = edit_len > 65535 ? 65535 : edit_len;

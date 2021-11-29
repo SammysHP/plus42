@@ -3578,6 +3578,9 @@ Evaluator *If::invert(const std::string &name, Evaluator *rhs) {
     Evaluator *cond = condition->clone(NULL);
     if (t == 1 && f == 1) {
         Evaluator *rhs2 = rhs->clone(NULL);
+        // TODO: How can we avoid the duplication taking place here?
+        // Remember, this isn't just a chunk of parse tree being cloned,
+        // this represent a chunk of code being generated twice.
         return new If(0, cond, trueEv->invert(name, rhs), falseEv->invert(name, rhs2));
     } else if (t == 1)
         return new If(0, cond, trueEv->invert(name, rhs), new Abort(tpos));

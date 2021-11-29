@@ -44,27 +44,23 @@ class Evaluator {
     Evaluator(int pos) : tpos(pos) {}
     virtual ~Evaluator() {}
     virtual bool isBool() { return false; }
-    virtual bool isEquation() { return false; }
     virtual bool makeLvalue() { return false; }
     virtual std::string name() { return ""; }
     virtual std::string eqnName() { return ""; }
     virtual std::vector<std::string> *eqnParamNames() { return NULL; }
-    virtual Evaluator *removeName() { return this; }
     virtual std::string getText() { return ""; }
-    virtual void getSides(const std::string *name, Evaluator **lhs, Evaluator **rhs);
-    virtual bool is(const std::string *name) { return false; }
+    virtual void getSides(const std::string &name, Evaluator **lhs, Evaluator **rhs);
     virtual Evaluator *clone(For *f) = 0;
-    virtual void detach() {}
 
     int pos() { return tpos; }
 
-    virtual bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) { return false; }
+    virtual Evaluator *invert(const std::string &name, Evaluator *rhs);
     virtual void generateCode(GeneratorContext *ctx) = 0;
     virtual void generateAssignmentCode(GeneratorContext *ctx) {} /* For lvalues */
     virtual void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) = 0;
-    virtual int howMany(const std::string *name) = 0;
+    virtual int howMany(const std::string &name) = 0;
     
-    void addIfNew(std::string name, std::vector<std::string> *vars, std::vector<std::string> *locals);
+    void addIfNew(const std::string &name, std::vector<std::string> *vars, std::vector<std::string> *locals);
 };
 
 class CodeMap {

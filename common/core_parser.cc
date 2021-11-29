@@ -297,15 +297,11 @@ class UnaryEvaluator : public Evaluator {
         delete ev;
     }
     
-    void detach() {
-        ev = NULL;
-    }
-
     void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
         ev->collectVariables(vars, locals);
     }
 
-    int howMany(const std::string *name) {
+    int howMany(const std::string &name) {
         int n = ev->howMany(name);
         return n == 0 ? 0 : invertible ? n : -1;
     }
@@ -331,17 +327,12 @@ class BinaryEvaluator : public Evaluator {
         delete right;
     }
     
-    void detach() {
-        left = NULL;
-        right = NULL;
-    }
-
     void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
         left->collectVariables(vars, locals);
         right->collectVariables(vars, locals);
     }
 
-    int howMany(const std::string *name) {
+    int howMany(const std::string &name) {
         int a = left->howMany(name);
         if (a == -1)
             return -1;
@@ -353,6 +344,34 @@ class BinaryEvaluator : public Evaluator {
     }
 };
 
+
+///////////////////
+/////  Abort  /////
+///////////////////
+
+class Abort : public Evaluator {
+
+    public:
+
+    Abort(int pos) : Evaluator(pos) {}
+
+    Evaluator *clone(For *f) {
+        return new Abort(tpos);
+    }
+
+    void generateCode(GeneratorContext *ctx) {
+        ctx->addLine(tpos, (phloat) 0);
+        ctx->addLine(tpos, CMD_INV);
+    }
+    
+    void collectVariables(std::vector<std::string> *vars, std::vector<std::string> *locals) {
+        // nope
+    }
+
+    int howMany(const std::string &name) {
+        return -1;
+    }
+};
 
 //////////////////
 /////  Acos  /////
@@ -368,7 +387,7 @@ class Acos : public UnaryEvaluator {
         return new Acos(tpos, ev->clone(f));
     }
 
-    bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
+    Evaluator *invert(const std::string &name, Evaluator *rhs);
 
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
@@ -390,7 +409,7 @@ class Acosh : public UnaryEvaluator {
         return new Acosh(tpos, ev->clone(f));
     }
 
-    bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
+    Evaluator *invert(const std::string &name, Evaluator *rhs);
 
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
@@ -412,7 +431,7 @@ class Alog : public UnaryEvaluator {
         return new Alog(tpos, ev->clone(f));
     }
 
-    bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
+    Evaluator *invert(const std::string &name, Evaluator *rhs);
 
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
@@ -497,7 +516,7 @@ class Asin : public UnaryEvaluator {
         return new Asin(tpos, ev->clone(f));
     }
 
-    bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
+    Evaluator *invert(const std::string &name, Evaluator *rhs);
 
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
@@ -519,7 +538,7 @@ class Asinh : public UnaryEvaluator {
         return new Asinh(tpos, ev->clone(f));
     }
 
-    bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
+    Evaluator *invert(const std::string &name, Evaluator *rhs);
 
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
@@ -611,7 +630,7 @@ public:
                 data[i][j]->collectVariables(vars, locals);
     }
 
-    int howMany(const std::string *name) {
+    int howMany(const std::string &name) {
         for (int i = 0; i < data.size(); i++)
             for (int j = 0; j < data[i].size(); j++)
                 if (data[i][j]->howMany(name) != 0)
@@ -634,7 +653,7 @@ class Atan : public UnaryEvaluator {
         return new Atan(tpos, ev->clone(f));
     }
 
-    bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
+    Evaluator *invert(const std::string &name, Evaluator *rhs);
 
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
@@ -656,7 +675,7 @@ class Atanh : public UnaryEvaluator {
         return new Atanh(tpos, ev->clone(f));
     }
 
-    bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
+    Evaluator *invert(const std::string &name, Evaluator *rhs);
 
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
@@ -678,7 +697,7 @@ class Badd : public BinaryEvaluator {
         return new Badd(tpos, left->clone(f), right->clone(f));
     }
 
-    bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
+    Evaluator *invert(const std::string &name, Evaluator *rhs);
 
     void generateCode(GeneratorContext *ctx) {
         left->generateCode(ctx);
@@ -723,7 +742,7 @@ class Bdiv : public BinaryEvaluator {
         return new Bdiv(tpos, left->clone(f), right->clone(f));
     }
 
-    bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
+    Evaluator *invert(const std::string &name, Evaluator *rhs);
 
     void generateCode(GeneratorContext *ctx) {
         left->generateCode(ctx);
@@ -748,7 +767,7 @@ class Bmul : public BinaryEvaluator {
         return new Bmul(tpos, left->clone(f), right->clone(f));
     }
 
-    bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
+    Evaluator *invert(const std::string &name, Evaluator *rhs);
 
     void generateCode(GeneratorContext *ctx) {
         left->generateCode(ctx);
@@ -771,7 +790,7 @@ class Bneg : public UnaryEvaluator {
         return new Bneg(tpos, ev->clone(f));
     }
 
-    bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
+    Evaluator *invert(const std::string &name, Evaluator *rhs);
 
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
@@ -793,7 +812,7 @@ class Bnot : public UnaryEvaluator {
         return new Bnot(tpos, ev->clone(f));
     }
 
-    bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
+    Evaluator *invert(const std::string &name, Evaluator *rhs);
 
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
@@ -846,7 +865,7 @@ class Break : public Evaluator {
         // nope
     }
 
-    int howMany(const std::string *name) {
+    int howMany(const std::string &name) {
         return 0;
     }
 };
@@ -866,7 +885,7 @@ class Bsub : public BinaryEvaluator {
         return new Bsub(tpos, left->clone(f), right->clone(f));
     }
 
-    bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
+    Evaluator *invert(const std::string &name, Evaluator *rhs);
 
     void generateCode(GeneratorContext *ctx) {
         left->generateCode(ctx);
@@ -891,7 +910,7 @@ class Bxor : public BinaryEvaluator {
         return new Bxor(tpos, left->clone(f), right->clone(f));
     }
 
-    bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
+    Evaluator *invert(const std::string &name, Evaluator *rhs);
 
     void generateCode(GeneratorContext *ctx) {
         left->generateCode(ctx);
@@ -951,7 +970,7 @@ class Call : public Evaluator {
             (*evs)[i]->collectVariables(vars, locals);
     }
 
-    int howMany(const std::string *name) {
+    int howMany(const std::string &name) {
         for (int i = 0; i < evs->size(); i++)
             if ((*evs)[i]->howMany(name) != 0)
                 return -1;
@@ -1142,7 +1161,7 @@ class Continue : public Evaluator {
         // nope
     }
 
-    int howMany(const std::string *name) {
+    int howMany(const std::string &name) {
         return 0;
     }
 };
@@ -1161,7 +1180,7 @@ class Cos : public UnaryEvaluator {
         return new Cos(tpos, ev->clone(f));
     }
 
-    bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
+    Evaluator *invert(const std::string &name, Evaluator *rhs);
 
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
@@ -1183,7 +1202,7 @@ class Cosh : public UnaryEvaluator {
         return new Cosh(tpos, ev->clone(f));
     }
 
-    bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
+    Evaluator *invert(const std::string &name, Evaluator *rhs);
 
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
@@ -1227,7 +1246,7 @@ class Date : public BinaryEvaluator {
         return new Date(tpos, left->clone(f), right->clone(f));
     }
 
-    bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
+    Evaluator *invert(const std::string &name, Evaluator *rhs);
 
     void generateCode(GeneratorContext *ctx) {
         left->generateCode(ctx);
@@ -1277,7 +1296,7 @@ class Ddays : public Evaluator {
         cal->collectVariables(vars, locals);
     }
 
-    int howMany(const std::string *name) {
+    int howMany(const std::string &name) {
         if (date1->howMany(name) != 0
                 || date2->howMany(name) != 0
                 || cal->howMany(name) != 0)
@@ -1301,7 +1320,7 @@ class Dec : public UnaryEvaluator {
         return new Dec(tpos, ev->clone(f));
     }
 
-    bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
+    Evaluator *invert(const std::string &name, Evaluator *rhs);
 
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
@@ -1323,7 +1342,7 @@ class Deg : public UnaryEvaluator {
         return new Deg(tpos, ev->clone(f));
     }
 
-    bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
+    Evaluator *invert(const std::string &name, Evaluator *rhs);
 
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
@@ -1346,7 +1365,7 @@ class Difference : public BinaryEvaluator {
         return new Difference(tpos, left->clone(f), right->clone(f));
     }
 
-    bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
+    Evaluator *invert(const std::string &name, Evaluator *rhs);
 
     void generateCode(GeneratorContext *ctx) {
         left->generateCode(ctx);
@@ -1424,7 +1443,7 @@ class Ell : public Evaluator {
         right->collectVariables(vars, locals);
     }
 
-    int howMany(const std::string *nam) {
+    int howMany(const std::string &nam) {
         if (left != NULL && left->howMany(nam) != 0)
             return -1;
         return right->howMany(nam) == 0 ? 0 : -1;
@@ -1445,11 +1464,7 @@ class Equation : public BinaryEvaluator {
         return new Equation(tpos, left->clone(f), right->clone(f));
     }
 
-    bool isEquation() {
-        return true;
-    }
-
-    void getSides(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
+    void getSides(const std::string &name, Evaluator **lhs, Evaluator **rhs) {
         if (left->howMany(name) == 1) {
             *lhs = left;
             *rhs = right;
@@ -1457,9 +1472,6 @@ class Equation : public BinaryEvaluator {
             *lhs = right;
             *rhs = left;
         }
-        left = NULL;
-        right = NULL;
-        delete this;
     }
 
     void generateCode(GeneratorContext *ctx) {
@@ -1498,8 +1510,8 @@ class Ess : public Evaluator {
         // nope
     }
 
-    int howMany(const std::string *nam) {
-        return *nam == name ? -1 : 0;
+    int howMany(const std::string &nam) {
+        return 0;
     }
 };
 
@@ -1517,7 +1529,7 @@ class Exp : public UnaryEvaluator {
         return new Exp(tpos, ev->clone(f));
     }
 
-    bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
+    Evaluator *invert(const std::string &name, Evaluator *rhs);
 
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
@@ -1539,7 +1551,7 @@ class Expm1 : public UnaryEvaluator {
         return new Expm1(tpos, ev->clone(f));
     }
 
-    bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
+    Evaluator *invert(const std::string &name, Evaluator *rhs);
 
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
@@ -1629,7 +1641,7 @@ class For : public Evaluator {
             (*evs)[i]->collectVariables(vars, locals);
     }
 
-    int howMany(const std::string *name) {
+    int howMany(const std::string &name) {
         if (init->howMany(name) != 0
                 || cond->howMany(name) != 0
                 || next->howMany(name) != 0)
@@ -1668,7 +1680,7 @@ class Gee : public Evaluator {
         // nope
     }
 
-    int howMany(const std::string *name) {
+    int howMany(const std::string &name) {
         return 0;
     }
 };
@@ -1687,7 +1699,7 @@ class Hms : public UnaryEvaluator {
         return new Hms(tpos, ev->clone(f));
     }
 
-    bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
+    Evaluator *invert(const std::string &name, Evaluator *rhs);
 
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
@@ -1709,7 +1721,7 @@ class Hmsadd : public BinaryEvaluator {
         return new Hmsadd(tpos, left->clone(f), right->clone(f));
     }
 
-    bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
+    Evaluator *invert(const std::string &name, Evaluator *rhs);
 
     void generateCode(GeneratorContext *ctx) {
         left->generateCode(ctx);
@@ -1733,7 +1745,7 @@ class Hmssub : public BinaryEvaluator {
         return new Hmssub(tpos, left->clone(f), right->clone(f));
     }
 
-    bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
+    Evaluator *invert(const std::string &name, Evaluator *rhs);
 
     void generateCode(GeneratorContext *ctx) {
         left->generateCode(ctx);
@@ -1758,7 +1770,7 @@ class Hrs : public UnaryEvaluator {
         return new Hrs(tpos, ev->clone(f));
     }
 
-    bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
+    Evaluator *invert(const std::string &name, Evaluator *rhs);
 
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
@@ -1813,6 +1825,8 @@ class If : public Evaluator {
         return new If(tpos, condition->clone(f), trueEv->clone(f), falseEv->clone(f));
     }
 
+    Evaluator *invert(const std::string &name, Evaluator *rhs);
+
     void generateCode(GeneratorContext *ctx) {
         condition->generateCode(ctx);
         int lbl1 = ctx->nextLabel();
@@ -1832,10 +1846,14 @@ class If : public Evaluator {
         falseEv->collectVariables(vars, locals);
     }
 
-    int howMany(const std::string *name) {
-        if (condition->howMany(name) != 0
-                || trueEv->howMany(name) != 0
-                || falseEv->howMany(name) != 0)
+    int howMany(const std::string &name) {
+        if (condition->howMany(name) != 0)
+            return -1;
+        int t = trueEv->howMany(name);
+        int f = falseEv->howMany(name);
+        if (t == 1 || f == 1)
+            return 1;
+        else if (t == -1 || f == -1)
             return -1;
         else
             return 0;
@@ -1921,8 +1939,8 @@ class Integ : public Evaluator {
         locals->pop_back();
     }
 
-    int howMany(const std::string *nam) {
-        if (*nam != integ_var) {
+    int howMany(const std::string &nam) {
+        if (nam != integ_var) {
             if (llim->howMany(nam) != 0
                     || ulim->howMany(nam) != 0)
                 return -1;
@@ -1945,7 +1963,7 @@ class Inv : public UnaryEvaluator {
         return new Inv(tpos, ev->clone(f));
     }
 
-    bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
+    Evaluator *invert(const std::string &name, Evaluator *rhs);
 
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
@@ -2005,8 +2023,8 @@ class Item : public Evaluator {
             ev2->collectVariables(vars, locals);
     }
 
-    int howMany(const std::string *nam) {
-        if (*nam == name || ev1->howMany(nam) != 0 || ev2 != NULL && ev2->howMany(nam) != 0)
+    int howMany(const std::string &nam) {
+        if (nam == name || ev1->howMany(nam) != 0 || ev2 != NULL && ev2->howMany(nam) != 0)
             return -1;
         else
             return 0;
@@ -2039,7 +2057,7 @@ class Literal : public Evaluator {
         // nope
     }
 
-    int howMany(const std::string *name) {
+    int howMany(const std::string &name) {
         return 0;
     }
 };
@@ -2058,7 +2076,7 @@ class Ln : public UnaryEvaluator {
         return new Ln(tpos, ev->clone(f));
     }
 
-    bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
+    Evaluator *invert(const std::string &name, Evaluator *rhs);
 
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
@@ -2080,7 +2098,7 @@ class Ln1p : public UnaryEvaluator {
         return new Ln1p(tpos, ev->clone(f));
     }
 
-    bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
+    Evaluator *invert(const std::string &name, Evaluator *rhs);
 
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
@@ -2102,7 +2120,7 @@ class Log : public UnaryEvaluator {
         return new Log(tpos, ev->clone(f));
     }
 
-    bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
+    Evaluator *invert(const std::string &name, Evaluator *rhs);
 
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
@@ -2156,7 +2174,7 @@ class Max : public Evaluator {
             (*evs)[i]->collectVariables(vars, locals);
     }
 
-    int howMany(const std::string *name) {
+    int howMany(const std::string &name) {
         for (int i = 0; i < evs->size(); i++)
             if ((*evs)[i]->howMany(name) != 0)
                 return -1;
@@ -2210,7 +2228,7 @@ class Min : public Evaluator {
             (*evs)[i]->collectVariables(vars, locals);
     }
 
-    int howMany(const std::string *name) {
+    int howMany(const std::string &name) {
         for (int i = 0; i < evs->size(); i++)
             if ((*evs)[i]->howMany(name) != 0)
                 return -1;
@@ -2262,6 +2280,10 @@ class NameTag : public UnaryEvaluator {
     Evaluator *clone(For *f) {
         return new NameTag(tpos, name, new std::vector<std::string>(*params), ev->clone(f));
     }
+
+    void getSides(const std::string &name, Evaluator **lhs, Evaluator **rhs) {
+        ev->getSides(name, lhs, rhs);
+    }
     
     std::string eqnName() {
         return name;
@@ -2269,13 +2291,6 @@ class NameTag : public UnaryEvaluator {
 
     std::vector<std::string> *eqnParamNames() {
         return params;
-    }
-
-    Evaluator *removeName() {
-        Evaluator *ret = ev;
-        ev = NULL;
-        delete this;
-        return ret;
     }
 
     void generateCode(GeneratorContext *ctx) {
@@ -2297,7 +2312,7 @@ class Negative : public UnaryEvaluator {
         return new Negative(tpos, ev->clone(f));
     }
 
-    bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
+    Evaluator *invert(const std::string &name, Evaluator *rhs);
 
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
@@ -2340,7 +2355,7 @@ class Oct : public UnaryEvaluator {
         return new Oct(tpos, ev->clone(f));
     }
 
-    bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
+    Evaluator *invert(const std::string &name, Evaluator *rhs);
 
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
@@ -2429,7 +2444,7 @@ class Power : public BinaryEvaluator {
         return new Power(tpos, left->clone(f), right->clone(f));
     }
 
-    bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
+    Evaluator *invert(const std::string &name, Evaluator *rhs);
 
     void generateCode(GeneratorContext *ctx) {
         left->generateCode(ctx);
@@ -2454,7 +2469,7 @@ class Product : public BinaryEvaluator {
         return new Product(tpos, left->clone(f), right->clone(f));
     }
 
-    bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
+    Evaluator *invert(const std::string &name, Evaluator *rhs);
 
     void generateCode(GeneratorContext *ctx) {
         left->generateCode(ctx);
@@ -2478,7 +2493,7 @@ class Quotient : public BinaryEvaluator {
         return new Quotient(tpos, left->clone(f), right->clone(f));
     }
 
-    bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
+    Evaluator *invert(const std::string &name, Evaluator *rhs);
 
     void generateCode(GeneratorContext *ctx) {
         left->generateCode(ctx);
@@ -2503,7 +2518,7 @@ class Rad : public UnaryEvaluator {
         return new Rad(tpos, ev->clone(f));
     }
 
-    bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
+    Evaluator *invert(const std::string &name, Evaluator *rhs);
 
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
@@ -2600,7 +2615,7 @@ class RecallFunction : public Evaluator {
         // nope
     }
 
-    int howMany(const std::string *name) {
+    int howMany(const std::string &name) {
         return 0;
     }
 };
@@ -2635,7 +2650,7 @@ class RecallOneOfTwoFunction : public Evaluator {
         // nope
     }
 
-    int howMany(const std::string *name) {
+    int howMany(const std::string &name) {
         return 0;
     }
 };
@@ -2685,7 +2700,7 @@ class Register : public Evaluator {
             ev->collectVariables(vars, locals);
     }
 
-    int howMany(const std::string *name) {
+    int howMany(const std::string &name) {
         if (ev == NULL)
             return 0;
         else
@@ -2776,7 +2791,7 @@ class Seq : public Evaluator {
             (*evs)[i]->collectVariables(vars, locals);
     }
 
-    int howMany(const std::string *name) {
+    int howMany(const std::string &name) {
         for (int i = 0; i < evs->size(); i++)
             if ((*evs)[i]->howMany(name) != 0)
                 return -1;
@@ -2874,8 +2889,8 @@ class Sigma : public Evaluator {
         locals->pop_back();
     }
 
-    int howMany(const std::string *nam) {
-        if (*nam != name) {
+    int howMany(const std::string &nam) {
+        if (nam != name) {
             if (ev->howMany(nam) != 0)
                 return -1;
         }
@@ -2901,7 +2916,7 @@ class Sin : public UnaryEvaluator {
         return new Sin(tpos, ev->clone(f));
     }
 
-    bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
+    Evaluator *invert(const std::string &name, Evaluator *rhs);
 
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
@@ -2923,7 +2938,7 @@ class Sinh : public UnaryEvaluator {
         return new Sinh(tpos, ev->clone(f));
     }
 
-    bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
+    Evaluator *invert(const std::string &name, Evaluator *rhs);
 
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
@@ -2985,7 +3000,7 @@ class Sq : public UnaryEvaluator {
         return new Sq(tpos, ev->clone(f));
     }
 
-    bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
+    Evaluator *invert(const std::string &name, Evaluator *rhs);
 
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
@@ -3007,7 +3022,7 @@ class Sqrt : public UnaryEvaluator {
         return new Sqrt(tpos, ev->clone(f));
     }
 
-    bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
+    Evaluator *invert(const std::string &name, Evaluator *rhs);
 
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
@@ -3045,7 +3060,7 @@ class StatSum : public Evaluator {
         // nope
     }
 
-    int howMany(const std::string *name) {
+    int howMany(const std::string &name) {
         return 0;
     }
 };
@@ -3085,7 +3100,7 @@ class Subexpression : public Evaluator {
         ev->collectVariables(vars, locals);
     }
 
-    int howMany(const std::string *name) {
+    int howMany(const std::string &name) {
         return ev->howMany(name) == 0 ? 0 : -1;
     }
 };
@@ -3104,7 +3119,7 @@ class Sum : public BinaryEvaluator {
         return new Sum(tpos, left->clone(f), right->clone(f));
     }
 
-    bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
+    Evaluator *invert(const std::string &name, Evaluator *rhs);
 
     void generateCode(GeneratorContext *ctx) {
         left->generateCode(ctx);
@@ -3127,7 +3142,7 @@ class Tan : public UnaryEvaluator {
         return new Tan(tpos, ev->clone(f));
     }
 
-    bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
+    Evaluator *invert(const std::string &name, Evaluator *rhs);
 
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
@@ -3149,7 +3164,7 @@ class Tanh : public UnaryEvaluator {
         return new Tanh(tpos, ev->clone(f));
     }
 
-    bool invert(const std::string *name, Evaluator **lhs, Evaluator **rhs);
+    Evaluator *invert(const std::string &name, Evaluator *rhs);
 
     void generateCode(GeneratorContext *ctx) {
         ev->generateCode(ctx);
@@ -3237,8 +3252,8 @@ class Variable : public Evaluator {
     
     std::string name() { return nam; }
 
-    bool is(const std::string *name) { return *name == nam; }
-    
+    Evaluator *invert(const std::string &name, Evaluator *rhs);
+
     void generateCode(GeneratorContext *ctx) {
         ctx->addLine(tpos, CMD_RCL, nam);
     }
@@ -3247,8 +3262,8 @@ class Variable : public Evaluator {
         addIfNew(nam, vars, locals);
     }
 
-    int howMany(const std::string *name) {
-        return nam == *name;
+    int howMany(const std::string &name) {
+        return nam == name;
     }
 };
 
@@ -3338,7 +3353,7 @@ class Xeq : public Evaluator {
             (*evs)[i]->collectVariables(vars, locals);
     }
 
-    int howMany(const std::string *name) {
+    int howMany(const std::string &name) {
         for (int i = 0; i < evs->size(); i++)
             if ((*evs)[i]->howMany(name) != 0)
                 return -1;
@@ -3420,328 +3435,245 @@ class Ycoord : public BinaryEvaluator {
  * would have to be dealt with of course, but that doesn't seem likely.
  */
 
-bool Acos::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
-    *lhs = ev;
-    *rhs = new Cos(0, *rhs);
-    return true;
+Evaluator *Evaluator::invert(const std::string &name, Evaluator *rhs) {
+    delete rhs;
+    return new Abort(tpos);
 }
 
-bool Acosh::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
-    *lhs = ev;
-    *rhs = new Cosh(0, *rhs);
-    return true;
+Evaluator *Acos::invert(const std::string &name, Evaluator *rhs) {
+    return ev->invert(name, new Cos(0, rhs));
 }
 
-bool Alog::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
-    *lhs = ev;
-    *rhs = new Log(0, *rhs);
-    return true;
+Evaluator *Acosh::invert(const std::string &name, Evaluator *rhs) {
+    return ev->invert(name, new Cosh(0, rhs));
 }
 
-bool Asin::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
-    *lhs = ev;
-    *rhs = new Sin(0, *rhs);
-    return true;
+Evaluator *Alog::invert(const std::string &name, Evaluator *rhs) {
+    return ev->invert(name, new Log(0, rhs));
 }
 
-bool Asinh::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
-    *lhs = ev;
-    *rhs = new Sinh(0, *rhs);
-    return true;
+Evaluator *Asin::invert(const std::string &name, Evaluator *rhs) {
+    return ev->invert(name, new Sin(0, rhs));
 }
 
-bool Atan::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
-    *lhs = ev;
-    *rhs = new Tan(0, *rhs);
-    return true;
+Evaluator *Asinh::invert(const std::string &name, Evaluator *rhs) {
+    return ev->invert(name, new Sinh(0, rhs));
 }
 
-bool Atanh::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
-    *lhs = ev;
-    *rhs = new Tanh(0, *rhs);
-    return true;
+Evaluator *Atan::invert(const std::string &name, Evaluator *rhs) {
+    return ev->invert(name, new Tan(0, rhs));
 }
 
-bool Badd::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
-    if (left->howMany(name) == 1) {
-        *lhs = left;
-        *rhs = new Bsub(0, right, *rhs, true);
+Evaluator *Atanh::invert(const std::string &name, Evaluator *rhs) {
+    return ev->invert(name, new Tanh(0, rhs));
+}
+
+Evaluator *Badd::invert(const std::string &name, Evaluator *rhs) {
+    if (left->howMany(name) == 1)
+        return left->invert(name, new Bsub(0, right->clone(NULL), rhs, true));
+    else
+        return right->invert(name, new Bsub(0, left->clone(NULL), rhs, true));
+}
+
+Evaluator *Bdiv::invert(const std::string &name, Evaluator *rhs) {
+    if (left->howMany(name) == 1)
+        return left->invert(name, new Bmul(0, right->clone(NULL), rhs));
+    else
+        return right->invert(name, new Bdiv(0, left->clone(NULL), rhs));
+}
+
+Evaluator *Bmul::invert(const std::string &name, Evaluator *rhs) {
+    if (left->howMany(name) == 1)
+        return left->invert(name, new Bdiv(0, right->clone(NULL), rhs, true));
+    else
+        return right->invert(name, new Bdiv(0, left->clone(NULL), rhs, true));
+}
+
+Evaluator *Bneg::invert(const std::string &name, Evaluator *rhs) {
+    return ev->invert(name, new Bneg(0, rhs));
+}
+
+Evaluator *Bnot::invert(const std::string &name, Evaluator *rhs) {
+    return ev->invert(name, new Bnot(0, rhs));
+}
+
+Evaluator *Bsub::invert(const std::string &name, Evaluator *rhs) {
+    if (left->howMany(name) == 1)
+        return left->invert(name, new Badd(0, right->clone(NULL), rhs));
+    else
+        return right->invert(name, new Bsub(0, left->clone(NULL), rhs));
+}
+
+Evaluator *Bxor::invert(const std::string &name, Evaluator *rhs) {
+    if (left->howMany(name) == 1)
+        return left->invert(name, new Bxor(0, right->clone(NULL), rhs));
+    else
+        return right->invert(name, new Bxor(0, left->clone(NULL), rhs));
+}
+
+Evaluator *Cos::invert(const std::string &name, Evaluator *rhs) {
+    return ev->invert(name, new Acos(0, rhs));
+}
+
+Evaluator *Cosh::invert(const std::string &name, Evaluator *rhs) {
+    return ev->invert(name, new Acosh(0, rhs));
+}
+
+Evaluator *Date::invert(const std::string &name, Evaluator *rhs) {
+    if (left->howMany(name) == 1)
+        return left->invert(name, new Date(0, new Negative(0, right->clone(NULL)), rhs, true));
+    else
+        return right->invert(name, new Ddays(0, left->clone(NULL), rhs, new Literal(0, 1)));
+}
+
+Evaluator *Dec::invert(const std::string &name, Evaluator *rhs) {
+    return ev->invert(name, new Oct(0, rhs));
+}
+
+Evaluator *Deg::invert(const std::string &name, Evaluator *rhs) {
+    return ev->invert(name, new Rad(0, rhs));
+}
+
+Evaluator *Difference::invert(const std::string &name, Evaluator *rhs) {
+    if (left->howMany(name) == 1)
+        return left->invert(name, new Sum(0, right->clone(NULL), rhs));
+    else
+        return right->invert(name, new Difference(0, left->clone(NULL), rhs));
+}
+
+Evaluator *Exp::invert(const std::string &name, Evaluator *rhs) {
+    return ev->invert(name, new Ln(0, rhs));
+}
+
+Evaluator *Expm1::invert(const std::string &name, Evaluator *rhs) {
+    return ev->invert(name, new Ln1p(0, rhs));
+}
+
+Evaluator *Hms::invert(const std::string &name, Evaluator *rhs) {
+    return ev->invert(name, new Hrs(0, rhs));
+}
+
+Evaluator *Hmsadd::invert(const std::string &name, Evaluator *rhs) {
+    if (left->howMany(name) == 1)
+        return left->invert(name, new Hmssub(0, right->clone(NULL), rhs, true));
+    else
+        return right->invert(name, new Hmssub(0, left->clone(NULL), rhs, true));
+}
+
+Evaluator *Hmssub::invert(const std::string &name, Evaluator *rhs) {
+    if (left->howMany(name) == 1)
+        return left->invert(name, new Hmsadd(0, right->clone(NULL), rhs));
+    else
+        return right->invert(name, new Hmssub(0, left->clone(NULL), rhs));
+}
+
+Evaluator *Hrs::invert(const std::string &name, Evaluator *rhs) {
+    return ev->invert(name, new Hms(0, rhs));
+}
+
+Evaluator *If::invert(const std::string &name, Evaluator *rhs) {
+    int t = trueEv->howMany(name);
+    int f = falseEv->howMany(name);
+    // Note: at least one of t and f must be 1 or we wouldn't be here
+    Evaluator *cond = condition->clone(NULL);
+    if (t == 1 && f == 1) {
+        Evaluator *rhs2 = rhs->clone(NULL);
+        return new If(0, cond, trueEv->invert(name, rhs), falseEv->invert(name, rhs2));
+    } else if (t == 1)
+        return new If(0, cond, trueEv->invert(name, rhs), new Abort(tpos));
+    else
+        return new If(0, cond, new Abort(tpos), falseEv->invert(name, rhs));
+}
+
+Evaluator *Inv::invert(const std::string &name, Evaluator *rhs) {
+    return ev->invert(name, new Inv(0, rhs));
+}
+
+Evaluator *Ln::invert(const std::string &name, Evaluator *rhs) {
+    return ev->invert(name, new Exp(0, rhs));
+}
+
+Evaluator *Ln1p::invert(const std::string &name, Evaluator *rhs) {
+    return ev->invert(name, new Expm1(0, rhs));
+}
+
+Evaluator *Log::invert(const std::string &name, Evaluator *rhs) {
+    return ev->invert(name, new Alog(0, rhs));
+}
+
+Evaluator *Negative::invert(const std::string &name, Evaluator *rhs) {
+    return ev->invert(name, new Negative(0, rhs));
+}
+
+Evaluator *Oct::invert(const std::string &name, Evaluator *rhs) {
+    return ev->invert(name, new Dec(0, rhs));
+}
+
+Evaluator *Power::invert(const std::string &name, Evaluator *rhs) {
+    if (left->howMany(name) == 1)
+        return left->invert(name, new Power(0, new Inv(0, right->clone(NULL)), rhs, true));
+    else
+        return right->invert(name, new Quotient(0, new Ln(0, left->clone(NULL)), new Ln(0, rhs), true));
+}
+
+Evaluator *Product::invert(const std::string &name, Evaluator *rhs) {
+    if (left->howMany(name) == 1)
+        return left->invert(name, new Quotient(0, right->clone(NULL), rhs, true));
+    else
+        return right->invert(name, new Quotient(0, left->clone(NULL), rhs, true));
+}
+
+Evaluator *Quotient::invert(const std::string &name, Evaluator *rhs) {
+    if (left->howMany(name) == 1)
+        return left->invert(name, new Product(0, right->clone(NULL), rhs));
+    else
+        return right->invert(name, new Quotient(0, left->clone(NULL), rhs));
+}
+
+Evaluator *Rad::invert(const std::string &name, Evaluator *rhs) {
+    return ev->invert(name, new Deg(0, rhs));
+}
+
+Evaluator *Sin::invert(const std::string &name, Evaluator *rhs) {
+    return ev->invert(name, new Asin(0, rhs));
+}
+
+Evaluator *Sinh::invert(const std::string &name, Evaluator *rhs) {
+    return ev->invert(name, new Asinh(0, rhs));
+}
+
+Evaluator *Sq::invert(const std::string &name, Evaluator *rhs) {
+    return ev->invert(name, new Sqrt(0, rhs));
+}
+
+Evaluator *Sqrt::invert(const std::string &name, Evaluator *rhs) {
+    return ev->invert(name, new Sq(0, rhs));
+}
+
+Evaluator *Sum::invert(const std::string &name, Evaluator *rhs) {
+    if (left->howMany(name) == 1)
+        return left->invert(name, new Difference(0, right->clone(NULL), rhs, true));
+    else
+        return right->invert(name, new Difference(0, left->clone(NULL), rhs, true));
+}
+
+Evaluator *Tan::invert(const std::string &name, Evaluator *rhs) {
+    return ev->invert(name, new Atan(0, rhs));
+}
+
+Evaluator *Tanh::invert(const std::string &name, Evaluator *rhs) {
+    return ev->invert(name, new Atanh(0, rhs));
+}
+
+Evaluator *Variable::invert(const std::string &name, Evaluator *rhs) {
+    if (nam == name) {
+        return rhs;
     } else {
-        *lhs = right;
-        *rhs = new Bsub(0, left, *rhs, true);
+        delete rhs;
+        return new Abort(tpos);
     }
-    return true;
 }
 
-bool Bdiv::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
-    if (left->howMany(name) == 1) {
-        *lhs = left;
-        *rhs = new Bmul(0, right, *rhs);
-    } else {
-        *lhs = right;
-        *rhs = new Bdiv(0, left, *rhs);
-    }
-    return true;
-}
-
-bool Bmul::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
-    if (left->howMany(name) == 1) {
-        *lhs = left;
-        *rhs = new Bdiv(0, right, *rhs, true);
-    } else {
-        *lhs = right;
-        *rhs = new Bdiv(0, left, *rhs, true);
-    }
-    return true;
-}
-
-bool Bneg::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
-    *lhs = ev;
-    *rhs = new Bneg(0, *rhs);
-    return true;
-}
-
-bool Bnot::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
-    *lhs = ev;
-    *rhs = new Bnot(0, *rhs);
-    return true;
-}
-
-bool Bsub::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
-    if (left->howMany(name) == 1) {
-        *lhs = left;
-        *rhs = new Badd(0, right, *rhs);
-    } else {
-        *lhs = right;
-        *rhs = new Bsub(0, left, *rhs);
-    }
-    return true;
-}
-
-bool Bxor::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
-    if (left->howMany(name) == 1) {
-        *lhs = left;
-        *rhs = new Bxor(0, right, *rhs);
-    } else {
-        *lhs = right;
-        *rhs = new Bxor(0, left, *rhs);
-    }
-    return true;
-}
-
-bool Cos::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
-    *lhs = ev;
-    *rhs = new Acos(0, *rhs);
-    return true;
-}
-
-bool Cosh::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
-    *lhs = ev;
-    *rhs = new Acosh(0, *rhs);
-    return true;
-}
-
-bool Date::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
-    if (left->howMany(name) == 1) {
-        *lhs = left;
-        *rhs = new Date(0, new Negative(0, right), *rhs, true);
-    } else {
-        *lhs = right;
-        *rhs = new Ddays(0, left, *rhs, new Literal(0, 1));
-    }
-    return true;
-}
-
-bool Dec::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
-    *lhs = ev;
-    *rhs = new Oct(0, *rhs);
-    return true;
-}
-
-bool Deg::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
-    *lhs = ev;
-    *rhs = new Rad(0, *rhs);
-    return true;
-}
-
-bool Difference::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
-    if (left->howMany(name) == 1) {
-        *lhs = left;
-        *rhs = new Sum(0, right, *rhs);
-    } else {
-        *lhs = right;
-        *rhs = new Difference(0, left, *rhs);
-    }
-    return true;
-}
-
-bool Exp::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
-    *lhs = ev;
-    *rhs = new Ln(0, *rhs);
-    return true;
-}
-
-bool Expm1::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
-    *lhs = ev;
-    *rhs = new Ln1p(0, *rhs);
-    return true;
-}
-
-bool Hms::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
-    *lhs = ev;
-    *rhs = new Hrs(0, *rhs);
-    return true;
-}
-
-bool Hmsadd::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
-    if (left->howMany(name) == 1) {
-        *lhs = left;
-        *rhs = new Hmssub(0, right, *rhs, true);
-    } else {
-        *lhs = right;
-        *rhs = new Hmssub(0, left, *rhs, true);
-    }
-    return true;
-}
-
-bool Hmssub::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
-    if (left->howMany(name) == 1) {
-        *lhs = left;
-        *rhs = new Hmsadd(0, right, *rhs);
-    } else {
-        *lhs = right;
-        *rhs = new Hmssub(0, left, *rhs);
-    }
-    return true;
-}
-
-bool Hrs::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
-    *lhs = ev;
-    *rhs = new Hms(0, *rhs);
-    return true;
-}
-
-bool Inv::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
-    *lhs = ev;
-    *rhs = new Inv(0, *rhs);
-    return true;
-}
-
-bool Ln::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
-    *lhs = ev;
-    *rhs = new Exp(0, *rhs);
-    return true;
-}
-
-bool Ln1p::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
-    *lhs = ev;
-    *rhs = new Expm1(0, *rhs);
-    return true;
-}
-
-bool Log::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
-    *lhs = ev;
-    *rhs = new Alog(0, *rhs);
-    return true;
-}
-
-bool Negative::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
-    *lhs = ev;
-    *rhs = new Negative(0, *rhs);
-    return true;
-}
-
-bool Oct::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
-    *lhs = ev;
-    *rhs = new Dec(0, *rhs);
-    return true;
-}
-
-bool Power::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
-    if (left->howMany(name) == 1) {
-        *lhs = left;
-        *rhs = new Power(0, new Inv(0, right), *rhs, true);
-    } else {
-        *lhs = right;
-        *rhs = new Quotient(0, new Ln(0, left), new Ln(0, *rhs), true);
-    }
-    return true;
-}
-
-bool Product::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
-    if (left->howMany(name) == 1) {
-        *lhs = left;
-        *rhs = new Quotient(0, right, *rhs, true);
-    } else {
-        *lhs = right;
-        *rhs = new Quotient(0, left, *rhs, true);
-    }
-    return true;
-}
-
-bool Quotient::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
-    if (left->howMany(name) == 1) {
-        *lhs = left;
-        *rhs = new Product(0, right, *rhs);
-    } else {
-        *lhs = right;
-        *rhs = new Quotient(0, left, *rhs);
-    }
-    return true;
-}
-
-bool Rad::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
-    *lhs = ev;
-    *rhs = new Deg(0, *rhs);
-    return true;
-}
-
-bool Sin::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
-    *lhs = ev;
-    *rhs = new Asin(0, *rhs);
-    return true;
-}
-
-bool Sinh::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
-    *lhs = ev;
-    *rhs = new Asinh(0, *rhs);
-    return true;
-}
-
-bool Sq::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
-    *lhs = ev;
-    *rhs = new Sqrt(0, *rhs);
-    return true;
-}
-
-bool Sqrt::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
-    *lhs = ev;
-    *rhs = new Sq(0, *rhs);
-    return true;
-}
-
-bool Sum::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
-    if (left->howMany(name) == 1) {
-        *lhs = left;
-        *rhs = new Difference(0, right, *rhs, true);
-    } else {
-        *lhs = right;
-        *rhs = new Difference(0, left, *rhs, true);
-    }
-    return true;
-}
-
-bool Tan::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
-    *lhs = ev;
-    *rhs = new Atan(0, *rhs);
-    return true;
-}
-
-bool Tanh::invert(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
-    *lhs = ev;
-    *rhs = new Atanh(0, *rhs);
-    return true;
-}
 
 void Break::generateCode(GeneratorContext *ctx) {
     if (f == NULL)
@@ -3757,12 +3689,12 @@ void Continue::generateCode(GeneratorContext *ctx) {
         ctx->addLine(tpos, CMD_GTOL, f->getContinue());
 }
 
-void Evaluator::getSides(const std::string *name, Evaluator **lhs, Evaluator **rhs) {
+void Evaluator::getSides(const std::string &name, Evaluator **lhs, Evaluator **rhs) {
     *lhs = this;
-    *rhs = new Literal(0, 0);
+    *rhs = NULL;
 }
 
-void Evaluator::addIfNew(std::string name, std::vector<std::string> *vars, std::vector<std::string> *locals) {
+void Evaluator::addIfNew(const std::string &name, std::vector<std::string> *vars, std::vector<std::string> *locals) {
     for (int i = 0; i < locals->size(); i++)
         if ((*locals)[i] == name)
             return;
@@ -5053,42 +4985,31 @@ int isolate(vartype *eqn, const char *name, int length) {
     equation_data *eqd = prgms[eq->data.index()].eq_data;
     Evaluator *ev = eqd->ev;
     std::string n(name, length);
-    if (ev->howMany(&n) != 1)
+    if (ev->howMany(n) != 1)
         return -1;
-    ev = ev->clone(NULL)->removeName();
-    Evaluator *lhs, *rhs;
-    ev->getSides(&n, &lhs, &rhs);
-
-    while (!lhs->is(&n)) {
-        Evaluator *left = lhs;
-        if (left->invert(&n, &lhs, &rhs)) {
-            left->detach();
-            delete left;
-        } else {
-            // Shouldn't happen
-            delete lhs;
-            delete rhs;
-            return -1;
-        }
-    }
-    delete lhs;
+    Evaluator *rhs;
+    ev->getSides(n, &ev, &rhs);
+    if (rhs == NULL)
+        rhs = new Literal(0, 0);
+    else
+        rhs = rhs->clone(NULL);
+    ev = ev->invert(n, rhs);
 
     int4 neq = new_eqn_idx(-1);
     if (neq == -1) {
-        delete rhs;
+        delete ev;
         return -1;
     }
     equation_data *neqd = new equation_data;
     if (neqd == NULL) {
-        delete rhs;
+        delete ev;
         return -1;
     }
     prgms[neq + prgms_count].eq_data = neqd;
     neqd->compatMode = eqd->compatMode;
     neqd->eqn_index = neq;
     GeneratorContext ctx;
-    rhs->generateCode(&ctx);
-    delete rhs;
+    ev->generateCode(&ctx);
     // We have to manually bump the refcount, because otherwise, in ctx.store(),
     // it would end up getting increased to 1 and then decreased to 0, and the
     // object would be deleted. Of course I could also return a pgm_index object,
@@ -5096,6 +5017,7 @@ int isolate(vartype *eqn, const char *name, int length) {
     neqd->refcount++;
     ctx.store(prgms + neq + prgms_count, NULL);
     neqd->refcount--;
+    delete ev;
     return neq;
 }
 
